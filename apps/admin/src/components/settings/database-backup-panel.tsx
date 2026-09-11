@@ -10,7 +10,7 @@ export type DatabaseBackupStatus = {
   database?: string | null;
   ssl?: boolean;
   usesPooler?: boolean;
-  providerHint?: 'neon' | 'postgres';
+  providerHint?: 'postgres';
   pgDumpAvailable?: boolean;
 };
 
@@ -60,7 +60,7 @@ export function DatabaseBackupPanel({ initial }: { initial: DatabaseBackupStatus
         </div>
         <div>
           <dt className="text-[var(--varnarc-subtle)]">Provider</dt>
-          <dd>{initial.providerHint === 'neon' ? 'Neon PostgreSQL' : 'PostgreSQL'}</dd>
+          <dd>PostgreSQL</dd>
         </div>
         <div>
           <dt className="text-[var(--varnarc-subtle)]">Dump engine</dt>
@@ -80,12 +80,12 @@ export function DatabaseBackupPanel({ initial }: { initial: DatabaseBackupStatus
 
       <section className="space-y-2 text-sm leading-6 text-[var(--varnarc-subtle)]">
         <h2 className="text-base font-semibold text-[var(--varnarc-ink)]">
-          Move Neon → VPS Postgres
+          Restore on VPS Postgres
         </h2>
         <ol className="list-decimal space-y-2 pl-5">
           <li>
-            Download the dump here, or run <code className="font-mono">pnpm db:backup</code> locally
-            (uses the non-pooler host).
+            Download the dump here, or run <code className="font-mono">pnpm db:backup</code>{' '}
+            locally.
           </li>
           <li>
             On the VPS: create an empty database, apply Prisma migrations, then restore:
@@ -96,7 +96,7 @@ pnpm db:restore -- --url=postgresql://USER:PASS@VPS_HOST:5432/varnarc --file=bac
             </pre>
           </li>
           <li>
-            Point API, web, admin, and CI at the VPS URL (no Neon pooler). Restart API and run{' '}
+            Point API, web, admin, and CI at the VPS URL. Restart API and run{' '}
             <code className="font-mono">pnpm db:migrate</code> only if Prisma reports pending
             migrations.
           </li>

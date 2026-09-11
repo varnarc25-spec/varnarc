@@ -13,7 +13,7 @@ export default async function DatabaseSettingsPage() {
     <div className="space-y-8">
       <PageHeader
         title="Database"
-        description="Download a full PostgreSQL dump of the live database (Neon today) and restore it on VPS Postgres."
+        description="Download a full PostgreSQL dump of the live database and restore it on VPS Postgres."
       />
       <SettingsNav active="/settings/database" />
       {result.error ? (

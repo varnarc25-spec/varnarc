@@ -21,7 +21,8 @@ import { SponsoredLabel } from '@/components/business/sponsored-label';
 import { CmsMediaImage } from '@/components/cms/cms-media-image';
 import { parseArticleSponsor } from '@/lib/article-sponsor';
 import { getPublicSiteUrlSync } from '@/lib/public-site-url';
-import { parseFaqItemsFromHtml, estimateReadingMinutes } from '@varnarc/validation';
+import { isNextControlFlowError } from '@/lib/next-control-flow';
+import { estimateReadingMinutes, parseFaqItemsFromHtml } from '@varnarc/validation';
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -56,7 +57,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function ArticleDetailPage({ params }: Props) {
   const { slug } = await params;
-  const session = await auth0.getSession();
+  let session: Awaited<ReturnType<typeof auth0.getSession>> | null = null;
+  try {
+    session = await auth0.getSession();
+  } catch (error) {
+    if (isNextControlFlowError(error)) throw error;
+    console.error('[web] article getSession failed; continuing as logged out', error);
+  }
   const me = session?.user ? await apiServerFetch<{ id: string }>('/users/me') : null;
   try {
     const { data } = await fetchArticleBySlug(slug);

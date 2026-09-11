@@ -16,18 +16,18 @@ This document acts as the primary reference for all future development.
 
 The platform must:
 
-* Be modular
-* Be scalable
-* Be cloud native
-* Be SEO optimized
-* Support millions of visitors
-* Support multiple administrators
-* Support future mobile applications
-* Support third-party integrations
-* Be deployable using Docker
-* Run on Google Cloud Run
-* Use Neon PostgreSQL
-* Use Auth0 for authentication
+- Be modular
+- Be scalable
+- Be cloud native
+- Be SEO optimized
+- Support millions of visitors
+- Support multiple administrators
+- Support future mobile applications
+- Support third-party integrations
+- Be deployable using Docker
+- Run on Google Cloud Run
+- Use PostgreSQL
+- Use Auth0 for authentication
 
 ---
 
@@ -72,47 +72,47 @@ Each application is independently deployable while sharing common packages.
 
 Frontend
 
-* Next.js (Latest App Router)
-* React
-* TypeScript
-* Tailwind CSS
-* shadcn/ui
-* TanStack Query
+- Next.js (Latest App Router)
+- React
+- TypeScript
+- Tailwind CSS
+- shadcn/ui
+- TanStack Query
 
 Backend
 
-* NestJS
-* TypeScript
-* Prisma ORM
+- NestJS
+- TypeScript
+- Prisma ORM
 
 Database
 
-* Neon PostgreSQL
+- PostgreSQL
 
 Authentication
 
-* Auth0
+- Auth0
 
 Storage
 
-* Cloudinary
+- Cloudinary
 
 Email
 
-* Resend
+- Resend
 
 Deployment
 
-* Docker
-* Google Cloud Run
+- Docker
+- Google Cloud Run
 
 CI/CD
 
-* GitHub Actions
+- GitHub Actions
 
 Monitoring
 
-* Google Cloud Logging
+- Google Cloud Logging
 
 ---
 
@@ -120,16 +120,16 @@ Monitoring
 
 The platform shall follow:
 
-* Clean Architecture
-* SOLID Principles
-* Feature-Based Folder Structure
-* Repository Pattern
-* Service Layer
-* Dependency Injection
-* Domain Separation
-* Shared UI Components
-* Strict TypeScript
-* Reusable Business Logic
+- Clean Architecture
+- SOLID Principles
+- Feature-Based Folder Structure
+- Repository Pattern
+- Service Layer
+- Dependency Injection
+- Domain Separation
+- Shared UI Components
+- Strict TypeScript
+- Reusable Business Logic
 
 No module shall directly depend on another module's internal implementation.
 
@@ -141,28 +141,28 @@ Communication must occur through well-defined interfaces.
 
 Core Modules include:
 
-* Authentication
-* User Management
-* Roles & Permissions
-* CMS
-* Articles
-* Categories
-* Tags
-* Homepage Builder
-* Landing Page Builder
-* Theme Builder
-* Advertisement Manager
-* Calculator Engine
-* Reviews
-* Comparisons
-* Business Directory
-* AI Tools
-* Search
-* Notifications
-* Analytics
-* SEO
-* Media Library
-* Settings
+- Authentication
+- User Management
+- Roles & Permissions
+- CMS
+- Articles
+- Categories
+- Tags
+- Homepage Builder
+- Landing Page Builder
+- Theme Builder
+- Advertisement Manager
+- Calculator Engine
+- Reviews
+- Comparisons
+- Business Directory
+- AI Tools
+- Search
+- Notifications
+- Analytics
+- SEO
+- Media Library
+- Settings
 
 Each module must be independently maintainable.
 
@@ -172,19 +172,19 @@ Each module must be independently maintainable.
 
 The public application provides:
 
-* Homepage
-* Articles
-* Categories
-* Search
-* Reviews
-* Comparisons
-* Directories
-* Calculators
-* AI Tools
-* User Profiles
-* Saved Calculations
-* Newsletter
-* Contact Pages
+- Homepage
+- Articles
+- Categories
+- Search
+- Reviews
+- Comparisons
+- Directories
+- Calculators
+- AI Tools
+- User Profiles
+- Saved Calculations
+- Newsletter
+- Contact Pages
 
 The public website must never expose administrative functionality.
 
@@ -194,22 +194,22 @@ The public website must never expose administrative functionality.
 
 The admin application provides:
 
-* Dashboard
-* CMS
-* Articles
-* Categories
-* Reviews
-* Directory
-* Calculator Builder
-* Homepage Builder
-* Theme Builder
-* Advertisement Management
-* Media Library
-* Analytics
-* User Management
-* Roles
-* Permissions
-* System Settings
+- Dashboard
+- CMS
+- Articles
+- Categories
+- Reviews
+- Directory
+- Calculator Builder
+- Homepage Builder
+- Theme Builder
+- Advertisement Management
+- Media Library
+- Analytics
+- User Management
+- Roles
+- Permissions
+- System Settings
 
 Every admin feature must be permission protected.
 
@@ -221,14 +221,14 @@ The backend shall expose REST APIs.
 
 All APIs must support:
 
-* Pagination
-* Filtering
-* Sorting
-* Validation
-* Versioning
-* Error Handling
-* Rate Limiting
-* Logging
+- Pagination
+- Filtering
+- Sorting
+- Validation
+- Versioning
+- Error Handling
+- Rate Limiting
+- Logging
 
 Every API response must follow a consistent response format.
 
@@ -240,12 +240,12 @@ The database shall use PostgreSQL.
 
 Requirements:
 
-* UUID primary keys
-* Soft deletes
-* Audit fields
-* Normalized schema
-* Indexed search columns
-* Transactions where required
+- UUID primary keys
+- Soft deletes
+- Audit fields
+- Normalized schema
+- Indexed search columns
+- Transactions where required
 
 Passwords must never be stored.
 
@@ -261,18 +261,18 @@ No duplicated UI code.
 
 The design system shall include:
 
-* Buttons
-* Cards
-* Tables
-* Forms
-* Dialogs
-* Drawers
-* Charts
-* Badges
-* Breadcrumbs
-* Data Grids
-* Editors
-* Uploaders
+- Buttons
+- Cards
+- Tables
+- Forms
+- Dialogs
+- Drawers
+- Charts
+- Badges
+- Breadcrumbs
+- Data Grids
+- Editors
+- Uploaders
 
 Dark Mode and Light Mode must be supported.
 
@@ -282,17 +282,17 @@ Dark Mode and Light Mode must be supported.
 
 The platform must implement:
 
-* Auth0 Authentication
-* Role-Based Access Control (RBAC)
-* Permission-Based Authorization
-* HTTPS
-* Secure Cookies
-* Input Validation
-* Rate Limiting
-* CSP Headers
-* XSS Protection
-* SQL Injection Protection
-* Audit Logs
+- Auth0 Authentication
+- Role-Based Access Control (RBAC)
+- Permission-Based Authorization
+- HTTPS
+- Secure Cookies
+- Input Validation
+- Rate Limiting
+- CSP Headers
+- XSS Protection
+- SQL Injection Protection
+- Audit Logs
 
 ---
 
@@ -300,15 +300,15 @@ The platform must implement:
 
 The application must support:
 
-* Server-Side Rendering
-* Static Generation where appropriate
-* Incremental Static Regeneration
-* Image Optimization
-* Lazy Loading
-* API Pagination
-* CDN Integration
-* Browser Caching
-* Compression
+- Server-Side Rendering
+- Static Generation where appropriate
+- Incremental Static Regeneration
+- Image Optimization
+- Lazy Loading
+- API Pagination
+- CDN Integration
+- Browser Caching
+- Compression
 
 ---
 
@@ -342,7 +342,7 @@ Google Cloud Run
 
 ↓
 
-Neon PostgreSQL
+PostgreSQL
 
 ↓
 
@@ -362,14 +362,14 @@ Cloudflare CDN
 
 Developers must:
 
-* Never hardcode business data.
-* Build reusable modules.
-* Keep business logic out of UI components.
-* Use dependency injection.
-* Write maintainable TypeScript.
-* Follow repository and service patterns.
-* Document public APIs.
-* Write tests for business logic.
+- Never hardcode business data.
+- Build reusable modules.
+- Keep business logic out of UI components.
+- Use dependency injection.
+- Write maintainable TypeScript.
+- Follow repository and service patterns.
+- Document public APIs.
+- Write tests for business logic.
 
 ---
 
@@ -401,18 +401,17 @@ Document any architectural decisions or assumptions in the relevant documentatio
 
 The architecture is considered complete when:
 
-* The repository follows the defined monorepo structure.
-* All modules adhere to the architectural principles.
-* Shared packages are used consistently.
-* Authentication and authorization are centralized.
-* The system is cloud-ready.
-* Code is modular and testable.
-* Documentation reflects the implemented architecture.
-* Future modules can be added without restructuring the project.
-
+- The repository follows the defined monorepo structure.
+- All modules adhere to the architectural principles.
+- Shared packages are used consistently.
+- Authentication and authorization are centralized.
+- The system is cloud-ready.
+- Code is modular and testable.
+- Documentation reflects the implemented architecture.
+- Future modules can be added without restructuring the project.
 
 ## Acceptance Criteria
+
 - Feature complete
 - Tested
 - Documented
-

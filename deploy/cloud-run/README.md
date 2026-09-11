@@ -72,7 +72,7 @@ In production the API **requires** these env vars (see `apps/api/src/config/star
 
 | Variable         | Required           | Notes                                       |
 | ---------------- | ------------------ | ------------------------------------------- |
-| `DATABASE_URL`   | Yes                | Neon PostgreSQL connection string           |
+| `DATABASE_URL`   | Yes                | PostgreSQL connection string                |
 | `AUTH0_DOMAIN`   | Yes (prod)         | Auth0 tenant domain                         |
 | `AUTH0_AUDIENCE` | Yes (prod)         | API audience identifier                     |
 | `OPENSEARCH_URL` | Yes (prod default) | Unless you set `SEARCH_ENGINE=postgres-fts` |
@@ -123,7 +123,7 @@ Look for `[startup] Fatal error:` or `Missing required environment variables`.
 
 - GCP project with Artifact Registry and Cloud Run enabled
 - GitHub secrets (see `.github/workflows/deploy.yml`)
-- Neon `DATABASE_URL` (production/staging)
+- PostgreSQL `DATABASE_URL` (production/staging)
 - Auth0 apps for web + admin + API audience
 - Optional: Redis (`REDIS_URL`) for cache and BullMQ
 
@@ -195,7 +195,7 @@ gcloud run services update-traffic varnarc-api \
   --to-revisions REVISION_NAME=100
 ```
 
-Database rollback: use Neon point-in-time recovery or restore backup; only reverse Prisma migrations when safe.
+Database rollback: restore a PostgreSQL backup; only reverse Prisma migrations when safe.
 
 See `deploy/gcp/README.md` for full GCP setup (IAM, Secret Manager, Workload Identity).
 

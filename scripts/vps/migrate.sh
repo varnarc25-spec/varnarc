@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 # Apply Prisma migrations using DATABASE_URL from .env.production.
-# Run from the cloned monorepo on the VPS. Does not modify Neon unless
-# DATABASE_URL still points at Neon.
+# Run from the cloned monorepo on the VPS.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"

@@ -15,13 +15,13 @@ Build a modular, cloud-native, SEO-oriented platform with:
 
 ## Locked technology
 
-Next.js (App Router), NestJS, Prisma, Neon PostgreSQL, Auth0, Tailwind + shadcn/ui, TanStack Query, Cloudinary, Resend, Docker, Google Cloud Run, GitHub Actions, pnpm, Turborepo.
+Next.js (App Router), NestJS, Prisma, PostgreSQL, Auth0, Tailwind + shadcn/ui, TanStack Query, Cloudinary, Resend, Docker, Google Cloud Run, GitHub Actions, pnpm, Turborepo.
 
 ## Phase 1 deliverables
 
 - [x] Monorepo structure
 - [x] Auth0 end-to-end (login, sync, RBAC APIs, admin UI)
-- [x] Prisma Phase 1 + Auth0 RBAC schema migrated on Neon `varnarc_db`
+- [x] Prisma Phase 1 + Auth0 RBAC schema migrated on PostgreSQL `varnarc_db`
 - [x] Admin shell + public shell + profile
 - [x] Docker + GitHub Actions + Cloud Run
 - [x] CMS, media, themes, homepage builder

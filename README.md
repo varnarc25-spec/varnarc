@@ -4,16 +4,16 @@ Content-driven platform for Finance, Home, Construction, Automobiles, AI Tools, 
 
 ## Stack
 
-| Layer | Choice |
-|-------|--------|
-| Apps | Next.js 15 (`web`, `admin`), NestJS (`api`) |
-| Data | Neon PostgreSQL + Prisma |
-| Auth | Auth0 |
-| UI | Tailwind CSS + shadcn/ui |
-| Client data | TanStack Query |
-| Media / Email | Cloudinary / Resend |
-| Monorepo | pnpm + Turborepo |
-| Deploy | Docker → Google Cloud Run |
+| Layer         | Choice                                      |
+| ------------- | ------------------------------------------- |
+| Apps          | Next.js 15 (`web`, `admin`), NestJS (`api`) |
+| Data          | PostgreSQL + Prisma                         |
+| Auth          | Auth0                                       |
+| UI            | Tailwind CSS + shadcn/ui                    |
+| Client data   | TanStack Query                              |
+| Media / Email | Cloudinary / Resend                         |
+| Monorepo      | pnpm + Turborepo                            |
+| Deploy        | Docker → Google Cloud Run                   |
 
 ## Repository layout
 
@@ -66,15 +66,15 @@ Start with:
 
 ## Scripts
 
-| Command | Description |
-|---------|-------------|
-| `pnpm dev` | Run all apps in parallel |
-| `pnpm build` | Build all packages and apps |
-| `pnpm lint` | Lint workspace |
-| `pnpm typecheck` | TypeScript checks |
-| `pnpm db:generate` | Generate Prisma client |
-| `pnpm db:migrate` | Run migrations |
-| `pnpm db:seed` | Seed roles / permissions |
+| Command            | Description                 |
+| ------------------ | --------------------------- |
+| `pnpm dev`         | Run all apps in parallel    |
+| `pnpm build`       | Build all packages and apps |
+| `pnpm lint`        | Lint workspace              |
+| `pnpm typecheck`   | TypeScript checks           |
+| `pnpm db:generate` | Generate Prisma client      |
+| `pnpm db:migrate`  | Run migrations              |
+| `pnpm db:seed`     | Seed roles / permissions    |
 
 ## GitHub
 

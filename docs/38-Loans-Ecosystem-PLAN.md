@@ -16,7 +16,7 @@
 | Web        | `apps/web`            | Next.js 15 App Router, React 19, Tailwind 4 |
 | Admin      | `apps/admin`          | Next.js admin + BFF proxies                 |
 | API        | `apps/api`            | NestJS + ZodValidationPipe                  |
-| DB         | `packages/database`   | Neon PostgreSQL + Prisma                    |
+| DB         | `packages/database`   | PostgreSQL + Prisma                         |
 | Validation | `packages/validation` | Zod schemas                                 |
 | Auth       | `packages/auth`       | Auth0 + `FINANCE_*` RBAC                    |
 

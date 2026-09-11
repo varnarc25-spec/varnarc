@@ -15,7 +15,7 @@ See `DEPLOYMENT.md`. Compose file: `docker/docker-compose.vps.yml` (Nginx 80/443
 From the monorepo root (`project/`):
 
 ```bash
-cp .env.example .env   # fill DATABASE_URL (Neon) and Auth0
+cp .env.example .env   # fill DATABASE_URL and Auth0
 export DOCKER_BUILDKIT=1
 pnpm docker:up
 ```
@@ -35,7 +35,7 @@ pnpm docker:up
 docker compose -f docker/docker-compose.yml up --build
 ```
 
-### Local PostgreSQL (instead of Neon)
+### Local PostgreSQL
 
 ```bash
 docker compose -f docker/docker-compose.yml --profile local-db up --build

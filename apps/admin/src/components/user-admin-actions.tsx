@@ -60,9 +60,7 @@ export function UserAdminActions({
           </select>
           <Button
             disabled={loading}
-            onClick={() =>
-              void call('/api/admin/users/status', { userId, status })
-            }
+            onClick={() => void call('/api/admin/users/status', { userId, status })}
           >
             Update status
           </Button>
@@ -72,7 +70,7 @@ export function UserAdminActions({
       <Card>
         <CardHeader>
           <CardTitle>Assign roles</CardTitle>
-          <CardDescription>RBAC roles stored in Neon (not Auth0).</CardDescription>
+          <CardDescription>RBAC roles stored in PostgreSQL (not Auth0).</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="max-h-48 space-y-2 overflow-y-auto">
@@ -85,9 +83,7 @@ export function UserAdminActions({
                     checked={checked}
                     onChange={(e) => {
                       setRoleIds((prev) =>
-                        e.target.checked
-                          ? [...prev, role.id]
-                          : prev.filter((id) => id !== role.id),
+                        e.target.checked ? [...prev, role.id] : prev.filter((id) => id !== role.id),
                       );
                     }}
                   />
@@ -107,7 +103,9 @@ export function UserAdminActions({
         </CardContent>
       </Card>
 
-      {message ? <p className="text-sm text-[var(--varnarc-subtle)] lg:col-span-2">{message}</p> : null}
+      {message ? (
+        <p className="text-sm text-[var(--varnarc-subtle)] lg:col-span-2">{message}</p>
+      ) : null}
     </div>
   );
 }

@@ -28,7 +28,7 @@ export {
   defaultBackupFilename,
   dumpConnectionUrl,
   isPgDumpAvailable,
-  neonPoolerToDirect,
+  poolerHostToDirect,
   openDatabaseDump,
   spawnPgDump,
   summarizeDumpConnection,

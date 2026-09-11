@@ -17,10 +17,9 @@ Start with `min-instances=0` until traffic justifies always-warm instances.
 - Retain last N image tags; delete old digests with cleanup policy
 - Use commit SHA tags in CI; `latest` only on main if needed
 
-## Neon
+## PostgreSQL
 
-- Use appropriate compute tier; scale to zero on dev branches
-- Delete unused preview branches
+- Right-size compute; take regular `pg_dump` backups off the VPS
 
 ## Redis
 
@@ -28,7 +27,7 @@ Start with `min-instances=0` until traffic justifies always-warm instances.
 
 ## Egress
 
-- Keep Cloud Run, Neon, and Redis in the same region (`us-central1`) when possible
+- Keep Cloud Run, PostgreSQL, and Redis in the same region when possible
 - Use Cloudinary transforms instead of serving large originals
 
 ## Monitoring spend

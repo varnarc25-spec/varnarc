@@ -4,20 +4,20 @@ Production uses **OpenSearch** for search reads by default. Postgres FTS remains
 
 ## Resolution rules
 
-| Environment | Default engine | Override |
-|-------------|----------------|----------|
-| `NODE_ENV=production` | `opensearch` | `SEARCH_ENGINE=postgres-fts` |
-| Local / staging | `postgres-fts` | `SEARCH_ENGINE=opensearch` |
+| Environment           | Default engine | Override                     |
+| --------------------- | -------------- | ---------------------------- |
+| `NODE_ENV=production` | `opensearch`   | `SEARCH_ENGINE=postgres-fts` |
+| Local / staging       | `postgres-fts` | `SEARCH_ENGINE=opensearch`   |
 
 Production startup **requires** `OPENSEARCH_URL` when the resolved engine is `opensearch`. Set `SEARCH_ENGINE=postgres-fts` only if you intentionally stay on Postgres FTS in production.
 
 ## Managed providers
 
-| Provider | Notes |
-|----------|--------|
-| [AWS OpenSearch Service](https://aws.amazon.com/opensearch-service/) | Common for multi-AZ; use HTTPS endpoint |
-| [Elastic Cloud](https://www.elastic.co/cloud) | OpenSearch-compatible serverless/managed |
-| Self-hosted on GKE/VM | Single-node for staging; 3+ data nodes for prod |
+| Provider                                                             | Notes                                           |
+| -------------------------------------------------------------------- | ----------------------------------------------- |
+| [AWS OpenSearch Service](https://aws.amazon.com/opensearch-service/) | Common for multi-AZ; use HTTPS endpoint         |
+| [Elastic Cloud](https://www.elastic.co/cloud)                        | OpenSearch-compatible serverless/managed        |
+| Self-hosted on GKE/VM                                                | Single-node for staging; 3+ data nodes for prod |
 
 ## Secret Manager (production)
 
@@ -70,13 +70,13 @@ docker compose -f docker/docker-compose.yml --profile search up --build
 
 ## Tuning
 
-| Variable | Default | Purpose |
-|----------|---------|---------|
-| `OPENSEARCH_SHARDS` | `1` | Index shards |
-| `OPENSEARCH_REPLICAS` | `1` | Replica count |
-| `OPENSEARCH_REFRESH_INTERVAL` | `30s` | Index refresh |
-| `OPENSEARCH_TIMEOUT_MS` | `3000` | Client timeout |
-| `SEARCH_ENGINE_DUAL_WRITE` | `true` | Postgres + OpenSearch writes; set `false` for OpenSearch-only writes |
+| Variable                      | Default | Purpose                                                              |
+| ----------------------------- | ------- | -------------------------------------------------------------------- |
+| `OPENSEARCH_SHARDS`           | `1`     | Index shards                                                         |
+| `OPENSEARCH_REPLICAS`         | `1`     | Replica count                                                        |
+| `OPENSEARCH_REFRESH_INTERVAL` | `30s`   | Index refresh                                                        |
+| `OPENSEARCH_TIMEOUT_MS`       | `3000`  | Client timeout                                                       |
+| `SEARCH_ENGINE_DUAL_WRITE`    | `true`  | Postgres + OpenSearch writes; set `false` for OpenSearch-only writes |
 
 ## Rollback
 
@@ -84,5 +84,5 @@ Set `SEARCH_ENGINE=postgres-fts` on the API service and redeploy. Postgres `sear
 
 ## Related
 
-- [neon-redis.md](./neon-redis.md) — other external services
+- [postgres-redis.md](./postgres-redis.md) — other external services
 - [../../apps/api/src/modules/search/README.md](../../apps/api/src/modules/search/README.md) — API module

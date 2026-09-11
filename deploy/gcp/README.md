@@ -1,13 +1,13 @@
 # Google Cloud Platform — Varnarc
 
-GCP hosts **Cloud Run** services; Neon, Auth0, Cloudinary, and managed Redis stay external.
+GCP hosts **Cloud Run** services; PostgreSQL, Auth0, Cloudinary, and Redis stay external.
 
 ## Architecture
 
 ```
 Users → (optional CDN/LB) → Cloud Run (web, admin, api)
                               ↓
-                    Neon · Redis · Auth0 · Cloudinary
+                    PostgreSQL · Redis · Auth0 · Cloudinary
                               ↓
                     Cloud Logging · Cloud Monitoring
 ```
@@ -53,7 +53,7 @@ Workflow: `.github/workflows/deploy.yml` builds images, pushes to Artifact Regis
 | [custom-domains.md](./custom-domains.md)       | DNS + managed SSL on Cloud Run            |
 | [monitoring.md](./monitoring.md)               | Logging, metrics, alerts                  |
 | [disaster-recovery.md](./disaster-recovery.md) | DR runbook                                |
-| [neon-redis.md](./neon-redis.md)               | External data services                    |
+| [postgres-redis.md](./postgres-redis.md)       | External data services                    |
 | [opensearch.md](./opensearch.md)               | Production search (OpenSearch)            |
 | [adsense-sync.md](./adsense-sync.md)           | AdSense API revenue sync                  |
 | [catalog-import.md](./catalog-import.md)       | Large-scale catalog CSV import            |

@@ -14,15 +14,15 @@ The authentication system must be secure, scalable, cloud-native, and suitable f
 
 The authentication system must:
 
-* Use Auth0 as the identity provider.
-* Never store passwords in the Varnarc database.
-* Support secure session management.
-* Support social login providers.
-* Support Role-Based Access Control (RBAC).
-* Support Permission-Based Authorization.
-* Protect all administrative routes.
-* Protect backend APIs.
-* Be extensible for mobile applications and third-party APIs.
+- Use Auth0 as the identity provider.
+- Never store passwords in the Varnarc database.
+- Support secure session management.
+- Support social login providers.
+- Support Role-Based Access Control (RBAC).
+- Support Permission-Based Authorization.
+- Protect all administrative routes.
+- Protect backend APIs.
+- Be extensible for mobile applications and third-party APIs.
 
 ---
 
@@ -30,22 +30,22 @@ The authentication system must:
 
 Identity Provider
 
-* Auth0
+- Auth0
 
 Supported Authentication Methods
 
-* Email & Password
-* Google
-* Microsoft
-* GitHub
-* Apple (future)
-* Passwordless Email (future)
+- Email & Password
+- Google
+- Microsoft
+- GitHub
+- Apple (future)
+- Passwordless Email (future)
 
 Future Support
 
-* Multi-Factor Authentication (MFA)
-* Enterprise SSO
-* Magic Links
+- Multi-Factor Authentication (MFA)
+- Enterprise SSO
+- Magic Links
 
 ---
 
@@ -75,14 +75,14 @@ User Login
 
 The system supports the following default roles:
 
-* Super Administrator
-* Administrator
-* Editor
-* Author
-* Moderator
-* Premium User
-* Registered User
-* Guest
+- Super Administrator
+- Administrator
+- Editor
+- Author
+- Moderator
+- Premium User
+- Registered User
+- Guest
 
 Roles are stored in the application database, not in Auth0.
 
@@ -96,42 +96,42 @@ Examples:
 
 Content
 
-* article.create
-* article.edit
-* article.publish
-* article.delete
+- article.create
+- article.edit
+- article.publish
+- article.delete
 
 Media
 
-* media.upload
-* media.delete
+- media.upload
+- media.delete
 
 Users
 
-* user.view
-* user.create
-* user.update
-* user.delete
+- user.view
+- user.create
+- user.update
+- user.delete
 
 Advertisements
 
-* advertisement.manage
+- advertisement.manage
 
 Homepage Builder
 
-* homepage.manage
+- homepage.manage
 
 Theme
 
-* theme.manage
+- theme.manage
 
 Analytics
 
-* analytics.view
+- analytics.view
 
 Settings
 
-* settings.manage
+- settings.manage
 
 Permissions should be configurable without changing application code.
 
@@ -168,7 +168,7 @@ Prisma
 
 ↓
 
-Neon PostgreSQL
+PostgreSQL
 ```
 
 Auth0 is responsible only for identity verification.
@@ -181,63 +181,63 @@ Application-specific authorization is handled by NestJS.
 
 Users
 
-* id
-* auth0_user_id
-* email
-* first_name
-* last_name
-* display_name
-* avatar_url
-* phone
-* status
-* email_verified
-* last_login_at
-* created_at
-* updated_at
-* deleted_at
+- id
+- auth0_user_id
+- email
+- first_name
+- last_name
+- display_name
+- avatar_url
+- phone
+- status
+- email_verified
+- last_login_at
+- created_at
+- updated_at
+- deleted_at
 
 Roles
 
-* id
-* name
-* description
+- id
+- name
+- description
 
 Permissions
 
-* id
-* name
-* module
-* description
+- id
+- name
+- module
+- description
 
 Role Permissions
 
-* role_id
-* permission_id
+- role_id
+- permission_id
 
 User Roles
 
-* user_id
-* role_id
+- user_id
+- role_id
 
 Login History
 
-* user_id
-* ip_address
-* device
-* browser
-* operating_system
-* country
-* login_time
+- user_id
+- ip_address
+- device
+- browser
+- operating_system
+- country
+- login_time
 
 Audit Logs
 
-* user_id
-* action
-* entity
-* entity_id
-* old_value
-* new_value
-* created_at
+- user_id
+- action
+- entity
+- entity_id
+- old_value
+- new_value
+- created_at
 
 No password fields shall exist in the application database.
 
@@ -249,17 +249,17 @@ Sessions are managed by Auth0.
 
 The application stores only session metadata such as:
 
-* Last login
-* Login history
-* Device information
-* Browser information
-* IP address
+- Last login
+- Login history
+- Device information
+- Browser information
+- IP address
 
 Future support:
 
-* Active sessions
-* Session revocation
-* Device management
+- Active sessions
+- Session revocation
+- Device management
 
 ---
 
@@ -267,26 +267,26 @@ Future support:
 
 Public
 
-* Home
-* Articles
-* Categories
-* Reviews
-* Calculators
-* Search
-* Contact
-* Newsletter
+- Home
+- Articles
+- Categories
+- Reviews
+- Calculators
+- Search
+- Contact
+- Newsletter
 
 Authenticated
 
-* Profile
-* Saved Calculations
-* Bookmarks
-* Dashboard
+- Profile
+- Saved Calculations
+- Bookmarks
+- Dashboard
 
 Administrative
 
-* /admin/**
-* /api/admin/**
+- /admin/**
+- /api/admin/**
 
 Only authorized users may access administrative resources.
 
@@ -296,11 +296,11 @@ Only authorized users may access administrative resources.
 
 Every protected API must:
 
-* Validate Auth0 JWT.
-* Load user profile.
-* Load assigned roles.
-* Load permissions.
-* Verify authorization before executing business logic.
+- Validate Auth0 JWT.
+- Load user profile.
+- Load assigned roles.
+- Load permissions.
+- Verify authorization before executing business logic.
 
 Unauthorized access must return:
 
@@ -318,19 +318,19 @@ Frontend Middleware
 
 Responsibilities:
 
-* Validate authentication state.
-* Redirect unauthenticated users.
-* Protect admin pages.
-* Refresh sessions where required.
+- Validate authentication state.
+- Redirect unauthenticated users.
+- Protect admin pages.
+- Refresh sessions where required.
 
 Backend Guards
 
 Responsibilities:
 
-* Validate JWT.
-* Load user context.
-* Verify permissions.
-* Return standardized errors.
+- Validate JWT.
+- Load user context.
+- Verify permissions.
+- Return standardized errors.
 
 ---
 
@@ -376,16 +376,16 @@ PUT /api/v1/users/{id}/roles
 
 Administrators can:
 
-* View users.
-* Search users.
-* Assign roles.
-* Remove roles.
-* Disable accounts.
-* Enable accounts.
-* View login history.
-* View audit logs.
-* View active sessions (future).
-* Revoke sessions (future).
+- View users.
+- Search users.
+- Assign roles.
+- Remove roles.
+- Disable accounts.
+- Enable accounts.
+- View login history.
+- View audit logs.
+- View active sessions (future).
+- Revoke sessions (future).
 
 ---
 
@@ -393,14 +393,14 @@ Administrators can:
 
 Users can:
 
-* Register.
-* Login.
-* Logout.
-* Update profile.
-* Change display information.
-* View account details.
-* Delete account (optional workflow).
-* Manage communication preferences.
+- Register.
+- Login.
+- Logout.
+- Update profile.
+- Change display information.
+- View account details.
+- Delete account (optional workflow).
+- Manage communication preferences.
 
 ---
 
@@ -412,12 +412,12 @@ Use NestJS validation pipes for backend validation.
 
 Validate:
 
-* Email addresses
-* UUIDs
-* Auth0 identifiers
-* Phone numbers
-* Required fields
-* Enum values
+- Email addresses
+- UUIDs
+- Auth0 identifiers
+- Phone numbers
+- Required fields
+- Enum values
 
 Never trust client input.
 
@@ -427,14 +427,14 @@ Never trust client input.
 
 Handle:
 
-* Invalid tokens
-* Expired sessions
-* Missing permissions
-* Disabled accounts
-* Deleted accounts
-* Duplicate user synchronization
-* Invalid role assignments
-* Auth0 service failures
+- Invalid tokens
+- Expired sessions
+- Missing permissions
+- Disabled accounts
+- Deleted accounts
+- Duplicate user synchronization
+- Invalid role assignments
+- Auth0 service failures
 
 Standard response:
 
@@ -454,16 +454,16 @@ Standard response:
 
 Requirements
 
-* HTTPS only
-* Secure cookies
-* CSP headers
-* CSRF protection where applicable
-* XSS prevention
-* SQL injection prevention
-* Rate limiting
-* Audit logging
-* Account lockout policies (future)
-* MFA support (future)
+- HTTPS only
+- Secure cookies
+- CSP headers
+- CSRF protection where applicable
+- XSS prevention
+- SQL injection prevention
+- Rate limiting
+- Audit logging
+- Account lockout policies (future)
+- MFA support (future)
 
 Sensitive information must never be exposed to the client.
 
@@ -473,9 +473,9 @@ Sensitive information must never be exposed to the client.
 
 Use caching where appropriate for:
 
-* Role lookups
-* Permission lookups
-* User profile retrieval
+- Role lookups
+- Permission lookups
+- User profile retrieval
 
 Do not cache authentication tokens.
 
@@ -487,16 +487,16 @@ Authorization should remain lightweight and optimized.
 
 Prepare the architecture for:
 
-* Organizations
-* Teams
-* Premium subscriptions
-* API keys
-* OAuth client applications
-* Mobile authentication
-* WebSockets
-* Enterprise SSO
-* MFA
-* Passwordless authentication
+- Organizations
+- Teams
+- Premium subscriptions
+- API keys
+- OAuth client applications
+- Mobile authentication
+- WebSockets
+- Enterprise SSO
+- MFA
+- Passwordless authentication
 
 No major architectural changes should be required to support these features.
 
@@ -504,23 +504,23 @@ No major architectural changes should be required to support these features.
 
 # Cursor Implementation Prompt
 
-Implement the complete authentication and authorization system for the Varnarc platform using Auth0, Next.js, NestJS, Prisma, and Neon PostgreSQL.
+Implement the complete authentication and authorization system for the Varnarc platform using Auth0, Next.js, NestJS, Prisma, and PostgreSQL.
 
 Requirements:
 
-* Integrate Auth0 for authentication.
-* Implement secure login, logout, and user synchronization.
-* Create database models for users, roles, permissions, user_roles, role_permissions, login_history, and audit_logs.
-* Protect frontend routes with middleware.
-* Protect backend APIs with NestJS guards.
-* Implement RBAC and permission-based authorization.
-* Build reusable authorization decorators and middleware.
-* Implement user synchronization between Auth0 and PostgreSQL.
-* Use Zod for frontend validation and NestJS validation for backend requests.
-* Return standardized API responses.
-* Log authentication events and administrative actions.
-* Write production-ready, modular, and well-documented code.
-* Do not store passwords in the application database.
+- Integrate Auth0 for authentication.
+- Implement secure login, logout, and user synchronization.
+- Create database models for users, roles, permissions, user_roles, role_permissions, login_history, and audit_logs.
+- Protect frontend routes with middleware.
+- Protect backend APIs with NestJS guards.
+- Implement RBAC and permission-based authorization.
+- Build reusable authorization decorators and middleware.
+- Implement user synchronization between Auth0 and PostgreSQL.
+- Use Zod for frontend validation and NestJS validation for backend requests.
+- Return standardized API responses.
+- Log authentication events and administrative actions.
+- Write production-ready, modular, and well-documented code.
+- Do not store passwords in the application database.
 
 ---
 
@@ -552,14 +552,14 @@ Requirements:
 
 Implemented in `project/`:
 
-* Auth0 login/logout via `@auth0/nextjs-auth0` (web + admin)
-* JWT validation (JWKS) in NestJS
-* User sync, login history, audit logs
-* RBAC guards + permission decorators
-* APIs: `/auth/*`, `/users/*`, `/roles/*`, `/permissions`
-* Admin UI: users, roles, permissions
-* Public profile page + profile update
-* Bootstrap admin via `BOOTSTRAP_ADMIN_EMAILS`
+- Auth0 login/logout via `@auth0/nextjs-auth0` (web + admin)
+- JWT validation (JWKS) in NestJS
+- User sync, login history, audit logs
+- RBAC guards + permission decorators
+- APIs: `/auth/*`, `/users/*`, `/roles/*`, `/permissions`
+- Admin UI: users, roles, permissions
+- Public profile page + profile update
+- Bootstrap admin via `BOOTSTRAP_ADMIN_EMAILS`
 
 Required Auth0 dashboard setup:
 

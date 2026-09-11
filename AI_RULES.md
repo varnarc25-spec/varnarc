@@ -8,7 +8,7 @@ Read this file and all relevant documents in `/docs` before making any changes.
 
 - Frontend: Next.js 15 (App Router), React, TypeScript, Tailwind CSS, shadcn/ui, TanStack Query
 - Backend: NestJS, TypeScript, Prisma
-- Database: Neon PostgreSQL
+- Database: PostgreSQL
 - Auth: Auth0
 - Storage: Cloudinary
 - Email: Resend

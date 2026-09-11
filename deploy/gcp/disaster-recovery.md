@@ -2,14 +2,14 @@
 
 ## RTO / RPO targets (guidance)
 
-| Component | RPO | Recovery |
-|-----------|-----|----------|
-| Cloud Run | Redeploy last image | Minutes — rollback revision |
-| Neon PostgreSQL | Neon plan PITR | Restore branch / PITR |
-| Redis | Cache only | Rebuild; queue jobs may replay |
-| Cloudinary | Provider SLA | Re-upload from backup export |
-| Auth0 | Provider SLA | Use Auth0 tenant backup/export |
-| Secret Manager | Version history | Roll back secret version |
+| Component      | RPO                    | Recovery                       |
+| -------------- | ---------------------- | ------------------------------ |
+| Cloud Run      | Redeploy last image    | Minutes — rollback revision    |
+| PostgreSQL     | `pg_dump` / VPS volume | Restore dump                   |
+| Redis          | Cache only             | Rebuild; queue jobs may replay |
+| Cloudinary     | Provider SLA           | Re-upload from backup export   |
+| Auth0          | Provider SLA           | Use Auth0 tenant backup/export |
+| Secret Manager | Version history        | Roll back secret version       |
 
 ## Cloud Run failure
 
@@ -21,13 +21,13 @@
 
 - Deploy to secondary region (manual today; multi-region is future)
 - Update DNS to point to healthy region
-- Neon: create read replica or restore in another region per Neon docs
+- PostgreSQL: restore the latest dump on a new instance in another region if needed
 
-## Database (Neon)
+## Database (PostgreSQL)
 
-1. Use Neon dashboard → **Restore** or point-in-time recovery
-2. Update `DATABASE_URL` secret if connection string changes
-3. Redeploy API or restart Cloud Run to pick up new secret version
+1. Restore from the latest `pg_dump` backup
+2. Update `DATABASE_URL` secret if the connection string changes
+3. Redeploy API or restart the service to pick up the new URL
 
 Do **not** run `prisma migrate reset` on production.
 
@@ -51,4 +51,4 @@ Do **not** run `prisma migrate reset` on production.
 
 ## Contacts / runbook
 
-Document on-call contacts and escalation outside this repo. Test restore from Neon backup quarterly.
+Document on-call contacts and escalation outside this repo. Test restore from a PostgreSQL backup quarterly.

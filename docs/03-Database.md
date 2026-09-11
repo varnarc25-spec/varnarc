@@ -1,6 +1,7 @@
 # 03 - Database Architecture
 
 ## Purpose
+
 Define the complete database architecture for the Varnarc platform.
 
 The database must support:
@@ -49,7 +50,7 @@ The database must be:
 
 Database
 
-- PostgreSQL (Neon)
+- PostgreSQL
 
 ORM
 

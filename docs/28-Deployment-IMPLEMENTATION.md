@@ -4,43 +4,43 @@ Deployment is **infrastructure and operations**, not a runtime feature module. R
 
 ## Required scope (delivered)
 
-| Area | Status |
-|------|--------|
-| Multi-environment strategy documented | Done — `deploy/environments.md` |
-| Docker Compose local stack (api, web, admin, redis) | Done |
-| Production Dockerfiles (api, web, admin) | Pre-existing, healthchecks added |
-| GitHub Actions CI (`ci.yml`) | Pre-existing |
-| GitHub Actions deploy pipeline (`deploy.yml`) | Done — migrate, build, push, Cloud Run, smoke |
-| Prisma migrate deploy script | Done — `scripts/deploy/migrate.sh` |
-| Smoke test script | Done — `scripts/deploy/smoke-test.sh` |
-| Cloud Run deploy guide | Done — `deploy/cloud-run/README.md` |
-| Startup env validation (API) | Done — `apps/api/src/config/startup-env.ts` |
-| Deep readiness (`/ready`) — DB + Redis ping | Done |
-| Liveness (`/health`) | Done |
-| Admin system pages (`/system/status`, `/system/health`, `/system/version`) | Done |
-| Rollback procedures documented | Done — Cloud Run revision traffic |
+| Area                                                                       | Status                                        |
+| -------------------------------------------------------------------------- | --------------------------------------------- |
+| Multi-environment strategy documented                                      | Done — `deploy/environments.md`               |
+| Docker Compose local stack (api, web, admin, redis)                        | Done                                          |
+| Production Dockerfiles (api, web, admin)                                   | Pre-existing, healthchecks added              |
+| GitHub Actions CI (`ci.yml`)                                               | Pre-existing                                  |
+| GitHub Actions deploy pipeline (`deploy.yml`)                              | Done — migrate, build, push, Cloud Run, smoke |
+| Prisma migrate deploy script                                               | Done — `scripts/deploy/migrate.sh`            |
+| Smoke test script                                                          | Done — `scripts/deploy/smoke-test.sh`         |
+| Cloud Run deploy guide                                                     | Done — `deploy/cloud-run/README.md`           |
+| Startup env validation (API)                                               | Done — `apps/api/src/config/startup-env.ts`   |
+| Deep readiness (`/ready`) — DB + Redis ping                                | Done                                          |
+| Liveness (`/health`)                                                       | Done                                          |
+| Admin system pages (`/system/status`, `/system/health`, `/system/version`) | Done                                          |
+| Rollback procedures documented                                             | Done — Cloud Run revision traffic             |
 
 ## Operational endpoints
 
-| Endpoint | Purpose |
-|----------|---------|
-| `GET /api/v1/health` | Liveness |
-| `GET /api/v1/ready` | Readiness (503 if DB/Redis down) |
-| `GET /api/v1/status` | Ops summary + 24h API metrics |
-| `GET /api/v1/version` | Version metadata |
+| Endpoint              | Purpose                          |
+| --------------------- | -------------------------------- |
+| `GET /api/v1/health`  | Liveness                         |
+| `GET /api/v1/ready`   | Readiness (503 if DB/Redis down) |
+| `GET /api/v1/status`  | Ops summary + 24h API metrics    |
+| `GET /api/v1/version` | Version metadata                 |
 
 ## Key paths
 
-| Area | Path |
-|------|------|
-| Docker Compose | `docker/docker-compose.yml` |
-| Dockerfiles | `docker/Dockerfile.*` |
-| CI | `.github/workflows/ci.yml` |
-| CD | `.github/workflows/deploy.yml` |
-| Deploy scripts | `scripts/deploy/` |
-| Cloud Run docs | `deploy/cloud-run/README.md` |
-| Health service | `apps/api/src/health/` |
-| Admin system UI | `apps/admin/src/app/system/` |
+| Area            | Path                           |
+| --------------- | ------------------------------ |
+| Docker Compose  | `docker/docker-compose.yml`    |
+| Dockerfiles     | `docker/Dockerfile.*`          |
+| CI              | `.github/workflows/ci.yml`     |
+| CD              | `.github/workflows/deploy.yml` |
+| Deploy scripts  | `scripts/deploy/`              |
+| Cloud Run docs  | `deploy/cloud-run/README.md`   |
+| Health service  | `apps/api/src/health/`         |
+| Admin system UI | `apps/admin/src/app/system/`   |
 
 ## Root scripts
 
@@ -53,13 +53,13 @@ pnpm deploy:smoke       # curl health/status/version/ready
 
 ## GitHub secrets (when enabling GCP deploy)
 
-| Secret | Purpose |
-|--------|---------|
-| `GCP_PROJECT_ID` | Artifact Registry + Cloud Run |
-| `GCP_WORKLOAD_IDENTITY_PROVIDER` | OIDC |
-| `GCP_SERVICE_ACCOUNT` | Deploy identity |
-| `DATABASE_URL` | Migration job |
-| `SMOKE_TEST_API_URL` | Optional post-deploy smoke |
+| Secret                           | Purpose                       |
+| -------------------------------- | ----------------------------- |
+| `GCP_PROJECT_ID`                 | Artifact Registry + Cloud Run |
+| `GCP_WORKLOAD_IDENTITY_PROVIDER` | OIDC                          |
+| `GCP_SERVICE_ACCOUNT`            | Deploy identity               |
+| `DATABASE_URL`                   | Migration job                 |
+| `SMOKE_TEST_API_URL`             | Optional post-deploy smoke    |
 
 Without GCP secrets, the pipeline still **builds images** and skips push/deploy gracefully.
 
@@ -70,7 +70,7 @@ PR → CI (typecheck, build, tests)
      ↓
 merge to develop/main
      ↓
-migrate deploy (Neon)
+migrate deploy (PostgreSQL)
      ↓
 docker build (api, web, admin)
      ↓
@@ -86,7 +86,7 @@ smoke tests (if URLs configured)
 - Terraform / IaC modules
 - Blue/green and canary releases
 - OpenTelemetry / Prometheus / Grafana stack deployment
-- Automated Neon backups configuration
+- Automated PostgreSQL backups configuration
 - Kubernetes manifests
 - Structured JSON logging driver (app still uses Nest Logger)
 - Cloudinary connectivity probe in `/ready`

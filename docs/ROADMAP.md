@@ -6,21 +6,21 @@ Living planning document for engineering, product, and infrastructure. **Structu
 
 ## Current status
 
-| Track | Status | Notes |
-|-------|--------|-------|
-| **v1.x Platform Foundation** | Complete | Modules 03–36 implemented |
-| **v2.x Content Expansion** | Complete | 100 articles, 30 calculators, 20 comparisons, 20 reviews seeded |
-| **v3.x+ Utility / AI / Community** | Planned | See phases 3–9 in spec |
+| Track                              | Status   | Notes                                                           |
+| ---------------------------------- | -------- | --------------------------------------------------------------- |
+| **v1.x Platform Foundation**       | Complete | Modules 03–36 implemented                                       |
+| **v2.x Content Expansion**         | Complete | 100 articles, 30 calculators, 20 comparisons, 20 reviews seeded |
+| **v3.x+ Utility / AI / Community** | Planned  | See phases 3–9 in spec                                          |
 
 ## Release strategy
 
-| Version | Focus | Phases |
-|---------|-------|--------|
-| v1.x | Platform Foundation | 1 |
-| v2.x | Content Expansion | 2 |
-| v3.x | Utility + AI Platform | 3, 4 |
-| v4.x | Community & Premium | 5, 6 |
-| v5.x | Business, Mobile, Enterprise | 7, 8, 9 |
+| Version | Focus                        | Phases  |
+| ------- | ---------------------------- | ------- |
+| v1.x    | Platform Foundation          | 1       |
+| v2.x    | Content Expansion            | 2       |
+| v3.x    | Utility + AI Platform        | 3, 4    |
+| v4.x    | Community & Premium          | 5, 6    |
+| v5.x    | Business, Mobile, Enterprise | 7, 8, 9 |
 
 ## Phase 1 — Platform Foundation (MVP)
 
@@ -28,18 +28,18 @@ Living planning document for engineering, product, and infrastructure. **Structu
 
 **Milestone:** Stable production-ready publishing platform.
 
-| Area | Status | Implementation doc |
-|------|--------|-------------------|
-| Monorepo, web, API, database | Complete | `03`–`06` |
-| Auth0 + RBAC + Admin | Complete | `05`, `07` |
-| CMS, media, themes | Complete | `08` |
-| Ads, search | Complete | `10`, search modules |
-| SEO, analytics, notifications | Complete | `22`–`24` |
-| Settings, API console | Complete | `26`, `27` |
-| Docker, GCP, deployment | Complete | `28`–`30` |
-| Testing, performance, security | Complete | `31`–`33` |
-| Coding standards, Cursor prompts | Complete | `34`, `35` |
-| Roadmap tracking | Complete | `36` (this module) |
+| Area                             | Status   | Implementation doc   |
+| -------------------------------- | -------- | -------------------- |
+| Monorepo, web, API, database     | Complete | `03`–`06`            |
+| Auth0 + RBAC + Admin             | Complete | `05`, `07`           |
+| CMS, media, themes               | Complete | `08`                 |
+| Ads, search                      | Complete | `10`, search modules |
+| SEO, analytics, notifications    | Complete | `22`–`24`            |
+| Settings, API console            | Complete | `26`, `27`           |
+| Docker, GCP, deployment          | Complete | `28`–`30`            |
+| Testing, performance, security   | Complete | `31`–`33`            |
+| Coding standards, Cursor prompts | Complete | `34`, `35`           |
+| Roadmap tracking                 | Complete | `36` (this module)   |
 
 ## Phases 2–9 (summary)
 
@@ -51,13 +51,13 @@ Ongoing across every phase: security, testing, performance, accessibility, SEO, 
 
 ## Infrastructure evolution
 
-| Current | Future (no redesign required) |
-|---------|------------------------------|
-| Google Cloud Run | Kubernetes, multi-region |
-| Neon PostgreSQL | Read replicas, managed clusters |
-| Redis cache | Distributed Redis |
-| CDN headers + purge scripts | Full edge CDN (Cloudflare) |
-| Optional OpenSearch | Primary search at scale |
+| Current                     | Future (no redesign required)  |
+| --------------------------- | ------------------------------ |
+| Google Cloud Run            | Kubernetes, multi-region       |
+| PostgreSQL                  | Read replicas, managed backups |
+| Redis cache                 | Distributed Redis              |
+| CDN headers + purge scripts | Full edge CDN (Cloudflare)     |
+| Optional OpenSearch         | Primary search at scale        |
 
 ## KPIs
 
@@ -81,11 +81,11 @@ See also: [`roadmap/README.md`](../roadmap/README.md).
 
 ## Admin UI
 
-| Route | Purpose |
-|-------|---------|
-| `/roadmap` | Overview, vision, phases, KPIs, risks |
-| `/roadmap/releases` | v1–v5 release tracks |
-| `/roadmap/milestones` | Per-phase milestones and item status |
+| Route                 | Purpose                               |
+| --------------------- | ------------------------------------- |
+| `/roadmap`            | Overview, vision, phases, KPIs, risks |
+| `/roadmap/releases`   | v1–v5 release tracks                  |
+| `/roadmap/milestones` | Per-phase milestones and item status  |
 
 Permission: `api.view` (internal planning, same as System status).
 

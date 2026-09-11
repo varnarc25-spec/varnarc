@@ -6,19 +6,20 @@
 #   docker compose -f docker/docker-compose.vps.yml --env-file .env.production up -d --build
 #
 # Published host ports: 80 and 443 (Nginx only).
-# PostgreSQL, Redis, Web, Admin, and API are internal.
+# Redis, Web, Admin, and API are internal.
+# PostgreSQL is the Ubuntu host instance (127.0.0.1:5432), not a Compose service.
 
 name: varnarc-vps
 
 networks:
   varnarc_edge:
     driver: bridge
+  # Do not set internal: true. Dual-homed API cannot reliably reach Redis on an
+  # isolated network. Keep Redis unpublished instead.
   varnarc_internal:
     driver: bridge
-    internal: true
 
 volumes:
-  postgres_data:
   redis_data:
 
 x-logging: &default-logging
@@ -27,34 +28,22 @@ x-logging: &default-logging
     max-size: '10m'
     max-file: '5'
 
-services:
-  postgres:
-    image: postgres:16-alpine
-    restart: unless-stopped
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER:-varnarc}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env.production}
-      POSTGRES_DB: ${POSTGRES_DB:-varnarc}
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    networks:
-      - varnarc_internal
-    healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-varnarc} -d ${POSTGRES_DB:-varnarc}']
-      interval: 5s
-      timeout: 5s
-      retries: 10
-      start_period: 10s
-    logging: *default-logging
+x-host-postgres: &host-postgres
+  extra_hosts:
+    - 'host.docker.internal:host-gateway'
 
+services:
   redis:
     image: redis:7-alpine
     restart: unless-stopped
-    command: redis-server --appendonly yes --bind 0.0.0.0 --protected-mode yes
+    # Protected mode with no password closes non-loopback clients (the API).
+    # Redis is not published to the host; the internal Docker network is enough.
+    command: redis-server --appendonly yes --bind 0.0.0.0 --protected-mode no
     volumes:
       - redis_data:/data
     networks:
       - varnarc_internal
+      - varnarc_edge
     healthcheck:
       test: ['CMD', 'redis-cli', 'ping']
       interval: 5s
@@ -63,6 +52,7 @@ services:
     logging: *default-logging
 
   api:
+    <<: *host-postgres
     build:
       context: ..
       dockerfile: docker/Dockerfile.api
@@ -82,8 +72,6 @@ services:
       - varnarc_internal
       - varnarc_edge
     depends_on:
-      postgres:
-        condition: service_healthy
       redis:
         condition: service_healthy
     healthcheck:
@@ -101,6 +89,7 @@ services:
     logging: *default-logging
 
   web:
+    <<: *host-postgres
     build:
       context: ..
       dockerfile: docker/Dockerfile.web
@@ -147,6 +136,7 @@ services:
     logging: *default-logging
 
   admin:
+    <<: *host-postgres
     build:
       context: ..
       dockerfile: docker/Dockerfile.admin

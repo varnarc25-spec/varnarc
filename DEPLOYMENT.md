@@ -150,7 +150,7 @@ chmod 600 .env.production
 nano .env.production
 ```
 
-Fill secrets on the server only. First boot may keep `DATABASE_URL` pointing at Neon until you restore a dump into VPS Postgres.
+Fill secrets on the server only. Point `DATABASE_URL` at VPS Postgres after you restore a dump.
 
 ## 6. Building images
 
@@ -193,7 +193,7 @@ pnpm install --frozen-lockfile
 bash scripts/vps/migrate.sh
 ```
 
-This uses `DATABASE_URL` from `.env.production`. It does **not** drop Neon. If that URL still points at Neon, migrations run on Neon.
+This uses `DATABASE_URL` from `.env.production`. If that URL is wrong, migrations run on the wrong database.
 
 ## 11. Creating PostgreSQL backups (VPS volume)
 
@@ -204,7 +204,7 @@ bash scripts/vps/backup-postgres.sh
 
 Copy `backups/*.sql.gz` off the server.
 
-Dump Neon (from a trusted machine, using your existing scripts — does not delete Neon):
+Dump the VPS database (from a trusted machine):
 
 ```bash
 pnpm db:backup
@@ -212,23 +212,23 @@ pnpm db:backup
 
 ## 12. Restoring PostgreSQL backups
 
-**Destructive for the target database inside the VPS container.** Does not delete Neon.
+**Destructive for the target database inside the VPS container.**
 
 ```bash
 bash scripts/vps/restore-postgres.sh backups/varnarc-YYYYMMDDTHHMMSSZ.sql.gz
 docker compose -f docker/docker-compose.vps.yml --env-file .env.production restart api
 ```
 
-Neon → VPS cutover outline:
+VPS Postgres restore outline:
 
-1. Deploy the stack with `DATABASE_URL` still on Neon; confirm Web/Admin/API.
-2. Put the site in a short write-quiet window.
-3. `pnpm db:backup` against Neon (direct/non-pooler URL).
+1. Deploy the stack with `DATABASE_URL` pointing at `postgres:5432`.
+2. Put the site in a short write-quiet window if needed.
+3. `pnpm db:backup` against the live database.
 4. Restore the dump into VPS Postgres.
-5. Point `DATABASE_URL` / `DATABASE_DIRECT_URL` at `postgres:5432`.
+5. Confirm `DATABASE_URL` / `DATABASE_DIRECT_URL` use `postgres:5432`.
 6. `bash scripts/vps/migrate.sh`
 7. Recreate API: `docker compose ... up -d api`
-8. Smoke-test. Keep Neon until you are sure; do not drop the Neon project from this repo.
+8. Smoke-test. Keep off-site backups.
 
 ## 13. Updating from GitHub
 

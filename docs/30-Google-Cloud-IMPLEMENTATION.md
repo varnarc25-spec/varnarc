@@ -16,7 +16,7 @@ GCP infrastructure is **documentation + automation scripts** integrated with exi
 | Custom domains + managed SSL                               | Done — `deploy/gcp/custom-domains.md`             |
 | Monitoring & alerting guide                                | Done — `deploy/gcp/monitoring.md`                 |
 | Disaster recovery runbook                                  | Done — `deploy/gcp/disaster-recovery.md`          |
-| Neon + Redis integration docs                              | Done — `deploy/gcp/neon-redis.md`                 |
+| PostgreSQL + Redis integration docs                        | Done — `deploy/gcp/postgres-redis.md`             |
 | Cost optimization                                          | Done — `deploy/gcp/cost-optimization.md`          |
 | Admin ops pages (from 28)                                  | Done — `/system/*`                                |
 | GCS media integration (app code)                           | Pre-existing — `gcs-storage.service.ts`           |
@@ -60,7 +60,7 @@ Or rely on GitHub Actions `deploy.yml` on push to `main` / `develop`.
 
 | Service               | Role           |
 | --------------------- | -------------- |
-| Neon                  | PostgreSQL     |
+| PostgreSQL            | PostgreSQL     |
 | Auth0                 | Authentication |
 | Cloudinary / GCS      | Media          |
 | Upstash / Memorystore | Redis          |

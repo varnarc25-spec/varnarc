@@ -1,24 +1,24 @@
 # 03 — Database Implementation Status
 
-Implements [03-Database.md](./03-Database.md) against Neon PostgreSQL via Prisma.
+Implements [03-Database.md](./03-Database.md) against PostgreSQL via Prisma.
 
 ## Done
 
-| Area | Status |
-|------|--------|
-| Normalized multi-domain Prisma schema | ✅ ~88 models, 10 enums |
-| UUID PKs + snake_case mapping | ✅ |
-| Soft delete (`deleted_at`) + audit (`created_by` / `updated_by`) | ✅ on domain tables |
-| RBAC (users, roles, permissions, junctions) | ✅ (Phase 1 + preserved) |
-| Indexes / unique constraints / FKs | ✅ |
-| Migration `20260716190000_full_domain_schema` | ✅ |
-| Seed (RBAC + `en` language + default theme + feature flag) | ✅ |
-| Polymorphic SEO (`entity_type` + `entity_id`, no conflicting FKs) | ✅ |
-| Cursor pagination helpers (`@varnarc/database`) | ✅ |
-| Domain repository classes + `createRepositories()` / `repos` | ✅ |
-| Domain Zod schemas (`@varnarc/validation`) | ✅ |
-| Cursor meta types (`@varnarc/types`) | ✅ |
-| NestJS `DatabaseModule` + identity services on repos | ✅ |
+| Area                                                              | Status                   |
+| ----------------------------------------------------------------- | ------------------------ |
+| Normalized multi-domain Prisma schema                             | ✅ ~88 models, 10 enums  |
+| UUID PKs + snake_case mapping                                     | ✅                       |
+| Soft delete (`deleted_at`) + audit (`created_by` / `updated_by`)  | ✅ on domain tables      |
+| RBAC (users, roles, permissions, junctions)                       | ✅ (Phase 1 + preserved) |
+| Indexes / unique constraints / FKs                                | ✅                       |
+| Migration `20260716190000_full_domain_schema`                     | ✅                       |
+| Seed (RBAC + `en` language + default theme + feature flag)        | ✅                       |
+| Polymorphic SEO (`entity_type` + `entity_id`, no conflicting FKs) | ✅                       |
+| Cursor pagination helpers (`@varnarc/database`)                   | ✅                       |
+| Domain repository classes + `createRepositories()` / `repos`      | ✅                       |
+| Domain Zod schemas (`@varnarc/validation`)                        | ✅                       |
+| Cursor meta types (`@varnarc/types`)                              | ✅                       |
+| NestJS `DatabaseModule` + identity services on repos              | ✅                       |
 
 ## Packages
 

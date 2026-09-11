@@ -22,14 +22,16 @@ export function buildCacheModule(): DynamicModule {
         const store = await redisStore({
           url: redisUrl,
           ttl: 30_000,
-          socket: { connectTimeout: 5_000 },
+          socket: {
+            connectTimeout: 5_000,
+            reconnectStrategy: (retries: number) => Math.min(retries * 100, 3_000),
+          },
         });
         return {
           store: () => store,
           ttl: 30_000,
         };
       } catch (err) {
-        // eslint-disable-next-line no-console
         console.warn(
           `[cache] Redis unavailable (${err instanceof Error ? err.message : String(err)}); using in-memory cache`,
         );

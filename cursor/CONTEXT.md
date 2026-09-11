@@ -7,7 +7,7 @@ Project Name: Varnarc Platform
 Architecture: pnpm + Turborepo monorepo
 Frontend: Next.js 15 App Router, React 19, Tailwind CSS, @varnarc/ui
 Backend: NestJS 11, apps/api
-Database: Neon PostgreSQL, Prisma, @varnarc/database repositories
+Database: PostgreSQL, Prisma, @varnarc/database repositories
 Authentication: Auth0 JWT + RBAC (packages/auth)
 Cache: Redis (cache-manager + optional rate limiting)
 Media: Google Cloud Storage (apps/api media module)

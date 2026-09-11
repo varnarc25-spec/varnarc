@@ -12,7 +12,7 @@ export type DumpConnectionSummary = {
   database: string | null;
   ssl: boolean;
   usesPooler: boolean;
-  providerHint: 'neon' | 'postgres';
+  providerHint: 'postgres';
 };
 
 /** Prefer a non-pooler URL so pg_dump is not routed through PgBouncer. */
@@ -21,7 +21,7 @@ export function dumpConnectionUrl(): string {
   if (direct) return stripUnsupportedParams(direct);
   const url = process.env.DATABASE_URL?.trim();
   if (!url) return '';
-  return neonPoolerToDirect(url);
+  return poolerHostToDirect(url);
 }
 
 export function stripUnsupportedParams(connectionString: string): string {
@@ -34,7 +34,7 @@ export function stripUnsupportedParams(connectionString: string): string {
   }
 }
 
-export function neonPoolerToDirect(connectionString: string): string {
+export function poolerHostToDirect(connectionString: string): string {
   const stripped = stripUnsupportedParams(connectionString);
   try {
     const url = new URL(stripped);
@@ -68,7 +68,7 @@ export function summarizeDumpConnection(connectionString: string): DumpConnectio
       database: decodeURIComponent(url.pathname.replace(/^\//, '')) || null,
       ssl: url.searchParams.get('sslmode') !== 'disable',
       usesPooler,
-      providerHint: host.includes('neon.tech') ? 'neon' : 'postgres',
+      providerHint: 'postgres',
     };
   } catch {
     return {
@@ -78,7 +78,7 @@ export function summarizeDumpConnection(connectionString: string): DumpConnectio
       database: null,
       ssl: true,
       usesPooler: /pooler/i.test(connectionString),
-      providerHint: /neon/i.test(connectionString) ? 'neon' : 'postgres',
+      providerHint: 'postgres',
     };
   }
 }
@@ -111,7 +111,7 @@ export type PgDumpHandle = {
 };
 
 export function spawnPgDump(connectionString: string): PgDumpHandle {
-  const url = neonPoolerToDirect(connectionString);
+  const url = poolerHostToDirect(connectionString);
   const filename = defaultBackupFilename();
   const child = spawn(
     'pg_dump',
@@ -163,7 +163,7 @@ export async function openDatabaseDump(connectionString: string): Promise<PgDump
   }
 
   const stdout = new PassThrough();
-  const wait = writeLogicalSqlDump(neonPoolerToDirect(connectionString), stdout).then(
+  const wait = writeLogicalSqlDump(poolerHostToDirect(connectionString), stdout).then(
     () => {
       stdout.end();
     },

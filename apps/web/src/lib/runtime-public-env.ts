@@ -23,7 +23,13 @@ export function getApiBaseUrl(): string {
   }
   const fromEnv = process.env.API_URL ?? process.env.NEXT_PUBLIC_API_URL;
   if (fromEnv) {
-    return fromEnv.replace(/\/$/, '');
+    const cleaned = fromEnv.replace(/\/$/, '');
+    const appUrl = process.env.APP_BASE_URL ?? process.env.NEXT_PUBLIC_APP_URL ?? '';
+    const localApp = /localhost|127\.0\.0\.1/.test(appUrl);
+    if (localApp && /api\.varnarc\.com/i.test(cleaned)) {
+      return 'http://localhost:4000/api/v1';
+    }
+    return cleaned;
   }
   if (process.env.NODE_ENV === 'production') {
     return 'https://api.varnarc.com/api/v1';

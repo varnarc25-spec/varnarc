@@ -42,7 +42,7 @@ export default async function SettingsHubPage() {
     {
       href: '/settings/database',
       title: 'Database',
-      description: 'Download a full Neon dump and restore it on VPS PostgreSQL.',
+      description: 'Download a full PostgreSQL dump and restore it on VPS.',
     },
     {
       href: '/settings/contact-messages',

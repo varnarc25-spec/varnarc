@@ -11,7 +11,7 @@ Read `AI_RULES.md` and `cursor/README.md` before implementing.
 
 - **Apps:** `apps/web` (Next.js 15), `apps/admin`, `apps/api` (NestJS)
 - **Packages:** `@varnarc/*` — types, validation, database, auth, ui, config
-- **DB:** Neon PostgreSQL + Prisma (via `@varnarc/database` repositories)
+- **DB:** PostgreSQL + Prisma (via `@varnarc/database` repositories)
 - **Auth:** Auth0 + RBAC guards
 - **Cache:** Redis | **Deploy:** Docker + GCP Cloud Run | **CI:** GitHub Actions
 
