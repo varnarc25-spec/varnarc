@@ -7,7 +7,7 @@ FROM alpine AS src
 RUN apk add --no-cache curl tar git
 WORKDIR /work
 COPY . .
-ARG REPO_URL=https://github.com/varnarc25-spec/varnarc_web
+ARG REPO_URL=https://github.com/varnarc25-spec/varnarc
 ARG GIT_REF=main
 RUN if [ ! -f package.json ]; then \
       echo "package.json not in build context; fetching ${REPO_URL}@${GIT_REF}"; \

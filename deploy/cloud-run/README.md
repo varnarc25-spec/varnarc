@@ -28,12 +28,12 @@ If Cloud Build logs show `Sending build context to Docker daemon ~18kB`, Cloud R
 
 ### Recommended Cloud Run settings
 
-| Setting                          | Value                        |
-| -------------------------------- | ---------------------------- |
-| **Repository**                   | `varnarc25-spec/varnarc_web` |
-| **Source location / Dockerfile** | `Dockerfile`                 |
-| **Build context directory**      | `/` (repository root)        |
-| **Port**                         | `3000`                       |
+| Setting                          | Value                    |
+| -------------------------------- | ------------------------ |
+| **Repository**                   | `varnarc25-spec/varnarc` |
+| **Source location / Dockerfile** | `Dockerfile`             |
+| **Build context directory**      | `/` (repository root)    |
+| **Port**                         | `3000`                   |
 
 ### If you must keep `docker/Dockerfile.web`
 

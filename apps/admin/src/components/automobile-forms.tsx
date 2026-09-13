@@ -16,6 +16,10 @@ function slugify(value: string) {
     .replace(/[^a-z0-9-]/g, '');
 }
 
+function sortManufacturersByName<T extends { name: string }>(list: T[]): T[] {
+  return [...list].sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
+}
+
 function AutomobileFormShell({
   title,
   message,
@@ -464,8 +468,9 @@ export function AutomobileVehicleForm({
 }: {
   manufacturers: Array<{ id: string; name: string }>;
 }) {
+  const manufacturersSorted = sortManufacturersByName(manufacturers);
   const router = useRouter();
-  const [manufacturerId, setManufacturerId] = useState(manufacturers[0]?.id ?? '');
+  const [manufacturerId, setManufacturerId] = useState(manufacturersSorted[0]?.id ?? '');
   const [name, setName] = useState('');
   const [model, setModel] = useState('');
   const [variant, setVariant] = useState('');
@@ -527,7 +532,7 @@ export function AutomobileVehicleForm({
           onChange={(e) => setManufacturerId(e.target.value)}
         >
           <option value="">Select manufacturer</option>
-          {manufacturers.map((m) => (
+          {manufacturersSorted.map((m) => (
             <option key={m.id} value={m.id}>
               {m.name}
             </option>
@@ -629,6 +634,7 @@ export function AutomobileVehicleEditForm({
     sponsored?: boolean;
   };
 }) {
+  const manufacturersSorted = sortManufacturersByName(manufacturers);
   const router = useRouter();
   const [manufacturerId, setManufacturerId] = useState(initial.manufacturerId ?? '');
   const [name, setName] = useState(initial.name);
@@ -707,7 +713,7 @@ export function AutomobileVehicleEditForm({
           onChange={(e) => setManufacturerId(e.target.value)}
         >
           <option value="">Select manufacturer</option>
-          {manufacturers.map((m) => (
+          {manufacturersSorted.map((m) => (
             <option key={m.id} value={m.id}>
               {m.name}
             </option>

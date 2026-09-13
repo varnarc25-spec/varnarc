@@ -57,7 +57,7 @@ services:
       context: ..
       dockerfile: docker/Dockerfile.api
       args:
-        REPO_URL: ${REPO_URL:-https://github.com/varnarc25-spec/varnarc_web}
+        REPO_URL: ${REPO_URL:-https://github.com/varnarc25-spec/varnarc}
         GIT_REF: ${GIT_REF:-main}
     restart: unless-stopped
     env_file:
@@ -94,7 +94,7 @@ services:
       context: ..
       dockerfile: docker/Dockerfile.web
       args:
-        REPO_URL: ${REPO_URL:-https://github.com/varnarc25-spec/varnarc_web}
+        REPO_URL: ${REPO_URL:-https://github.com/varnarc25-spec/varnarc}
         GIT_REF: ${GIT_REF:-main}
         NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-https://varnarc.com}
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://varnarc.com/api/v1}
@@ -141,7 +141,7 @@ services:
       context: ..
       dockerfile: docker/Dockerfile.admin
       args:
-        REPO_URL: ${REPO_URL:-https://github.com/varnarc25-spec/varnarc_web}
+        REPO_URL: ${REPO_URL:-https://github.com/varnarc25-spec/varnarc}
         GIT_REF: ${GIT_REF:-main}
         NEXT_PUBLIC_ADMIN_URL: ${NEXT_PUBLIC_ADMIN_URL:-https://admin.varnarc.com}
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://varnarc.com/api/v1}

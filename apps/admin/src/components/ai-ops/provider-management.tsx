@@ -24,11 +24,13 @@ export type AiProvider = {
   defaultModel: string;
   imageModel?: string;
   apiKeyEnvVar: string;
+  apiKey?: string;
   priority: number;
   isDefault: boolean;
   isEnabled: boolean;
   keyConfigured?: boolean;
   apiKeyConfigured?: boolean;
+  keySource?: 'database' | 'environment' | 'missing';
 };
 
 const emptyProvider: AiProvider = {
@@ -85,7 +87,7 @@ export function ProviderManagement({ providers }: { providers: AiProvider[] }) {
   function remove(provider: AiProvider) {
     if (
       window.confirm(
-        `Delete ${provider.name}? This removes its configuration, but does not delete its Cloud Run secret.`,
+        `Delete ${provider.name}? This removes its configuration and any API key stored in the database.`,
       )
     ) {
       void mutate(`/api/admin/ai-ops/providers/${encodeURIComponent(provider.slug)}`, 'DELETE');
@@ -97,13 +99,9 @@ export function ProviderManagement({ providers }: { providers: AiProvider[] }) {
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="max-w-3xl space-y-1 text-sm text-[var(--varnarc-subtle)]">
           <p>
-            API keys remain in Google Secret Manager and are exposed only to the API service through
-            Cloud Run environment variables.
-          </p>
-          <p>
-            <code className="rounded bg-[var(--varnarc-muted)] px-1">apiKeyEnvVar</code> stores only
-            the environment variable name that references a secret. Raw keys are never stored or
-            shown here.
+            API keys can be stored in the database (Settings → AI providers) or read from an
+            environment variable. The raw key is never shown after save. Database keys take priority
+            over env.
           </p>
         </div>
         <Button type="button" onClick={() => setCreating(true)}>
@@ -120,8 +118,7 @@ export function ProviderManagement({ providers }: { providers: AiProvider[] }) {
               <TableHead>Provider</TableHead>
               <TableHead>Base URL</TableHead>
               <TableHead>Model</TableHead>
-              <TableHead>Key environment variable</TableHead>
-              <TableHead>Key status</TableHead>
+              <TableHead>Key source</TableHead>
               <TableHead>Priority</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Default</TableHead>
@@ -147,7 +144,13 @@ export function ProviderManagement({ providers }: { providers: AiProvider[] }) {
                     ) : null}
                   </TableCell>
                   <TableCell>
-                    <code className="text-xs">{provider.apiKeyEnvVar}</code>
+                    <div className="text-xs">
+                      {provider.apiKeyEnvVar ? (
+                        <code>{provider.apiKeyEnvVar}</code>
+                      ) : (
+                        <span className="text-[var(--varnarc-subtle)]">Database only</span>
+                      )}
+                    </div>
                   </TableCell>
                   <TableCell>
                     {keyConfigured === undefined ? (
@@ -160,7 +163,11 @@ export function ProviderManagement({ providers }: { providers: AiProvider[] }) {
                             : 'bg-amber-100 text-amber-800'
                         }
                       >
-                        {keyConfigured ? 'Configured' : 'Missing'}
+                        {keyConfigured
+                          ? provider.keySource === 'database'
+                            ? 'Database'
+                            : 'Environment'
+                          : 'Missing'}
                       </Badge>
                     )}
                   </TableCell>
@@ -279,7 +286,8 @@ function ProviderDialog({
       <DialogHeader>
         <DialogTitle>{isEditing ? `Edit ${provider.name}` : 'Add AI provider'}</DialogTitle>
         <DialogDescription>
-          Enter a Secret Manager-backed environment variable name, never an API key.
+          Paste an API key to store it in the database, or set an environment variable name as a
+          fallback. The key is never shown again after save.
         </DialogDescription>
       </DialogHeader>
       <form
@@ -289,14 +297,18 @@ function ProviderDialog({
           const {
             keyConfigured: _keyConfigured,
             apiKeyConfigured: _apiKeyConfigured,
+            keySource: _keySource,
             ...rawPayload
           } = form;
-          const payload = {
+          const payload: Record<string, unknown> = {
             ...rawPayload,
             ...(rawPayload.imageModel ? { imageModel: rawPayload.imageModel } : {}),
           };
           if (!rawPayload.imageModel) delete payload.imageModel;
-          onSave(isEditing ? (({ slug: _slug, ...rest }) => rest)(payload) : payload);
+          if (!rawPayload.apiKey?.trim()) delete payload.apiKey;
+          onSave(
+            (isEditing ? (({ slug: _slug, ...rest }) => rest)(payload) : payload) as AiProvider,
+          );
         }}
       >
         {!isEditing ? (
@@ -336,12 +348,21 @@ function ProviderDialog({
             onChange={(event) => update('imageModel', event.target.value)}
           />
         </Field>
-        <Field label="API key environment variable">
+        <Field label="API key (stored in database)">
           <Input
-            required
-            pattern="[A-Z][A-Z0-9_]*"
-            placeholder="OPENAI_API_KEY"
+            type="password"
+            autoComplete="new-password"
+            placeholder={
+              provider.keySource === 'database' ? 'Leave blank to keep the saved key' : 'sk-...'
+            }
+            value={form.apiKey ?? ''}
+            onChange={(event) => update('apiKey', event.target.value)}
+          />
+        </Field>
+        <Field label="API key environment variable (optional fallback)">
+          <Input
             autoComplete="off"
+            placeholder="OPENAI_API_KEY"
             value={form.apiKeyEnvVar}
             onChange={(event) => update('apiKeyEnvVar', event.target.value.toUpperCase())}
           />

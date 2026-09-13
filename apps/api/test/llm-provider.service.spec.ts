@@ -84,4 +84,33 @@ describe('LlmProviderService', () => {
       'legacy result',
     );
   });
+
+  it('uses an API key stored on the provider setting', async () => {
+    const repos = {
+      settings: {
+        findByKey: vi.fn().mockResolvedValue({
+          value: [
+            {
+              ...providers[0],
+              apiKey: 'db-secret-key',
+              apiKeyEnvVar: '',
+            },
+          ],
+        }),
+      },
+    };
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ choices: [{ message: { content: 'db result' } }] }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      }),
+    );
+    vi.stubGlobal('fetch', fetchMock);
+
+    const service = new LlmProviderService(repos as never);
+    await expect(service.chatCompletion([{ role: 'user', content: 'hello' }])).resolves.toBe(
+      'db result',
+    );
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
 });

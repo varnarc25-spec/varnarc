@@ -17,8 +17,10 @@ describe('AI provider schemas', () => {
     expect(createAiProviderSchema.parse(provider).baseUrl).toBe('https://openrouter.ai/api/v1');
   });
 
-  it('rejects secret values and duplicate defaults', () => {
-    expect(createAiProviderSchema.safeParse({ ...provider, apiKey: 'secret' }).success).toBe(false);
+  it('accepts a database API key and rejects duplicate defaults', () => {
+    expect(
+      createAiProviderSchema.parse({ ...provider, apiKey: 'sk-database-secret-key' }).apiKey,
+    ).toBe('sk-database-secret-key');
     expect(
       aiProvidersSchema.safeParse([
         provider,

@@ -36,22 +36,17 @@ export class LlmProviderService {
 
   async listProviders() {
     const providers = (await this.loadProviderSetting()) ?? [];
-    return providers.map((provider) => ({
-      ...provider,
-      keyConfigured: Boolean(process.env[provider.apiKeyEnvVar]?.trim()),
-    }));
+    return providers.map((provider) => this.toPublicProvider(provider));
   }
 
   async isConfigured(): Promise<boolean> {
     const providers = await this.loadProvidersForRequests();
-    return providers.some((provider) => Boolean(process.env[provider.apiKeyEnvVar]?.trim()));
+    return providers.some((provider) => Boolean(this.resolveApiKey(provider)));
   }
 
   async getConfigSummary() {
     const providers = await this.loadProvidersForRequests();
-    const configured = providers.filter((provider) =>
-      Boolean(process.env[provider.apiKeyEnvVar]?.trim()),
-    );
+    const configured = providers.filter((provider) => Boolean(this.resolveApiKey(provider)));
     const primary = configured[0] ?? providers[0];
     return {
       configured: configured.length > 0,
@@ -73,7 +68,7 @@ export class LlmProviderService {
       : providers;
     next.push(input);
     await this.saveProviders(next, actorId);
-    return input;
+    return this.toPublicProvider(input);
   }
 
   async updateProvider(slug: string, input: UpdateAiProviderInput, actorId: string) {
@@ -86,9 +81,17 @@ export class LlmProviderService {
       });
     }
     const current = providers[index]!;
-    providers[index] = { ...current, ...input, slug: current.slug };
+    const { clearApiKey, apiKey, ...rest } = input;
+    const nextKey = clearApiKey ? undefined : apiKey?.trim() ? apiKey.trim() : current.apiKey;
+    providers[index] = {
+      ...current,
+      ...rest,
+      slug: current.slug,
+      ...(nextKey ? { apiKey: nextKey } : { apiKey: undefined }),
+    };
+    if (!nextKey) delete providers[index]!.apiKey;
     await this.saveProviders(providers, actorId);
-    return providers[index];
+    return this.toPublicProvider(providers[index]!);
   }
 
   async deleteProvider(slug: string, actorId: string) {
@@ -109,7 +112,7 @@ export class LlmProviderService {
       isDefault: provider.slug === slug,
     }));
     await this.saveProviders(next, actorId);
-    return next.find((provider) => provider.slug === slug)!;
+    return this.toPublicProvider(next.find((provider) => provider.slug === slug)!);
   }
 
   async chatCompletion(messages: LlmMessage[], options: LlmChatOptions = {}): Promise<string> {
@@ -145,7 +148,7 @@ export class LlmProviderService {
   ): Promise<T> {
     const providers = (await this.loadProvidersForRequests()).filter(supports);
     const attempts = providers.flatMap((provider) => {
-      const apiKey = process.env[provider.apiKeyEnvVar]?.trim();
+      const apiKey = this.resolveApiKey(provider);
       return apiKey ? [{ provider, apiKey }] : [];
     });
     if (!attempts.length) {
@@ -175,6 +178,27 @@ export class LlmProviderService {
       success: false,
       error: { code: 'AI_ALL_PROVIDERS_FAILED', message },
     });
+  }
+
+  private resolveApiKey(provider: AiProvider): string | undefined {
+    const fromDb = provider.apiKey?.trim();
+    if (fromDb) return fromDb;
+    const envName = provider.apiKeyEnvVar?.trim();
+    if (!envName) return undefined;
+    return process.env[envName]?.trim() || undefined;
+  }
+
+  private toPublicProvider(provider: AiProvider) {
+    const { apiKey: _apiKey, ...rest } = provider;
+    return {
+      ...rest,
+      keyConfigured: Boolean(this.resolveApiKey(provider)),
+      keySource: provider.apiKey?.trim()
+        ? ('database' as const)
+        : provider.apiKeyEnvVar && process.env[provider.apiKeyEnvVar]?.trim()
+          ? ('environment' as const)
+          : ('missing' as const),
+    };
   }
 
   private async loadStoredProviders(): Promise<AiProvider[]> {

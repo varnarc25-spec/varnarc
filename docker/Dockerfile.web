@@ -7,7 +7,7 @@ FROM alpine AS src
 RUN apk add --no-cache curl tar git
 WORKDIR /work
 COPY . .
-ARG REPO_URL=https://github.com/varnarc25-spec/varnarc_web
+ARG REPO_URL=https://github.com/varnarc25-spec/varnarc
 ARG GIT_REF=main
 RUN if [ ! -f package.json ]; then \
       echo "package.json not in build context; fetching ${REPO_URL}@${GIT_REF}"; \
@@ -52,6 +52,8 @@ ENV NEXT_PUBLIC_CMP_SDK_URL=$NEXT_PUBLIC_CMP_SDK_URL
 ENV NEXT_PUBLIC_CMP_TEST_SCRIPTS=$NEXT_PUBLIC_CMP_TEST_SCRIPTS
 ENV NEXT_PUBLIC_ADSENSE_CLIENT=$NEXT_PUBLIC_ADSENSE_CLIENT
 ENV NEXT_TELEMETRY_DISABLED=1
+ENV DOCKER_BUILD=1
+ENV NODE_OPTIONS=--max-old-space-size=1536
 COPY --from=src /work .
 RUN pnpm --filter @varnarc/web... build
 

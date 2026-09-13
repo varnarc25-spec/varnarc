@@ -32,10 +32,16 @@ import { REPOS } from '../../database/database.module';
 const CACHE_TTL = 60_000;
 
 function redactSettingSecrets(value: unknown): unknown {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) return value;
+  if (Array.isArray(value)) {
+    return value.map((item) => redactSettingSecrets(item));
+  }
+  if (!value || typeof value !== 'object') return value;
   const next = { ...(value as Record<string, unknown>) };
   if (typeof next.privateKey === 'string' && next.privateKey.trim()) {
     next.privateKey = '[redacted]';
+  }
+  if (typeof next.apiKey === 'string' && next.apiKey.trim()) {
+    next.apiKey = '[redacted]';
   }
   return next;
 }

@@ -21,7 +21,7 @@ Internet
       → redis:6379        Docker-internal only
 ```
 
-Application source lives in this directory (monorepo root). GitHub: `varnarc25-spec/varnarc_web`.
+Application source lives in this directory (monorepo root). GitHub: `varnarc25-spec/varnarc`.
 
 ## Environment variables (required)
 
@@ -136,7 +136,7 @@ pnpm -v
 sudo mkdir -p /opt/varnarc
 sudo chown "$USER":"$USER" /opt/varnarc
 cd /opt/varnarc
-git clone git@github.com:varnarc25-spec/varnarc_web.git
+git clone git@github.com:varnarc25-spec/varnarc.git
 cd varnarc_web
 # If this clone has a nested project/ directory, use that as the compose root:
 #   cd project

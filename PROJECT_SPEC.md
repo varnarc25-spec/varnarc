@@ -1,7 +1,7 @@
 # Varnarc Project Specification
 
 **Brand:** Varnarc Platform  
-**Repo:** https://github.com/varnarc25-spec/varnarc_web.git  
+**Repo:** https://github.com/varnarc25-spec/varnarc.git  
 **Status:** Phase 1 — Foundation (v1.x release prep)
 
 ## Purpose

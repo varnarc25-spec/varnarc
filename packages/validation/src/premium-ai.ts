@@ -43,7 +43,7 @@ export const aiJobListQuerySchema = z.object({
   userId: z.string().uuid().optional(),
 });
 
-export const aiProviderSchema = z
+const aiProviderObjectSchema = z
   .object({
     slug: slugSchema,
     name: z.string().trim().min(1).max(150),
@@ -57,13 +57,26 @@ export const aiProviderSchema = z
     apiKeyEnvVar: z
       .string()
       .trim()
-      .regex(/^[A-Z][A-Z0-9_]*$/, 'Must be an uppercase environment variable name')
-      .max(100),
+      .max(100)
+      .regex(/^$|^[A-Z][A-Z0-9_]*$/, 'Must be an uppercase environment variable name')
+      .optional()
+      .default(''),
+    apiKey: z.string().trim().min(8).max(500).optional(),
     priority: z.number().int().min(0).max(10000),
     isDefault: z.boolean(),
     isEnabled: z.boolean(),
   })
   .strict();
+
+export const aiProviderSchema = aiProviderObjectSchema.superRefine((provider, ctx) => {
+  if (!provider.apiKey && !provider.apiKeyEnvVar) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'Provide an API key or an environment variable name',
+      path: ['apiKey'],
+    });
+  }
+});
 
 export const aiProvidersSchema = z
   .array(aiProviderSchema)
@@ -91,7 +104,9 @@ export const aiProvidersSchema = z
   });
 
 export const createAiProviderSchema = aiProviderSchema;
-export const updateAiProviderSchema = aiProviderSchema.partial().omit({ slug: true });
+export const updateAiProviderSchema = aiProviderObjectSchema.partial().omit({ slug: true }).extend({
+  clearApiKey: z.boolean().optional(),
+});
 
 export { newsletterSubscribeSchema } from './newsletter';
 

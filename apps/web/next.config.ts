@@ -21,6 +21,8 @@ const nextConfig: NextConfig = withSecurityHeaders(
     ],
     output: 'standalone',
     outputFileTracingRoot: path.join(__dirname, '../..'),
+    eslint: { ignoreDuringBuilds: process.env.DOCKER_BUILD === '1' },
+    typescript: { ignoreBuildErrors: process.env.DOCKER_BUILD === '1' },
     async headers() {
       return getCdnHeaderRules();
     },

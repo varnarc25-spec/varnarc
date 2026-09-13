@@ -78,7 +78,7 @@ Start with:
 
 ## GitHub
 
-https://github.com/varnarc25-spec/varnarc_web.git
+https://github.com/varnarc25-spec/varnarc.git
 
 ## Phase 1 scope
 
