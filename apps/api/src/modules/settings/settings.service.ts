@@ -1,4 +1,4 @@
-import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { ForbiddenException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import type { Cache } from 'cache-manager';
 import type { Repositories } from '@varnarc/database';
@@ -13,12 +13,14 @@ import type {
   SeoDefaultsSettingsInput,
   AdsenseSettingsInput,
   GcsSettingsInput,
+  Auth0SettingsInput,
   UpsertFeatureFlagInput,
   UpsertSettingInput,
 } from '@varnarc/validation';
 import {
   adsenseSettingsSchema,
   gcsSettingsSchema,
+  auth0SettingsSchema,
   normalizeHttpPublicUrl,
   cmsDefaultsSettingsSchema,
   contactSettingsSchema,
@@ -43,6 +45,12 @@ function redactSettingSecrets(value: unknown): unknown {
   if (typeof next.apiKey === 'string' && next.apiKey.trim()) {
     next.apiKey = '[redacted]';
   }
+  if (typeof next.clientSecret === 'string' && next.clientSecret.trim()) {
+    next.clientSecret = '[redacted]';
+  }
+  if (typeof next.secret === 'string' && next.secret.trim()) {
+    next.secret = '[redacted]';
+  }
   return next;
 }
 
@@ -55,6 +63,7 @@ export const SETTINGS_KEYS = {
   contact: 'settings.contact',
   adsense: 'settings.adsense',
   gcs: 'settings.gcs',
+  auth0: 'settings.auth0',
 } as const;
 
 const DEFAULT_GENERAL: GeneralSettingsInput = {
@@ -503,6 +512,136 @@ export class SettingsService {
       'settings.gcs.update',
     );
     return this.getGcs();
+  }
+
+  private async getAuth0Raw(): Promise<Auth0SettingsInput> {
+    return this.readJson(SETTINGS_KEYS.auth0, {
+      enabled: true,
+      domain: null,
+      clientId: null,
+      clientSecret: null,
+      secret: null,
+      audience: null,
+      issuerBaseUrl: null,
+      connection: 'Username-Password-Authentication',
+    });
+  }
+
+  private envAuth0() {
+    return {
+      domain: process.env.AUTH0_DOMAIN?.trim() || '',
+      clientId:
+        process.env.AUTH0_CLIENT_ID?.trim() || process.env.NEXT_PUBLIC_AUTH0_CLIENT_ID?.trim() || '',
+      clientSecret: process.env.AUTH0_CLIENT_SECRET?.trim() || '',
+      secret: process.env.AUTH0_SECRET?.trim() || '',
+      audience: process.env.AUTH0_AUDIENCE?.trim() || '',
+      issuerBaseUrl: process.env.AUTH0_ISSUER_BASE_URL?.trim() || '',
+      connection: process.env.AUTH0_CONNECTION?.trim() || 'Username-Password-Authentication',
+    };
+  }
+
+  async getAuth0() {
+    const raw = await this.getAuth0Raw();
+    const env = this.envAuth0();
+    const domain = raw.domain?.trim() || env.domain;
+    const clientId = raw.clientId?.trim() || env.clientId;
+    const clientSecret = raw.clientSecret?.trim() || env.clientSecret;
+    const secret = raw.secret?.trim() || env.secret;
+    const dbReady = Boolean(raw.enabled && domain && clientId && clientSecret && secret);
+    const envReady = Boolean(env.domain && env.clientId && env.clientSecret && env.secret);
+    return {
+      enabled: raw.enabled !== false,
+      domain: domain || null,
+      clientId: clientId || null,
+      audience: raw.audience?.trim() || env.audience || null,
+      issuerBaseUrl: normalizeHttpPublicUrl(raw.issuerBaseUrl) || env.issuerBaseUrl || null,
+      connection: raw.connection?.trim() || env.connection,
+      clientSecretConfigured: Boolean(clientSecret),
+      secretConfigured: Boolean(secret),
+      envConfigured: envReady,
+      activeSource: dbReady
+        ? ('database' as const)
+        : envReady
+          ? ('environment' as const)
+          : ('none' as const),
+    };
+  }
+
+  async getAuth0Runtime() {
+    const raw = await this.getAuth0Raw();
+    const env = this.envAuth0();
+    const enabled = raw.enabled !== false;
+    const domain = (enabled ? raw.domain?.trim() : '') || env.domain;
+    const clientId = (enabled ? raw.clientId?.trim() : '') || env.clientId;
+    const clientSecret = (enabled ? raw.clientSecret?.trim() : '') || env.clientSecret;
+    const secret = (enabled ? raw.secret?.trim() : '') || env.secret;
+    const configured = Boolean(domain && clientId && clientSecret && secret);
+    const fromDb = Boolean(
+      enabled && raw.domain?.trim() && raw.clientSecret?.trim() && raw.secret?.trim(),
+    );
+    return {
+      configured,
+      source: fromDb ? ('database' as const) : configured ? ('environment' as const) : ('none' as const),
+      domain: domain || null,
+      clientId: clientId || null,
+      clientSecret: clientSecret || null,
+      secret: secret || null,
+      audience: raw.audience?.trim() || env.audience || null,
+      issuerBaseUrl: normalizeHttpPublicUrl(raw.issuerBaseUrl) || env.issuerBaseUrl || null,
+      connection: raw.connection?.trim() || env.connection,
+    };
+  }
+
+  async getAuth0Public() {
+    const runtime = await this.getAuth0Runtime();
+    return {
+      configured: runtime.configured,
+      domain: runtime.domain,
+      clientId: runtime.clientId,
+      source: runtime.source,
+    };
+  }
+
+  assertInternalAuth0Access(hostHeader: string | undefined) {
+    const host = (hostHeader ?? '').split(':')[0]?.trim().toLowerCase();
+    const allowed =
+      host === 'api' ||
+      host === 'localhost' ||
+      host === '127.0.0.1' ||
+      host === '::1' ||
+      host.endsWith('.internal');
+    if (!allowed) {
+      throw new ForbiddenException('Auth0 runtime config is only available to internal services');
+    }
+  }
+
+  async setAuth0(input: Auth0SettingsInput, actorId: string) {
+    const parsed = auth0SettingsSchema.parse(input);
+    const current = await this.getAuth0Raw();
+    const nextClientSecret = parsed.clearClientSecret
+      ? null
+      : !parsed.clientSecret?.trim()
+        ? current.clientSecret
+        : parsed.clientSecret.trim();
+    const nextSecret = parsed.clearSecret
+      ? null
+      : !parsed.secret?.trim()
+        ? current.secret
+        : parsed.secret.trim();
+
+    const merged: Auth0SettingsInput = {
+      enabled: parsed.enabled,
+      domain: parsed.domain?.trim() || null,
+      clientId: parsed.clientId?.trim() || null,
+      clientSecret: nextClientSecret,
+      secret: nextSecret,
+      audience: parsed.audience?.trim() || null,
+      issuerBaseUrl: parsed.issuerBaseUrl,
+      connection: parsed.connection?.trim() || 'Username-Password-Authentication',
+    };
+
+    await this.writeJson(SETTINGS_KEYS.auth0, merged, 'auth', actorId, 'settings.auth0.update');
+    return this.getAuth0();
   }
 
   async isFeatureEnabled(key: string) {

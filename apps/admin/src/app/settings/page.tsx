@@ -40,6 +40,11 @@ export default async function SettingsHubPage() {
       description: 'Google Cloud Storage bucket and credentials for media uploads.',
     },
     {
+      href: '/settings/auth0',
+      title: 'Auth0',
+      description: 'Public-site login. Database credentials override environment variables.',
+    },
+    {
       href: '/settings/database',
       title: 'Database',
       description: 'Download a full PostgreSQL dump and restore it on VPS.',

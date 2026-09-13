@@ -105,6 +105,21 @@ export const gcsSettingsSchema = z.object({
   makePublic: z.boolean().default(false),
 });
 
+export const auth0SettingsSchema = z.object({
+  enabled: z.boolean().default(true),
+  domain: z.string().max(200).optional().nullable(),
+  clientId: z.string().max(200).optional().nullable(),
+  /** Empty string keeps the stored secret. */
+  clientSecret: z.string().max(500).optional().nullable(),
+  /** Empty string keeps the stored cookie secret. */
+  secret: z.string().max(500).optional().nullable(),
+  clearClientSecret: z.boolean().optional(),
+  clearSecret: z.boolean().optional(),
+  audience: z.string().max(300).optional().nullable(),
+  issuerBaseUrl: optionalUrl,
+  connection: z.string().max(120).optional().nullable(),
+});
+
 export const upsertSettingSchema = z.object({
   key: z.string().min(1).max(120),
   value: jsonValueSchema,
@@ -152,6 +167,7 @@ export type CmsDefaultsSettingsInput = z.infer<typeof cmsDefaultsSettingsSchema>
 export type SeoDefaultsSettingsInput = z.infer<typeof seoDefaultsSettingsSchema>;
 export type AdsenseSettingsInput = z.infer<typeof adsenseSettingsSchema>;
 export type GcsSettingsInput = z.infer<typeof gcsSettingsSchema>;
+export type Auth0SettingsInput = z.infer<typeof auth0SettingsSchema>;
 export type UpsertSettingInput = z.infer<typeof upsertSettingSchema>;
 export type UpsertFeatureFlagInput = z.infer<typeof upsertFeatureFlagSchema>;
 export type CreateHomepageLayoutInput = z.infer<typeof createHomepageLayoutSchema>;

@@ -7,6 +7,7 @@ import {
   Post,
   Put,
   Query,
+  Req,
   StreamableFile,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
@@ -22,10 +23,12 @@ import {
   seoDefaultsSettingsSchema,
   adsenseSettingsSchema,
   gcsSettingsSchema,
+  auth0SettingsSchema,
   upsertFeatureFlagSchema,
   upsertSettingSchema,
   type AdsenseSettingsInput,
   type GcsSettingsInput,
+  type Auth0SettingsInput,
   type CmsDefaultsSettingsInput,
   type ContactSettingsInput,
   type CreateThemeInput,
@@ -223,6 +226,34 @@ export class SettingsController {
     @Body(new ZodValidationPipe(gcsSettingsSchema)) body: GcsSettingsInput,
   ) {
     return ok(await this.service.setGcs(body, user.id));
+  }
+
+  @Get('auth0')
+  @RequirePermissions(PERMISSIONS.SETTINGS_MANAGE)
+  async auth0() {
+    return ok(await this.service.getAuth0());
+  }
+
+  @Public()
+  @Get('auth0/public')
+  async auth0Public() {
+    return ok(await this.service.getAuth0Public());
+  }
+
+  @Public()
+  @Get('auth0/runtime')
+  async auth0Runtime(@Req() req: { hostname?: string; headers?: { host?: string } }) {
+    this.service.assertInternalAuth0Access(req.hostname || req.headers?.host);
+    return ok(await this.service.getAuth0Runtime());
+  }
+
+  @Put('auth0')
+  @RequirePermissions(PERMISSIONS.SETTINGS_MANAGE)
+  async updateAuth0(
+    @CurrentUserDecorator() user: CurrentUser,
+    @Body(new ZodValidationPipe(auth0SettingsSchema)) body: Auth0SettingsInput,
+  ) {
+    return ok(await this.service.setAuth0(body, user.id));
   }
 
   @Public()

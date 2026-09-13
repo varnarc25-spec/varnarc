@@ -22,6 +22,7 @@ const groups = [
     links: [
       { href: '/settings/adsense', label: 'Google AdSense' },
       { href: '/settings/gcs', label: 'Cloud Storage' },
+      { href: '/settings/auth0', label: 'Auth0' },
       { href: '/analytics/integrations', label: 'Analytics' },
       { href: '/seo/integrations', label: 'SEO integrations' },
       { href: '/seo/robots', label: 'SEO robots' },

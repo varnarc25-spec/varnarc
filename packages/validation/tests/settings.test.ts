@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   adsenseSettingsSchema,
+  auth0SettingsSchema,
   gcsSettingsSchema,
   generalSettingsSchema,
   maintenanceSettingsSchema,
@@ -44,6 +45,20 @@ describe('adsenseSettingsSchema', () => {
 
   it('rejects an invalid publisher ID', () => {
     expect(() => adsenseSettingsSchema.parse({ client: 'pub-123' })).toThrow();
+  });
+});
+
+describe('auth0SettingsSchema', () => {
+  it('keeps empty secrets so the API can preserve stored values', () => {
+    const parsed = auth0SettingsSchema.parse({
+      enabled: true,
+      domain: 'varnarc.auth0.com',
+      clientId: 'abc',
+      clientSecret: '',
+      secret: '',
+    });
+    expect(parsed.domain).toBe('varnarc.auth0.com');
+    expect(parsed.clientSecret).toBe('');
   });
 });
 

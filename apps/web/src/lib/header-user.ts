@@ -6,6 +6,7 @@ import {
   isUsableAvatarUrl,
 } from '@varnarc/auth';
 import { auth0 } from '@/lib/auth0';
+import { resolveAuth0RuntimeConfig } from '@/lib/auth0-config';
 import { apiServerFetch } from '@/lib/api';
 import { isNextControlFlowError } from '@/lib/next-control-flow';
 import type { CurrentUser } from '@varnarc/types';
@@ -18,6 +19,7 @@ export type HeaderUser = {
 };
 
 export async function loadHeaderUser(): Promise<HeaderUser | null> {
+  await resolveAuth0RuntimeConfig();
   if (!isAuth0Configured()) return null;
 
   const host = (await headers()).get('host');
