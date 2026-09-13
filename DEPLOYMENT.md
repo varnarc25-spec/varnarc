@@ -136,11 +136,12 @@ pnpm -v
 sudo mkdir -p /opt/varnarc
 sudo chown "$USER":"$USER" /opt/varnarc
 cd /opt/varnarc
-git clone git@github.com:varnarc25-spec/varnarc.git
-cd varnarc_web
-# If this clone has a nested project/ directory, use that as the compose root:
-#   cd project
+git clone git@github.com:varnarc25-spec/varnarc.git varnarc_web
+cd /opt/varnarc/varnarc_web
 ```
+
+This clone is the same GitHub repo as local development (`varnarc.git`). The
+directory name `varnarc_web` is only the path on disk.
 
 ## 5. Create production environment files
 
@@ -349,9 +350,29 @@ API liveness: `GET /api/v1/health`. Readiness (DB/Redis): `GET /api/v1/ready`.
 - Rotate Auth0 and DB credentials if they were ever committed (see Problems in the audit).
 - Log rotation: Compose `json-file` 10m × 5.
 
-## Optional GitHub Actions
+## GitHub Actions (VPS CI/CD)
 
-`.github/workflows/vps-deploy.optional.yml` is `workflow_dispatch` only. Store `VPS_HOST`, `VPS_USER`, `VPS_PORT`, `VPS_SSH_KEY` in GitHub Environment secrets. Create a deploy-only key:
+Repo: [varnarc25-spec/varnarc](https://github.com/varnarc25-spec/varnarc).  
+Workflow: `.github/workflows/vps-deploy.yml`.  
+Triggers: **push to `main`** and **Run workflow**.
+
+On each run it SSHs to the VPS, `git pull --ff-only` in
+`/opt/varnarc/varnarc_web`, rebuilds Compose, applies Prisma migrations, then
+`docker compose ps`.
+
+### Secrets (Environment `vps-production`)
+
+GitHub → **Settings → Environments → New environment** → name `vps-production`.
+Add secrets (never commit them):
+
+| Secret | Example |
+|---|---|
+| `VPS_HOST` | `95.135.166.155` |
+| `VPS_USER` | `varnarc_25` |
+| `VPS_PORT` | `22` (or `20063` if that is the SSH port) |
+| `VPS_SSH_KEY` | private key for a deploy-only account |
+
+Create a deploy-only key:
 
 ```bash
 ssh-keygen -t ed25519 -f ~/.ssh/varnarc_vps_deploy -C varnarc-github-deploy -N ""
@@ -359,4 +380,11 @@ ssh-keygen -t ed25519 -f ~/.ssh/varnarc_vps_deploy -C varnarc-github-deploy -N "
 # Put the private key only in GitHub Actions secrets
 ```
 
+The VPS clone `origin` must be `varnarc.git` (HTTPS or SSH). Resolve any local
+merge conflicts on the server before the first Actions deploy (`ff-only` pull
+will fail on a dirty/unmerged tree).
+
 Manual deploy remains: `git pull` → `docker compose build` → `docker compose up -d`.
+
+GCP Cloud Run (`deploy.yml`) is **manual only** so production is not deployed
+to two places on every push.

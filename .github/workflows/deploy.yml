@@ -1,5 +1,9 @@
 name: Deploy
 
+# GCP Cloud Run. Automatic production deploys go to the VPS
+# (.github/workflows/vps-deploy.yml on push to main). Run this workflow
+# manually when you still need Cloud Run.
+
 on:
   workflow_dispatch:
     inputs:
@@ -10,10 +14,6 @@ on:
           - staging
           - production
         default: staging
-  push:
-    branches:
-      - main
-      - develop
 
 concurrency:
   group: deploy-${{ github.ref }}

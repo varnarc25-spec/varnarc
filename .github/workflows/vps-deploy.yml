@@ -1,0 +1,52 @@
+name: VPS deploy
+
+# Production CD for https://github.com/varnarc25-spec/varnarc
+# App directory on the server: /opt/varnarc/varnarc_web
+#
+# GitHub → Settings → Environments → vps-production secrets:
+#   VPS_HOST, VPS_USER, VPS_PORT, VPS_SSH_KEY
+#
+# Never commit VPS passwords or private keys.
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: vps-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: vps-production
+    steps:
+      - name: SSH pull and rebuild
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          port: ${{ secrets.VPS_PORT }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          command_timeout: 60m
+          script: |
+            set -euo pipefail
+            cd /opt/varnarc/varnarc_web
+            git fetch origin
+            git checkout main
+            git pull --ff-only origin main
+            COMPOSE_FILES="-f docker/docker-compose.vps.yml"
+            if [ -f docker/docker-compose.host-db.yml ]; then
+              COMPOSE_FILES="$COMPOSE_FILES -f docker/docker-compose.host-db.yml"
+            fi
+            # shellcheck disable=SC2086
+            docker compose $COMPOSE_FILES --env-file .env.production build
+            # shellcheck disable=SC2086
+            docker compose $COMPOSE_FILES --env-file .env.production up -d
+            if [ -x scripts/vps/migrate.sh ]; then
+              bash scripts/vps/migrate.sh
+            fi
+            # shellcheck disable=SC2086
+            docker compose $COMPOSE_FILES --env-file .env.production ps
