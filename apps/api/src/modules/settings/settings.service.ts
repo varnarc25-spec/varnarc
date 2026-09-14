@@ -603,7 +603,7 @@ export class SettingsService {
   }
 
   assertInternalAuth0Access(hostHeader: string | undefined) {
-    const host = (hostHeader ?? '').split(':')[0]?.trim().toLowerCase();
+    const host = (hostHeader ?? '').split(':')[0]?.trim().toLowerCase() ?? '';
     const allowed =
       host === 'api' ||
       host === 'localhost' ||
