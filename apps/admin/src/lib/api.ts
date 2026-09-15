@@ -24,6 +24,7 @@ export async function apiServerFetch<T>(
   try {
     res = await fetch(`${apiUrl}${path.startsWith('/') ? path : `/${path}`}`, {
       ...init,
+      signal: init.signal ?? AbortSignal.timeout(8_000),
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,

@@ -24,7 +24,6 @@ const nextConfig: NextConfig = withSecurityHeaders(
         bodySizeLimit: '50mb',
       },
       middlewareClientMaxBodySize: '50mb',
-      proxyClientMaxBodySize: '50mb',
     },
     output: 'standalone',
     outputFileTracingRoot: path.join(__dirname, '../..'),

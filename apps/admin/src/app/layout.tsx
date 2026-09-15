@@ -17,7 +17,20 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
+export const dynamic = 'force-dynamic';
+
 export default async function RootLayout({ children }: { children: ReactNode }) {
+  // Docker image builds have no API/session. Do not prerender 380 admin routes
+  // against a live backend (that hang shows as "Generating static pages (0/380)").
+  if (process.env.DOCKER_BUILD === '1') {
+    return (
+      <html lang="en">
+        <body>
+          <Providers>{children}</Providers>
+        </body>
+      </html>
+    );
+  }
   const pathname = (await headers()).get('x-middleware-pathname') ?? '';
   const onAuthRoute = pathname === '/login' || pathname.startsWith('/api/admin/auth');
 
