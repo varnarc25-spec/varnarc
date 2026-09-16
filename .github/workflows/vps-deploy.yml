@@ -22,6 +22,7 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     environment: vps-production
+    timeout-minutes: 180
     steps:
       - name: SSH pull and rebuild
         uses: appleboy/ssh-action@v1.2.0

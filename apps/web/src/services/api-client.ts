@@ -46,6 +46,9 @@ export async function apiPublicFetch<T>(
   path: string,
   init: RequestInit = {},
 ): Promise<{ data: T; meta?: Record<string, unknown> }> {
+  if (process.env.DOCKER_BUILD === '1') {
+    throw new ApiError('Skipped during Docker image build', 503, 'DOCKER_BUILD');
+  }
   const apiUrl = getApiBaseUrl();
   const res = await fetch(`${apiUrl}${path.startsWith('/') ? path : `/${path}`}`, {
     ...init,

@@ -157,7 +157,9 @@ export async function fetchMenuByLocation(location: string) {
       next: { revalidate: 60 },
     });
   } catch (error) {
-    console.error(`[cms] menu location "${location}" failed`, error);
+    if (!(error instanceof Error && error.message.includes('Docker image build'))) {
+      console.error(`[cms] menu location "${location}" failed`, error);
+    }
     return { data: null };
   }
 }
