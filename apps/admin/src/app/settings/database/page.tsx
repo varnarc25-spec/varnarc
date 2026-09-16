@@ -13,7 +13,7 @@ export default async function DatabaseSettingsPage() {
     <div className="space-y-8">
       <PageHeader
         title="Database"
-        description="Download a full PostgreSQL dump of the live database and restore it on VPS Postgres."
+        description="PostgreSQL dump/restore and Prisma migrate deploy from the API container."
       />
       <SettingsNav active="/settings/database" />
       {result.error ? (

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Apply Prisma migrations using DATABASE_URL from .env.production.
+# Apply Prisma migrations inside the API image (same DATABASE_URL as production).
 # Run from the cloned monorepo on the VPS.
 set -euo pipefail
 
@@ -11,21 +11,14 @@ if [[ ! -f .env.production ]]; then
   exit 1
 fi
 
-set -a
-# shellcheck disable=SC1091
-source .env.production
-set +a
-
-if [[ -z "${DATABASE_URL:-}" ]]; then
-  echo "DATABASE_URL is empty" >&2
-  exit 1
+COMPOSE_FILES=(-f docker/docker-compose.vps.yml)
+if [[ -f docker/docker-compose.host-db.yml ]]; then
+  COMPOSE_FILES+=(-f docker/docker-compose.host-db.yml)
 fi
 
-if ! command -v pnpm >/dev/null 2>&1; then
-  echo "pnpm is required on the VPS for migrations (corepack enable && corepack prepare pnpm@9.6.0 --activate)." >&2
-  exit 1
-fi
+SCHEMA="${PRISMA_SCHEMA_PATH:-/app/packages/database/prisma/schema.prisma}"
 
-echo "Applying prisma migrate deploy (target host is taken from DATABASE_URL; values are not printed)."
-pnpm --filter @varnarc/database migrate:deploy
+echo "Applying prisma migrate deploy inside the api image (DATABASE_URL is not printed)."
+docker compose "${COMPOSE_FILES[@]}" --env-file .env.production \
+  run --rm --no-deps --entrypoint npx api prisma migrate deploy --schema="$SCHEMA"
 echo "Migrations complete."

@@ -189,12 +189,17 @@ docker compose -f docker/docker-compose.vps.yml --env-file .env.production logs 
 
 ## 10. Running database migrations
 
+Migrations run **inside the API image** (Prisma CLI + schema copied into that container). Do not run
+host `pnpm` migrate on the VPS checkout; that tree has no `node_modules`.
+
 ```bash
-pnpm install --frozen-lockfile
 bash scripts/vps/migrate.sh
 ```
 
-This uses `DATABASE_URL` from `.env.production`. If that URL is wrong, migrations run on the wrong database.
+Or in Admin → Settings → Database → **Apply pending migrations**.
+
+`DATABASE_URL` comes from `.env.production` / the api service env. If that URL is wrong, migrations
+run on the wrong database.
 
 ## 11. Creating PostgreSQL backups (VPS volume)
 
@@ -365,12 +370,12 @@ On each run it SSHs to the VPS, `git pull --ff-only` in
 GitHub → **Settings → Environments → New environment** → name `vps-production`.
 Add secrets (never commit them):
 
-| Secret | Example |
-|---|---|
-| `VPS_HOST` | `95.135.166.155` |
-| `VPS_USER` | `varnarc_25` |
-| `VPS_PORT` | `22` (or `20063` if that is the SSH port) |
-| `VPS_SSH_KEY` | private key for a deploy-only account |
+| Secret        | Example                                   |
+| ------------- | ----------------------------------------- |
+| `VPS_HOST`    | `95.135.166.155`                          |
+| `VPS_USER`    | `varnarc_25`                              |
+| `VPS_PORT`    | `22` (or `20063` if that is the SSH port) |
+| `VPS_SSH_KEY` | private key for a deploy-only account     |
 
 Create a deploy-only key:
 

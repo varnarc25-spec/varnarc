@@ -61,6 +61,8 @@ ENV NODE_ENV=production
 ENV SEARCH_ENGINE=postgres-fts
 
 COPY --from=build --chown=varnarc:varnarc /deploy ./
+COPY --from=src --chown=varnarc:varnarc /work/packages/database/prisma ./packages/database/prisma
+ENV PRISMA_SCHEMA_PATH=/app/packages/database/prisma/schema.prisma
 
 USER varnarc
 EXPOSE 8080

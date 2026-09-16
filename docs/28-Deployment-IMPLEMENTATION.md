@@ -4,21 +4,21 @@ Deployment is **infrastructure and operations**, not a runtime feature module. R
 
 ## Required scope (delivered)
 
-| Area                                                                       | Status                                        |
-| -------------------------------------------------------------------------- | --------------------------------------------- |
-| Multi-environment strategy documented                                      | Done — `deploy/environments.md`               |
-| Docker Compose local stack (api, web, admin, redis)                        | Done                                          |
-| Production Dockerfiles (api, web, admin)                                   | Pre-existing, healthchecks added              |
-| GitHub Actions CI (`ci.yml`)                                               | Pre-existing                                  |
-| GitHub Actions deploy pipeline (`deploy.yml`)                              | Done — migrate, build, push, Cloud Run, smoke |
-| Prisma migrate deploy script                                               | Done — `scripts/deploy/migrate.sh`            |
-| Smoke test script                                                          | Done — `scripts/deploy/smoke-test.sh`         |
-| Cloud Run deploy guide                                                     | Done — `deploy/cloud-run/README.md`           |
-| Startup env validation (API)                                               | Done — `apps/api/src/config/startup-env.ts`   |
-| Deep readiness (`/ready`) — DB + Redis ping                                | Done                                          |
-| Liveness (`/health`)                                                       | Done                                          |
-| Admin system pages (`/system/status`, `/system/health`, `/system/version`) | Done                                          |
-| Rollback procedures documented                                             | Done — Cloud Run revision traffic             |
+| Area                                                                       | Status                                                                                        |
+| -------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| Multi-environment strategy documented                                      | Done — `deploy/environments.md`                                                               |
+| Docker Compose local stack (api, web, admin, redis)                        | Done                                                                                          |
+| Production Dockerfiles (api, web, admin)                                   | Pre-existing, healthchecks added                                                              |
+| GitHub Actions CI (`ci.yml`)                                               | Pre-existing                                                                                  |
+| GitHub Actions deploy pipeline (`deploy.yml`)                              | Done — migrate, build, push, Cloud Run, smoke                                                 |
+| Prisma migrate deploy (VPS)                                                | Done — `scripts/vps/migrate.sh` runs CLI in the api image; Admin → Database can apply pending |
+| Smoke test script                                                          | Done — `scripts/deploy/smoke-test.sh`                                                         |
+| Cloud Run deploy guide                                                     | Done — `deploy/cloud-run/README.md`                                                           |
+| Startup env validation (API)                                               | Done — `apps/api/src/config/startup-env.ts`                                                   |
+| Deep readiness (`/ready`) — DB + Redis ping                                | Done                                                                                          |
+| Liveness (`/health`)                                                       | Done                                                                                          |
+| Admin system pages (`/system/status`, `/system/health`, `/system/version`) | Done                                                                                          |
+| Rollback procedures documented                                             | Done — Cloud Run revision traffic                                                             |
 
 ## Operational endpoints
 

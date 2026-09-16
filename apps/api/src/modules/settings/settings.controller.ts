@@ -48,6 +48,7 @@ import { ZodValidationPipe } from '../../common/zod-validation.pipe';
 import { ok, okCursor } from '../../common/utils/response';
 import { SettingsService } from './settings.service';
 import { DatabaseBackupService } from './database-backup.service';
+import { PrismaMigrateService } from './prisma-migrate.service';
 
 @ApiTags('settings')
 @Controller('settings')
@@ -55,6 +56,7 @@ export class SettingsController {
   constructor(
     private readonly service: SettingsService,
     private readonly databaseBackupService: DatabaseBackupService,
+    private readonly prismaMigrateService: PrismaMigrateService,
   ) {}
 
   @Get()
@@ -203,7 +205,15 @@ export class SettingsController {
   @Get('database')
   @RequirePermissions(PERMISSIONS.SETTINGS_MANAGE)
   async database() {
-    return ok(await this.databaseBackupService.status());
+    const backup = await this.databaseBackupService.status();
+    const migrations = await this.prismaMigrateService.status();
+    return ok({ ...backup, migrations });
+  }
+
+  @Post('database/migrate')
+  @RequirePermissions(PERMISSIONS.SETTINGS_MANAGE)
+  async migrateDatabase() {
+    return ok(await this.prismaMigrateService.deploy());
   }
 
   @Get('database/backup')
