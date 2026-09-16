@@ -114,8 +114,7 @@ export const viewport = {
   themeColor: '#0b1f3a',
 };
 
-export const dynamic = process.env.DOCKER_BUILD === '1' ? 'force-dynamic' : 'auto';
-export const revalidate = process.env.DOCKER_BUILD === '1' ? 0 : 60;
+export const revalidate = 60;
 
 export default async function RootLayout({ children }: { children: ReactNode }) {
   const [menuRes, footerRes, activeTheme, adsenseConfig, siteUrl, gaId] = await Promise.all([

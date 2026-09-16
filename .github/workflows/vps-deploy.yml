@@ -43,8 +43,13 @@ jobs:
               COMPOSE_FILES="$COMPOSE_FILES -f docker/docker-compose.host-db.yml"
             fi
             export COMPOSE_PARALLEL_LIMIT=1
+            # Bake still compiles web+admin+api together and OOMs the VPS.
             # shellcheck disable=SC2086
-            docker compose $COMPOSE_FILES --env-file .env.production build
+            docker compose $COMPOSE_FILES --env-file .env.production build api
+            # shellcheck disable=SC2086
+            docker compose $COMPOSE_FILES --env-file .env.production build web
+            # shellcheck disable=SC2086
+            docker compose $COMPOSE_FILES --env-file .env.production build admin
             # shellcheck disable=SC2086
             docker compose $COMPOSE_FILES --env-file .env.production up -d
             if [ -x scripts/vps/migrate.sh ]; then
