@@ -11,10 +11,12 @@ import {
 import { constructionHubBreadcrumbs, resolveConstructionIndexing } from '@/lib/construction/seo';
 import { isConstructionCostCitySlug } from '@varnarc/validation';
 import { cx } from '@/components/construction/styles';
+import { isDockerBuild } from '@/lib/docker-build';
 
 type Props = { params: Promise<{ city: string }> };
 
 export async function generateStaticParams() {
+  if (isDockerBuild()) return [];
   const cities = await fetchIndexableConstructionCostCities();
   return cities.map((c) => ({ city: c.city }));
 }

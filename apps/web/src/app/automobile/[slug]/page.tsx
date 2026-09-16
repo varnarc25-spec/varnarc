@@ -9,6 +9,7 @@ import { AutomobileDiscoveryLanding } from '@/components/automobile/discovery-la
 import { discoveryFilterToQuery } from '@/components/automobile/discovery-landing';
 import { buildAutomobileMetadata } from '@/lib/automobile/seo';
 import { fetchAutomobileModels } from '@/services/automobile';
+import { staticParamsOutsideDocker } from '@/lib/docker-build';
 
 type Props = {
   params: Promise<{ slug: string }>;
@@ -38,7 +39,7 @@ export function generateStaticParams() {
     'best-cars-for-bad-roads',
     'best-cars-for-large-families',
   ].map((slug) => ({ slug }));
-  return [...fromCat, ...extra];
+  return staticParamsOutsideDocker([...fromCat, ...extra]);
 }
 
 export async function generateMetadata({ params, searchParams }: Props): Promise<Metadata> {

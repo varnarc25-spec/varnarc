@@ -5,6 +5,7 @@ import { AutomobileDiscoveryLanding } from '@/components/automobile/discovery-la
 import { discoveryFilterToQuery } from '@/components/automobile/discovery-landing';
 import { buildAutomobileMetadata } from '@/lib/automobile/seo';
 import { fetchAutomobileModels } from '@/services/automobile';
+import { staticParamsOutsideDocker } from '@/lib/docker-build';
 
 type Props = {
   params: Promise<{ slug: string; intent: string }>;
@@ -14,14 +15,14 @@ type Props = {
 export const revalidate = 60;
 
 export function generateStaticParams() {
-  return [
+  return staticParamsOutsideDocker([
     { slug: 'suv', intent: 'under-15-lakh' },
     { slug: 'automatic-cars', intent: 'under-10-lakh' },
     { slug: 'cng-cars', intent: 'under-10-lakh' },
     { slug: 'electric-cars', intent: 'under-15-lakh' },
     { slug: 'electric-cars', intent: 'under-20-lakh' },
     { slug: '7-seater-cars', intent: 'under-20-lakh' },
-  ];
+  ]);
 }
 
 export async function generateMetadata({ params, searchParams }: Props): Promise<Metadata> {

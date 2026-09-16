@@ -69,6 +69,7 @@ ENV NEXT_TELEMETRY_DISABLED=1
 ENV DOCKER_BUILD=1
 ENV NODE_OPTIONS=--max-old-space-size=3072
 COPY --from=src /work .
+# Compile only: a full `next build` prerenders hundreds of pages with no API and hangs.
 RUN pnpm --filter @varnarc/web... build
 
 FROM node:20-alpine AS runner

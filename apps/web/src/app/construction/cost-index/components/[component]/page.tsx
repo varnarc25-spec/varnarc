@@ -8,10 +8,12 @@ import { fetchVcciComponent, fetchVcciHub } from '@/lib/construction/vcci/api';
 import { VCCI_COMPONENTS, VCCI_QUALIFICATION, isVcciComponentKey } from '@varnarc/validation';
 import { constructionHubBreadcrumbs, resolveConstructionIndexing } from '@/lib/construction/seo';
 import { cn, cx } from '@/components/construction/styles';
+import { isDockerBuild } from '@/lib/docker-build';
 
 type Props = { params: Promise<{ component: string }> };
 
 export async function generateStaticParams() {
+  if (isDockerBuild()) return [];
   const hub = await fetchVcciHub();
   if (!hub?.published) return [];
   return hub.availableComponents.map((c) => ({ component: c.key }));

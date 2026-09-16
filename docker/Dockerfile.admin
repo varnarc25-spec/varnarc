@@ -39,6 +39,7 @@ ENV NEXT_TELEMETRY_DISABLED=1
 ENV DOCKER_BUILD=1
 ENV NODE_OPTIONS=--max-old-space-size=3072
 COPY --from=src /work .
+# Compile only when DOCKER_BUILD=1 (see docker/next-build.mjs).
 RUN pnpm --filter @varnarc/admin... build
 
 FROM node:20-alpine AS runner

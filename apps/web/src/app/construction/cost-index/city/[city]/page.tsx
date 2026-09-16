@@ -8,10 +8,12 @@ import { fetchPublishedVcciCities, fetchVcciCity } from '@/lib/construction/vcci
 import { VCCI_QUALIFICATION, isPriceHubCitySlug } from '@varnarc/validation';
 import { constructionHubBreadcrumbs, resolveConstructionIndexing } from '@/lib/construction/seo';
 import { cn, cx } from '@/components/construction/styles';
+import { isDockerBuild } from '@/lib/docker-build';
 
 type Props = { params: Promise<{ city: string }> };
 
 export async function generateStaticParams() {
+  if (isDockerBuild()) return [];
   const cities = await fetchPublishedVcciCities();
   return cities.map((c) => ({ city: c.slug }));
 }

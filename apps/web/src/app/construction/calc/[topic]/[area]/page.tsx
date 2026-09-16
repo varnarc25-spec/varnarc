@@ -11,15 +11,18 @@ import {
   listIndexableIntentCalcLandings,
 } from '@varnarc/validation';
 import { constructionHubBreadcrumbs, resolveConstructionIndexing } from '@/lib/construction/seo';
+import { staticParamsOutsideDocker } from '@/lib/docker-build';
 import { cx } from '@/components/construction/styles';
 
 type Props = { params: Promise<{ topic: string; area: string }> };
 
 export async function generateStaticParams() {
-  return listIndexableIntentCalcLandings().map((p) => ({
-    topic: p.topic,
-    area: p.area,
-  }));
+  return staticParamsOutsideDocker(
+    listIndexableIntentCalcLandings().map((p) => ({
+      topic: p.topic,
+      area: p.area,
+    })),
+  );
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {

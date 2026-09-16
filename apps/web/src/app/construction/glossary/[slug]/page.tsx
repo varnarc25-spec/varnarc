@@ -10,12 +10,15 @@ import {
   listIndexableConstructionGlossaryTerms,
 } from '@varnarc/validation';
 import { constructionHubBreadcrumbs, resolveConstructionIndexing } from '@/lib/construction/seo';
+import { staticParamsOutsideDocker } from '@/lib/docker-build';
 import { cx } from '@/components/construction/styles';
 
 type Props = { params: Promise<{ slug: string }> };
 
 export async function generateStaticParams() {
-  return listIndexableConstructionGlossaryTerms().map((t) => ({ slug: t.slug }));
+  return staticParamsOutsideDocker(
+    listIndexableConstructionGlossaryTerms().map((t) => ({ slug: t.slug })),
+  );
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {

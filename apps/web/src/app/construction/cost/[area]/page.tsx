@@ -8,11 +8,14 @@ import {
   listIndexableConstructionCostAreaLandings,
 } from '@varnarc/validation';
 import { constructionHubBreadcrumbs, resolveConstructionIndexing } from '@/lib/construction/seo';
+import { staticParamsOutsideDocker } from '@/lib/docker-build';
 
 type Props = { params: Promise<{ area: string }> };
 
 export async function generateStaticParams() {
-  return listIndexableConstructionCostAreaLandings().map((item) => ({ area: item.slug }));
+  return staticParamsOutsideDocker(
+    listIndexableConstructionCostAreaLandings().map((item) => ({ area: item.slug })),
+  );
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {

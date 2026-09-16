@@ -19,11 +19,12 @@ import { buildSeoMetadata } from '@/lib/seo-metadata';
 import { constructionHubBreadcrumbs } from '@/lib/construction/seo';
 import { ApiError } from '@/services/api-client';
 import { notFound } from 'next/navigation';
+import { staticParamsOutsideDocker } from '@/lib/docker-build';
 
 type Props = { params: Promise<{ id: string }> };
 
 export function generateStaticParams() {
-  return listMaterialSlugs().map((slug) => ({ id: slug }));
+  return staticParamsOutsideDocker(listMaterialSlugs().map((slug) => ({ id: slug })));
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {

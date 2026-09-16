@@ -1,6 +1,7 @@
 /** Fetch helpers for location-specific construction-cost landings. */
 
 import { fetchIfNotDocker } from '@/lib/docker-build';
+import type { ConstructionCostCityLanding } from '@varnarc/validation';
 
 const apiUrl = () => process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000/api/v1';
 

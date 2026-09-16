@@ -15,12 +15,14 @@ import {
   isProfessionalTypeKey,
 } from '@varnarc/validation';
 import { cx } from '@/components/construction/styles';
+import { isDockerBuild } from '@/lib/docker-build';
 
 type Props = {
   params: Promise<{ type: string; city: string }>;
 };
 
 export async function generateStaticParams() {
+  if (isDockerBuild()) return [];
   const pairs = await fetchProfessionalLandings();
   return pairs.map((p) => ({ type: p.type, city: p.city }));
 }

@@ -20,6 +20,7 @@ import {
 } from '@/lib/automobile/seo-pages';
 import { apiPublicFetch } from '@/services/api-client';
 import { AUTOMOBILE_CALCULATOR_LINKS } from '@/services/automobile';
+import { staticParamsOutsideDocker } from '@/lib/docker-build';
 
 type Props = {
   params: Promise<{ slug: string }>;
@@ -59,7 +60,9 @@ type CalculatorDetail = {
 };
 
 export function generateStaticParams() {
-  return Object.values(AUTOMOBILE_CALC_PATH_SLUG).map((slug) => ({ slug }));
+  return staticParamsOutsideDocker(
+    Object.values(AUTOMOBILE_CALC_PATH_SLUG).map((slug) => ({ slug })),
+  );
 }
 
 export async function generateMetadata({ params, searchParams }: Props) {

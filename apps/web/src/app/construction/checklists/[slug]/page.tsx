@@ -9,12 +9,14 @@ import { constructionHubBreadcrumbs } from '@/lib/construction/seo';
 import { CONSTRUCTION_CHECKLIST_QUALIFICATION, normalizeChecklistItems } from '@varnarc/validation';
 import { ApiError } from '@/services/api-client';
 import { cx } from '@/components/construction/styles';
+import { isDockerBuild } from '@/lib/docker-build';
 
 type Props = { params: Promise<{ slug: string }> };
 
 export const revalidate = 300;
 
 export async function generateStaticParams() {
+  if (isDockerBuild()) return [];
   try {
     const { data } = await fetchConstructionChecklists();
     return (data ?? []).map((c) => ({ slug: c.slug }));

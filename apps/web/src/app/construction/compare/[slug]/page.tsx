@@ -6,11 +6,12 @@ import {
   listEditorialComparisonSlugs,
 } from '@/lib/construction/compare-hub/catalog';
 import { resolveConstructionIndexing } from '@/lib/construction/seo';
+import { staticParamsOutsideDocker } from '@/lib/docker-build';
 
 type Props = { params: Promise<{ slug: string }> };
 
 export function generateStaticParams() {
-  return listEditorialComparisonSlugs().map((slug) => ({ slug }));
+  return staticParamsOutsideDocker(listEditorialComparisonSlugs().map((slug) => ({ slug })));
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {

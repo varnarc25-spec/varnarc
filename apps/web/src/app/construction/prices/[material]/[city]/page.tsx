@@ -12,10 +12,12 @@ import {
 } from '@varnarc/validation';
 import { constructionHubBreadcrumbs, resolveConstructionIndexing } from '@/lib/construction/seo';
 import { cx } from '@/components/construction/styles';
+import { isDockerBuild } from '@/lib/docker-build';
 
 type Props = { params: Promise<{ material: string; city: string }> };
 
 export async function generateStaticParams() {
+  if (isDockerBuild()) return [];
   const pairs = await fetchIndexablePriceLandings();
   return pairs.map((p) => ({ material: p.material, city: p.city }));
 }

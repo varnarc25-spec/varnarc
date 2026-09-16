@@ -10,14 +10,17 @@ import {
   listGuideClusters,
 } from '@varnarc/validation';
 import { constructionHubBreadcrumbs, resolveConstructionIndexing } from '@/lib/construction/seo';
+import { staticParamsOutsideDocker } from '@/lib/docker-build';
 import { cx } from '@/components/construction/styles';
 
 type Props = { params: Promise<{ cluster: string }> };
 
 export async function generateStaticParams() {
-  return listGuideClusters()
-    .filter((c) => buildGuideClusterLanding(c.slug))
-    .map((c) => ({ cluster: c.slug }));
+  return staticParamsOutsideDocker(
+    listGuideClusters()
+      .filter((c) => buildGuideClusterLanding(c.slug))
+      .map((c) => ({ cluster: c.slug })),
+  );
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
