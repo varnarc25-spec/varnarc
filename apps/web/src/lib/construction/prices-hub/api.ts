@@ -2,6 +2,8 @@
 
 import type { PricePeriodChange } from '@varnarc/validation';
 
+import { fetchIfNotDocker } from '@/lib/docker-build';
+
 const apiUrl = () => process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000/api/v1';
 
 export type PriceObservation = {
@@ -100,10 +102,10 @@ export async function fetchPricesHub(query?: {
   if (query?.location) sp.set('location', query.location);
   const qs = sp.toString();
   try {
-    const res = await fetch(`${apiUrl()}/construction/prices${qs ? `?${qs}` : ''}`, {
+    const res = await fetchIfNotDocker(`${apiUrl()}/construction/prices${qs ? `?${qs}` : ''}`, {
       cache: 'no-store',
     });
-    if (!res.ok) return null;
+    if (!res?.ok) return null;
     return unwrap<PricesHubPayload>(await res.json());
   } catch {
     return null;
@@ -115,11 +117,11 @@ export async function fetchPriceLanding(
   city: string,
 ): Promise<PriceLandingPayload | null> {
   try {
-    const res = await fetch(`${apiUrl()}/construction/prices/${material}/${city}`, {
+    const res = await fetchIfNotDocker(`${apiUrl()}/construction/prices/${material}/${city}`, {
       cache: 'no-store',
     });
-    if (res.status === 404) return null;
-    if (!res.ok) return null;
+    if (!res || res.status === 404) return null;
+    if (!res?.ok) return null;
     return unwrap<PriceLandingPayload>(await res.json());
   } catch {
     return null;
@@ -132,11 +134,11 @@ export async function fetchPricePairHistory(
   city: string,
 ): Promise<PriceLandingPayload | null> {
   try {
-    const res = await fetch(`${apiUrl()}/construction/prices/${material}/${city}/history`, {
+    const res = await fetchIfNotDocker(`${apiUrl()}/construction/prices/${material}/${city}/history`, {
       cache: 'no-store',
     });
-    if (res.status === 404) return null;
-    if (!res.ok) return null;
+    if (!res || res.status === 404) return null;
+    if (!res?.ok) return null;
     return unwrap<PriceLandingPayload>(await res.json());
   } catch {
     return null;
@@ -147,10 +149,10 @@ export async function fetchIndexablePriceLandings(): Promise<
   Array<{ material: string; city: string }>
 > {
   try {
-    const res = await fetch(`${apiUrl()}/construction/prices/landings`, {
+    const res = await fetchIfNotDocker(`${apiUrl()}/construction/prices/landings`, {
       next: { revalidate: 300 },
     });
-    if (!res.ok) return [];
+    if (!res?.ok) return [];
     const data = unwrap<{ pairs: Array<{ material: string; city: string }> }>(await res.json());
     return data?.pairs ?? [];
   } catch {

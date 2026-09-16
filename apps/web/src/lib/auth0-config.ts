@@ -48,6 +48,7 @@ function applyToProcessEnv(config: Auth0RuntimeConfig) {
 
 export async function resolveAuth0RuntimeConfig(): Promise<Auth0RuntimeConfig | null> {
   if (typeof window !== 'undefined') return fromProcessEnv();
+  if (process.env.DOCKER_BUILD === '1') return fromProcessEnv();
   if (cached.value && Date.now() - cached.at < TTL_MS) return cached.value;
 
   try {
@@ -55,6 +56,7 @@ export async function resolveAuth0RuntimeConfig(): Promise<Auth0RuntimeConfig | 
     const res = await fetch(`${base}/settings/auth0/runtime`, {
       cache: 'no-store',
       headers: { 'X-Varnarc-Internal': '1' },
+      signal: AbortSignal.timeout(8_000),
     });
     if (res.ok) {
       const json = (await res.json()) as { data?: Auth0RuntimeConfig };

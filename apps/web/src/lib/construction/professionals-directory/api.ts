@@ -1,5 +1,7 @@
 /** Construction professionals directory API helpers. */
 
+import { fetchIfNotDocker } from '@/lib/docker-build';
+
 const apiUrl = () => process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000/api/v1';
 
 export type ProfessionalSourceBadge = {
@@ -109,10 +111,10 @@ export async function fetchProfessionalsDirectory(params: {
   if (params.sort) sp.set('sort', params.sort);
   if (params.limit) sp.set('limit', String(params.limit));
   try {
-    const res = await fetch(`${apiUrl()}/construction/professionals?${sp}`, {
+    const res = await fetchIfNotDocker(`${apiUrl()}/construction/professionals?${sp}`, {
       next: { revalidate: 120 },
     });
-    if (!res.ok) return null;
+    if (!res?.ok) return null;
     return unwrap<ProfessionalsDirectoryPayload>(await res.json());
   } catch {
     return null;
@@ -121,10 +123,10 @@ export async function fetchProfessionalsDirectory(params: {
 
 export async function fetchProfessionalProfile(slug: string): Promise<ProfessionalProfile | null> {
   try {
-    const res = await fetch(`${apiUrl()}/construction/professionals/profile/${slug}`, {
+    const res = await fetchIfNotDocker(`${apiUrl()}/construction/professionals/profile/${slug}`, {
       next: { revalidate: 120 },
     });
-    if (!res.ok) return null;
+    if (!res?.ok) return null;
     return unwrap<ProfessionalProfile>(await res.json());
   } catch {
     return null;
@@ -136,10 +138,10 @@ export async function fetchProfessionalLanding(
   city: string,
 ): Promise<ProfessionalLanding | null> {
   try {
-    const res = await fetch(`${apiUrl()}/construction/professionals/${type}/${city}`, {
+    const res = await fetchIfNotDocker(`${apiUrl()}/construction/professionals/${type}/${city}`, {
       next: { revalidate: 300 },
     });
-    if (!res.ok) return null;
+    if (!res?.ok) return null;
     return unwrap<ProfessionalLanding>(await res.json());
   } catch {
     return null;
@@ -150,10 +152,10 @@ export async function fetchProfessionalLandings(): Promise<
   Array<{ type: string; city: string; path: string }>
 > {
   try {
-    const res = await fetch(`${apiUrl()}/construction/professionals/landings`, {
+    const res = await fetchIfNotDocker(`${apiUrl()}/construction/professionals/landings`, {
       next: { revalidate: 600 },
     });
-    if (!res.ok) return [];
+    if (!res?.ok) return [];
     const data = unwrap<{ pairs: Array<{ type: string; city: string; path: string }> }>(
       await res.json(),
     );

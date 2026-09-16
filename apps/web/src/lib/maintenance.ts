@@ -9,6 +9,7 @@ type MaintenanceStatus = {
 let cache: { status: MaintenanceStatus; expires: number } | null = null;
 
 export async function getMaintenanceStatus(): Promise<MaintenanceStatus> {
+  if (process.env.DOCKER_BUILD === '1') return { active: false };
   const now = Date.now();
   if (cache && cache.expires > now) return cache.status;
 

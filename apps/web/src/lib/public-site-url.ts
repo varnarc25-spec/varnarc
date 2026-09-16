@@ -22,6 +22,7 @@ export function getPublicSiteUrlSync(): string {
 
 /** Prefer env, then request Host, then production default. */
 export async function getPublicSiteUrl(): Promise<string> {
+  if (process.env.DOCKER_BUILD === '1') return getPublicSiteUrlSync();
   const fromEnv = getAppBaseUrl();
   if (!isLocalSiteUrl(fromEnv)) return stripSlash(fromEnv);
   try {

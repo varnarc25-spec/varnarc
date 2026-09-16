@@ -23,6 +23,7 @@ import { isAuthUiEnabled } from '@varnarc/auth';
 import { getRuntimePublicEnvScript } from '@/lib/runtime-public-env';
 import { JsonLd, organizationJsonLd, websiteJsonLd } from '@/components/seo/json-ld';
 import { getPublicSiteUrl } from '@/lib/public-site-url';
+import { isDockerBuild } from '@/lib/docker-build';
 import {
   DEFAULT_OG_IMAGE_PATH,
   DEFAULT_SEO_DESCRIPTION,
@@ -45,7 +46,7 @@ const display = Fraunces({
 
 export async function generateMetadata(): Promise<Metadata> {
   const siteUrl = await getPublicSiteUrl();
-  const theme = await fetchActiveTheme();
+  const theme = isDockerBuild() ? null : await fetchActiveTheme();
   const branding = theme?.branding ?? {};
   const siteName = branding.siteName?.trim() || 'Varnarc';
   const tagline = branding.siteTagline?.trim() || 'Smart Tools & Expert Guides';
@@ -117,6 +118,20 @@ export const viewport = {
 export const revalidate = 60;
 
 export default async function RootLayout({ children }: { children: ReactNode }) {
+  if (isDockerBuild()) {
+    return (
+      <html lang="en" className={`${sans.variable} ${display.variable}`} suppressHydrationWarning>
+        <body className={sans.className}>
+          <AppProviders themeStyleBlock={undefined} isAuthenticated={false}>
+            <SiteHeader user={null} authConfigured={false} navItems={[{ label: 'Home', href: '/' }]} />
+            <main id="main-content">{children}</main>
+            <SiteFooter />
+          </AppProviders>
+        </body>
+      </html>
+    );
+  }
+
   const [menuRes, footerRes, activeTheme, adsenseConfig, siteUrl, gaId] = await Promise.all([
     fetchMenuByLocation('header'),
     fetchMenuByLocation('footer'),

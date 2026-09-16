@@ -6,6 +6,7 @@ import { isNextControlFlowError } from '@/lib/next-control-flow';
 export { getApiBaseUrl };
 
 export async function getApiAccessToken(): Promise<string | null> {
+  if (process.env.DOCKER_BUILD === '1') return null;
   try {
     const audience = process.env.AUTH0_AUDIENCE;
     const result = await auth0.getAccessToken(audience ? { audience } : undefined);

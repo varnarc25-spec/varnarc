@@ -1,5 +1,7 @@
 /** Construction supplier directory API helpers. */
 
+import { fetchIfNotDocker } from '@/lib/docker-build';
+
 const apiUrl = () => process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000/api/v1';
 
 export type SupplierCard = {
@@ -93,10 +95,10 @@ export async function fetchSupplierDirectory(
     if (params.sort) sp.set('sort', params.sort);
     if (params.limit) sp.set('limit', String(params.limit));
     const qs = sp.toString();
-    const res = await fetch(`${apiUrl()}/construction/suppliers${qs ? `?${qs}` : ''}`, {
+    const res = await fetchIfNotDocker(`${apiUrl()}/construction/suppliers${qs ? `?${qs}` : ''}`, {
       cache: 'no-store',
     });
-    if (!res.ok) return null;
+    if (!res?.ok) return null;
     return unwrap<SupplierDirectoryPayload>(await res.json());
   } catch {
     return null;
@@ -105,10 +107,10 @@ export async function fetchSupplierDirectory(
 
 export async function fetchSupplierProfile(slug: string): Promise<SupplierProfile | null> {
   try {
-    const res = await fetch(`${apiUrl()}/construction/suppliers/profile/${slug}`, {
+    const res = await fetchIfNotDocker(`${apiUrl()}/construction/suppliers/profile/${slug}`, {
       cache: 'no-store',
     });
-    if (!res.ok) return null;
+    if (!res?.ok) return null;
     return unwrap<SupplierProfile>(await res.json());
   } catch {
     return null;
@@ -120,10 +122,10 @@ export async function fetchSupplierLanding(
   city: string,
 ): Promise<SupplierLanding | null> {
   try {
-    const res = await fetch(`${apiUrl()}/construction/suppliers/${category}/${city}`, {
+    const res = await fetchIfNotDocker(`${apiUrl()}/construction/suppliers/${category}/${city}`, {
       cache: 'no-store',
     });
-    if (!res.ok) return null;
+    if (!res?.ok) return null;
     return unwrap<SupplierLanding>(await res.json());
   } catch {
     return null;
@@ -134,10 +136,10 @@ export async function fetchSupplierLandings(): Promise<
   Array<{ category: string; city: string; path: string }>
 > {
   try {
-    const res = await fetch(`${apiUrl()}/construction/suppliers/landings`, {
+    const res = await fetchIfNotDocker(`${apiUrl()}/construction/suppliers/landings`, {
       next: { revalidate: 300 },
     });
-    if (!res.ok) return [];
+    if (!res?.ok) return [];
     const data = unwrap<{ pairs: Array<{ category: string; city: string; path: string }> }>(
       await res.json(),
     );

@@ -1,5 +1,7 @@
 /** VCCI fetch helpers. */
 
+import { fetchIfNotDocker } from '@/lib/docker-build';
+
 const apiUrl = () => process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000/api/v1';
 
 export type VcciMethodologyPayload = {
@@ -76,10 +78,10 @@ function unwrap<T>(json: unknown): T | null {
 
 export async function fetchVcciMethodology(): Promise<VcciMethodologyPayload | null> {
   try {
-    const res = await fetch(`${apiUrl()}/construction/vcci/methodology`, {
+    const res = await fetchIfNotDocker(`${apiUrl()}/construction/vcci/methodology`, {
       next: { revalidate: 300 },
     });
-    if (!res.ok) return null;
+    if (!res?.ok) return null;
     return unwrap<VcciMethodologyPayload>(await res.json());
   } catch {
     return null;
@@ -88,8 +90,8 @@ export async function fetchVcciMethodology(): Promise<VcciMethodologyPayload | n
 
 export async function fetchVcciHub(): Promise<VcciHubPayload | null> {
   try {
-    const res = await fetch(`${apiUrl()}/construction/vcci`, { cache: 'no-store' });
-    if (!res.ok) return null;
+    const res = await fetchIfNotDocker(`${apiUrl()}/construction/vcci`, { cache: 'no-store' });
+    if (!res?.ok) return null;
     return unwrap<VcciHubPayload>(await res.json());
   } catch {
     return null;
@@ -98,11 +100,11 @@ export async function fetchVcciHub(): Promise<VcciHubPayload | null> {
 
 export async function fetchVcciCity(city: string) {
   try {
-    const res = await fetch(`${apiUrl()}/construction/vcci/city/${city}`, {
+    const res = await fetchIfNotDocker(`${apiUrl()}/construction/vcci/city/${city}`, {
       cache: 'no-store',
     });
-    if (res.status === 404) return null;
-    if (!res.ok) return null;
+    if (!res || res.status === 404) return null;
+    if (!res?.ok) return null;
     return unwrap<{
       published: boolean;
       city: { slug: string; name: string };
@@ -118,11 +120,11 @@ export async function fetchVcciCity(city: string) {
 
 export async function fetchVcciComponent(component: string) {
   try {
-    const res = await fetch(`${apiUrl()}/construction/vcci/components/${component}`, {
+    const res = await fetchIfNotDocker(`${apiUrl()}/construction/vcci/components/${component}`, {
       cache: 'no-store',
     });
-    if (res.status === 404) return null;
-    if (!res.ok) return null;
+    if (!res || res.status === 404) return null;
+    if (!res?.ok) return null;
     return unwrap<{
       published: boolean;
       component: {
@@ -144,10 +146,10 @@ export async function fetchVcciComponent(component: string) {
 
 export async function fetchPublishedVcciCities(): Promise<Array<{ slug: string; name: string }>> {
   try {
-    const res = await fetch(`${apiUrl()}/construction/vcci/cities`, {
+    const res = await fetchIfNotDocker(`${apiUrl()}/construction/vcci/cities`, {
       next: { revalidate: 300 },
     });
-    if (!res.ok) return [];
+    if (!res?.ok) return [];
     const data = unwrap<{ cities: Array<{ slug: string; name: string }> }>(await res.json());
     return data?.cities ?? [];
   } catch {

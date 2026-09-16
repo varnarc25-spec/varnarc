@@ -1,5 +1,7 @@
 /** Types + fetch helpers for Construction Fair Price Checker. */
 
+import { fetchIfNotDocker } from '@/lib/docker-build';
+
 const apiUrl = () => process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000/api/v1';
 
 export type FairPriceMeta = {
@@ -67,10 +69,10 @@ function unwrap<T>(json: unknown): T | null {
 
 export async function fetchFairPriceMeta(): Promise<FairPriceMeta | null> {
   try {
-    const res = await fetch(`${apiUrl()}/construction/fair-price-checker/meta`, {
+    const res = await fetchIfNotDocker(`${apiUrl()}/construction/fair-price-checker/meta`, {
       cache: 'no-store',
     });
-    if (!res.ok) return null;
+    if (!res?.ok) return null;
     return unwrap<FairPriceMeta>(await res.json());
   } catch {
     return null;
@@ -86,13 +88,13 @@ export async function checkFairPrice(body: {
   currency?: string;
 }): Promise<FairPriceResult | null> {
   try {
-    const res = await fetch(`${apiUrl()}/construction/fair-price-checker`, {
+    const res = await fetchIfNotDocker(`${apiUrl()}/construction/fair-price-checker`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
       cache: 'no-store',
     });
-    if (!res.ok) return null;
+    if (!res?.ok) return null;
     return unwrap<FairPriceResult>(await res.json());
   } catch {
     return null;

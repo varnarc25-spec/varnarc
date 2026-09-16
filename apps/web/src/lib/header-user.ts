@@ -19,6 +19,7 @@ export type HeaderUser = {
 };
 
 export async function loadHeaderUser(): Promise<HeaderUser | null> {
+  if (process.env.DOCKER_BUILD === '1') return null;
   await resolveAuth0RuntimeConfig();
   if (!isAuth0Configured()) return null;
 
