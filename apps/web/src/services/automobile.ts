@@ -412,7 +412,7 @@ export const AUTOMOBILE_CALCULATOR_LINKS = [
   { href: '/automobile/calculators/mileage', label: 'Mileage Calculator' },
   { href: '/automobile/calculators/car-insurance', label: 'Car Insurance Estimator' },
   { href: '/automobile/calculators/depreciation', label: 'Depreciation Calculator' },
-  { href: '/automobile/calculators/resale-value', label: 'Resale Value Planner' },
+  { href: '/automobile/calculators/resale-value', label: 'Car Resale Value Calculator' },
   { href: '/automobile/calculators/maintenance-cost', label: 'Maintenance Cost Estimator' },
   { href: '/automobile/calculators/tco', label: 'Total Cost of Ownership' },
   { href: '/automobile/calculators/road-tax', label: 'Road Tax Estimator' },

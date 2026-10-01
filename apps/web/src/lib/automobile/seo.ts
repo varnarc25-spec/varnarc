@@ -6,6 +6,7 @@ import {
 import { buildSeoMetadata } from '@/lib/seo-metadata';
 import { AUTOMOBILE_PAGE_DEFAULTS, type AutomobilePageKey } from '@/lib/automobile/seo-pages';
 import { getPublicSiteUrlSync } from '@/lib/public-site-url';
+import { RESALE_SHARE_QUERY_KEYS } from '@varnarc/validation';
 
 const siteUrl = () => getPublicSiteUrlSync();
 
@@ -67,6 +68,7 @@ export const AUTOMOBILE_CALC_SHARE_QUERY_KEYS = [
   's',
   'inputs',
   'mode',
+  ...RESALE_SHARE_QUERY_KEYS,
 ] as const;
 
 export type AutomobileCrumbInput = { name: string; path: string };

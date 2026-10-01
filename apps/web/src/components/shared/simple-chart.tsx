@@ -89,6 +89,7 @@ export function SimpleLineChart({
   height = 280,
   showDots = false,
   connectNulls = false,
+  formatY,
   onPointClick,
 }: {
   data: Array<Record<string, string | number>>;
@@ -99,6 +100,7 @@ export function SimpleLineChart({
   showDots?: boolean;
   /** When false, gaps are not filled — avoids inventing mid-gap values. */
   connectNulls?: boolean;
+  formatY?: (value: number) => string;
   onPointClick?: (payload: Record<string, string | number>) => void;
 }) {
   return (
@@ -116,8 +118,19 @@ export function SimpleLineChart({
         >
           <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
           <XAxis dataKey={xKey} tick={{ fontSize: 11 }} />
-          <YAxis tick={{ fontSize: 12 }} domain={['auto', 'auto']} />
-          <Tooltip />
+          <YAxis
+            tick={{ fontSize: 11 }}
+            domain={['auto', 'auto']}
+            width={formatY ? 88 : 40}
+            tickFormatter={(value) =>
+              formatY && typeof value === 'number' ? formatY(value) : String(value)
+            }
+          />
+          <Tooltip
+            formatter={(value) =>
+              formatY && typeof value === 'number' ? formatY(value) : String(value ?? '')
+            }
+          />
           <Legend />
           {series.map((s) => (
             <Line

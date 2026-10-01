@@ -21,6 +21,7 @@ const sections = [
   { href: '/automobile/reports', label: 'Reports' },
   { href: '/automobile/faqs', label: 'FAQs' },
   { href: '/automobile/guides', label: 'Guides' },
+  { href: '/automobile/resale-valuation', label: 'Resale valuation' },
 ];
 
 export default async function AutomobileAdminDashboardPage() {

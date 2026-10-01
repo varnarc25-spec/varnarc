@@ -5321,3 +5321,35 @@ model WebhookDelivery {
   @@index([endpointId, createdAt])
   @@map("webhook_deliveries")
 }
+
+/// Admin-managed overrides for the car resale valuation engine.
+/// Values are decimal factors (0.02 = +2%). Empty table means code defaults apply.
+model ResaleValuationConfig {
+  id             String    @id @default(uuid()) @db.Uuid
+  type           String
+  manufacturerId String?   @map("manufacturer_id") @db.Uuid
+  modelId        String?   @map("model_id") @db.Uuid
+  variantId      String?   @map("variant_id") @db.Uuid
+  segment        String?
+  fuelType       String?   @map("fuel_type")
+  key            String
+  value          Decimal   @db.Decimal(14, 6)
+  minValue       Decimal?  @map("min_value") @db.Decimal(14, 6)
+  maxValue       Decimal?  @map("max_value") @db.Decimal(14, 6)
+  effectiveFrom  DateTime? @map("effective_from")
+  effectiveTo    DateTime? @map("effective_to")
+  sourceName     String?   @map("source_name")
+  sourceUrl      String?   @map("source_url")
+  lastVerifiedAt DateTime? @map("last_verified_at")
+  isActive       Boolean   @default(true) @map("is_active")
+  notes          String?
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+  deletedAt      DateTime? @map("deleted_at")
+
+  @@index([type, isActive])
+  @@index([key])
+  @@index([manufacturerId])
+  @@index([modelId])
+  @@map("resale_valuation_configs")
+}

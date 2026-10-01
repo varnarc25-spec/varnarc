@@ -295,11 +295,11 @@ export const AUTOMOBILE_PAGE_DEFAULTS: Record<AutomobilePageKey, AutomobilePageS
   },
   'calc-resale-value': {
     path: '/automobile/calculators/resale-value',
-    label: 'Resale value',
-    title: 'Car Resale Value Planner | Varnarc',
+    label: 'Car Resale Value Calculator',
+    title: 'Car Resale Value Calculator India 2026 | Used Car Value – Varnarc',
     description:
-      'Estimate remaining value after depreciation for ownership planning. Markets vary — not an appraisal.',
-    h1: 'Resale value planner',
+      "Calculate your car's estimated resale value in India based on make, model, age, kilometres, ownership, condition and location. Check depreciation and future value instantly.",
+    h1: 'Car Resale Value Calculator India',
     indexable: true,
   },
   'calc-tco': {

@@ -32,6 +32,7 @@ type AutomobileSeoProps = {
     description?: string | null;
     path: string;
     image?: string | null;
+    applicationCategory?: string | null;
   };
   product?: {
     name: string;

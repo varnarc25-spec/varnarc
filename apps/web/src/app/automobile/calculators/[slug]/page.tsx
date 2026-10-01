@@ -61,7 +61,9 @@ type CalculatorDetail = {
 
 export function generateStaticParams() {
   return staticParamsOutsideDocker(
-    Object.values(AUTOMOBILE_CALC_PATH_SLUG).map((slug) => ({ slug })),
+    Object.values(AUTOMOBILE_CALC_PATH_SLUG)
+      .filter((slug) => slug !== 'resale-value')
+      .map((slug) => ({ slug })),
   );
 }
 
@@ -75,6 +77,7 @@ export async function generateMetadata({ params, searchParams }: Props) {
 
 export default async function AutomobileCalculatorLandingPage({ params, searchParams }: Props) {
   const { slug } = await params;
+  if (slug === 'resale-value') notFound();
   const pageKey = automobileCalcPageKeyFromSlug(slug);
   if (!pageKey) notFound();
 

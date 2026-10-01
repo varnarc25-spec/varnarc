@@ -10,7 +10,13 @@ export function trackAutomobileEvent(
     | 'onroad_price_started'
     | 'emi_calculator_started'
     | 'car_finder_started'
-    | 'car_finder_completed',
+    | 'car_finder_completed'
+    | 'resale_calculator_started'
+    | 'resale_vehicle_selected'
+    | 'resale_calculator_completed'
+    | 'resale_result_viewed'
+    | 'resale_comparison_clicked'
+    | 'related_calculator_clicked',
   metadata?: Record<string, unknown>,
 ) {
   trackAnalyticsEvent({

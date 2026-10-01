@@ -52,6 +52,7 @@ export type BuildAutomobileJsonLdGraphInput = {
     description?: string | null;
     path: string;
     image?: string | null;
+    applicationCategory?: string | null;
   };
   /** Vehicle product pages — include Offer only when a real price exists. */
   product?: {
@@ -142,7 +143,7 @@ export function buildAutomobileJsonLdGraph(input: BuildAutomobileJsonLdGraphInpu
         name: input.webApplication.name,
         description: input.webApplication.description,
         url: abs(input.webApplication.path),
-        applicationCategory: 'FinanceApplication',
+        applicationCategory: input.webApplication.applicationCategory ?? 'FinanceApplication',
         operatingSystem: 'Any',
         image: input.webApplication.image,
         offers: {
