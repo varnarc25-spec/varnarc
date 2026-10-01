@@ -109,6 +109,7 @@ export * from './automobile';
 export * from './vehicle-pricing';
 export * from './car-catalog';
 export * from './resale-valuation';
+export * from './site-pages';
 export * from './automobile-india-catalog';
 export * from './comparison';
 export * from './reviews';

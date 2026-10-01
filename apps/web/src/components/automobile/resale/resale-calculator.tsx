@@ -498,7 +498,7 @@ export function ResaleCalculator() {
   }));
 
   return (
-    <section id="calculator" className="scroll-mt-24 mx-auto w-full max-w-[960px]">
+    <section id="calculator" className="scroll-mt-24 w-full">
       <ol className="mb-4 grid grid-cols-4 gap-2" aria-label="Valuation steps">
         {STEPS.map((item, index) => {
           const current = index === step;

@@ -6,6 +6,7 @@ import { Button } from '@varnarc/ui';
 import { CkeditorContentEditor } from '@/components/ckeditor-content-editor';
 import { AiSeoAssistant } from '@/components/ai-seo-assistant';
 import { DateTimeLocalInput } from '@/components/datetime-local-input';
+import { EntityMediaField } from '@/components/entity-media-field';
 
 function toLocalInputValue(iso: string | null | undefined) {
   if (!iso) return '';
@@ -46,6 +47,9 @@ export function PageEditActions({
   status,
   seoTitle,
   seoDescription,
+  seoKeywords = null,
+  ogImage = null,
+  sitePath = null,
   publishedAt = null,
 }: {
   pageId: string;
@@ -55,6 +59,9 @@ export function PageEditActions({
   status: string;
   seoTitle: string | null;
   seoDescription: string | null;
+  seoKeywords?: string | null;
+  ogImage?: string | null;
+  sitePath?: string | null;
   publishedAt?: string | null;
 }) {
   const router = useRouter();
@@ -64,6 +71,8 @@ export function PageEditActions({
     content: content || '',
     seoTitle: seoTitle || '',
     seoDescription: seoDescription || '',
+    seoKeywords: seoKeywords || '',
+    ogImage: ogImage || '',
     scheduleAt: toLocalInputValue(publishedAt),
   });
   const [message, setMessage] = useState<string | null>(null);
@@ -79,14 +88,15 @@ export function PageEditActions({
     return {
       pageId,
       title: f.title,
-      slug: f.slug,
-      content: f.content,
+      ...(sitePath ? {} : { slug: f.slug, content: f.content }),
       seo: {
         title: f.seoTitle || null,
         description: f.seoDescription || null,
+        metaKeywords: f.seoKeywords || null,
+        ogImage: f.ogImage || null,
       },
     };
-  }, [pageId]);
+  }, [pageId, sitePath]);
 
   const save = useCallback(
     async (opts?: { silent?: boolean }) => {
@@ -246,19 +256,27 @@ export function PageEditActions({
         <label className="text-sm">
           <span className="mb-1 block text-[var(--varnarc-subtle)]">Slug</span>
           <input
-            className="h-10 w-full rounded-md border border-[var(--varnarc-border)] px-3"
+            className="h-10 w-full rounded-md border border-[var(--varnarc-border)] px-3 disabled:bg-[var(--varnarc-muted)]"
             value={form.slug}
+            disabled={Boolean(sitePath)}
             onChange={(e) => setForm((f) => ({ ...f, slug: e.target.value }))}
           />
         </label>
       </div>
-      <div>
-        <span className="mb-1 block text-sm text-[var(--varnarc-subtle)]">Content</span>
-        <CkeditorContentEditor
-          value={form.content}
-          onChange={(content) => setForm((f) => ({ ...f, content }))}
-        />
-      </div>
+      {sitePath ? (
+        <p className="text-sm text-[var(--varnarc-subtle)]">
+          Website page at {sitePath}. SEO title, description, keywords, and image update the live
+          page. The page layout stays in the site.
+        </p>
+      ) : (
+        <div>
+          <span className="mb-1 block text-sm text-[var(--varnarc-subtle)]">Content</span>
+          <CkeditorContentEditor
+            value={form.content}
+            onChange={(content) => setForm((f) => ({ ...f, content }))}
+          />
+        </div>
+      )}
       <div className="grid gap-3 md:grid-cols-2">
         <label className="text-sm">
           <span className="mb-1 block text-[var(--varnarc-subtle)]">SEO title</span>
@@ -276,7 +294,22 @@ export function PageEditActions({
             onChange={(e) => setForm((f) => ({ ...f, seoDescription: e.target.value }))}
           />
         </label>
+        <label className="text-sm md:col-span-2">
+          <span className="mb-1 block text-[var(--varnarc-subtle)]">Keywords</span>
+          <input
+            className="h-10 w-full rounded-md border border-[var(--varnarc-border)] px-3"
+            value={form.seoKeywords}
+            onChange={(e) => setForm((f) => ({ ...f, seoKeywords: e.target.value }))}
+            placeholder="car resale value, used car price india"
+          />
+        </label>
       </div>
+      <EntityMediaField
+        label="Image"
+        help="Used as the social share image. On the car resale page it also replaces the hero graphic."
+        value={{ mediaId: null, url: form.ogImage || null, alt: '' }}
+        onChange={(next) => setForm((f) => ({ ...f, ogImage: next.url || '' }))}
+      />
 
       <AiSeoAssistant
         initialTitle={form.title}

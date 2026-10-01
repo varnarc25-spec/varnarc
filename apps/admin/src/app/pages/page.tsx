@@ -10,7 +10,13 @@ type PageRow = {
   status: string;
   publishedAt: string | null;
   updatedAt: string;
+  metadata?: { kind?: string; path?: string } | null;
 };
+
+function publicPath(page: PageRow) {
+  if (page.metadata?.kind === 'site' && page.metadata.path) return page.metadata.path;
+  return `/p/${page.slug}`;
+}
 
 export default async function PagesPage({
   searchParams,
@@ -18,18 +24,30 @@ export default async function PagesPage({
   searchParams: Promise<{ status?: string; search?: string }>;
 }) {
   const params = await searchParams;
-  const qs = new URLSearchParams({ limit: '50' });
-  if (params.status) qs.set('status', params.status);
-  if (params.search) qs.set('search', params.search);
-
-  const result = await apiServerFetch<PageRow[]>(`/pages?${qs.toString()}`);
-  const pages = Array.isArray(result.data) ? result.data : [];
+  const pages: PageRow[] = [];
+  let error: string | null = null;
+  let cursor: string | null = null;
+  for (let page = 0; page < 8; page += 1) {
+    const qs = new URLSearchParams({ limit: '100' });
+    if (params.status) qs.set('status', params.status);
+    if (params.search) qs.set('search', params.search);
+    if (cursor) qs.set('cursor', cursor);
+    const result = await apiServerFetch<PageRow[]>(`/pages?${qs.toString()}`);
+    if (result.error) {
+      error = result.error;
+      break;
+    }
+    pages.push(...(Array.isArray(result.data) ? result.data : []));
+    const next = result.meta?.nextCursor;
+    if (typeof next !== 'string' || !next) break;
+    cursor = next;
+  }
 
   return (
     <div>
       <PageHeader
         title="Pages"
-        description="Create and publish CMS pages with SEO metadata."
+        description="Every website page is listed here. New pages you create are added to this list, and new site routes appear after the next deploy."
         actions={<Badge>{pages.length} loaded</Badge>}
       />
 
@@ -62,11 +80,11 @@ export default async function PagesPage({
         </button>
       </form>
 
-      {result.error ? (
+      {error ? (
         <Card>
           <CardHeader>
             <CardTitle>Unable to load pages</CardTitle>
-            <CardDescription>{result.error}</CardDescription>
+            <CardDescription>{error}</CardDescription>
           </CardHeader>
         </Card>
       ) : (
@@ -89,7 +107,7 @@ export default async function PagesPage({
                     >
                       {page.title}
                     </Link>
-                    <div className="text-xs text-[var(--varnarc-subtle)]">/{page.slug}</div>
+                    <div className="text-xs text-[var(--varnarc-subtle)]">{publicPath(page)}</div>
                   </td>
                   <td className="px-4 py-3">{page.status}</td>
                   <td className="px-4 py-3 text-[var(--varnarc-subtle)]">

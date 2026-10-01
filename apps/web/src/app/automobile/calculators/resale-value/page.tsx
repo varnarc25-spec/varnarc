@@ -6,6 +6,8 @@ import { RelatedCalculators } from '@/components/automobile/resale/related-calcu
 import { ResaleCalculator } from '@/components/automobile/resale/resale-calculator';
 import { RESALE_FAQS, ResaleValueGuide } from '@/components/automobile/resale/resale-guide';
 import { buildAutomobilePageMetadata } from '@/lib/automobile/seo';
+import { fetchSitePageSeo } from '@/lib/seo-metadata';
+import { brandTitleOnce } from '@/lib/seo-defaults';
 
 const TITLE = 'Car Resale Value Calculator India 2026 | Used Car Value – Varnarc';
 const DESCRIPTION =
@@ -18,20 +20,29 @@ type Props = {
 
 export async function generateMetadata({ searchParams }: Props): Promise<Metadata> {
   const sp = await searchParams;
-  const meta = await buildAutomobilePageMetadata('calc-resale-value', { searchParams: sp });
+  const [meta, siteSeo] = await Promise.all([
+    buildAutomobilePageMetadata('calc-resale-value', { searchParams: sp }),
+    fetchSitePageSeo(PATH),
+  ]);
+  const title = siteSeo?.title?.trim() ? brandTitleOnce(siteSeo.title.trim()) : TITLE;
+  const description = siteSeo?.description?.trim() || DESCRIPTION;
+  const image = siteSeo?.ogImage?.trim();
   return {
     ...meta,
-    title: { absolute: TITLE },
-    description: DESCRIPTION,
+    title: { absolute: title },
+    description,
+    keywords: siteSeo?.metaKeywords?.trim() || meta.keywords,
     openGraph: {
       ...meta.openGraph,
-      title: TITLE,
-      description: DESCRIPTION,
+      title,
+      description,
+      images: image ? [{ url: image }] : meta.openGraph?.images,
     },
     twitter: {
       ...meta.twitter,
-      title: TITLE,
-      description: DESCRIPTION,
+      title,
+      description,
+      images: image ? [image] : meta.twitter?.images,
     },
   };
 }
@@ -61,6 +72,8 @@ function HeroMark() {
 export default async function CarResaleValuePage({ searchParams }: Props) {
   const sp = await searchParams;
   void sp;
+  const siteSeo = await fetchSitePageSeo(PATH);
+  const heroImage = siteSeo?.ogImage?.trim() || null;
   return (
     <>
       <AutomobileSeo
@@ -80,7 +93,7 @@ export default async function CarResaleValuePage({ searchParams }: Props) {
       />
       <main className="w-full overflow-x-hidden bg-white">
         <div className="site-container py-6 sm:py-10">
-          <div className="mx-auto w-full max-w-[1280px]">
+          <div className="w-full">
             <Breadcrumbs
               items={[
                 { label: 'Home', href: '/' },
@@ -120,7 +133,15 @@ export default async function CarResaleValuePage({ searchParams }: Props) {
                 </div>
               </div>
               <div className="hidden lg:block">
-                <HeroMark />
+                {heroImage ? (
+                  <img
+                    src={heroImage}
+                    alt="Car resale value"
+                    className="h-36 w-full max-w-xs rounded-2xl object-contain"
+                  />
+                ) : (
+                  <HeroMark />
+                )}
               </div>
             </div>
             <div className="mt-8">

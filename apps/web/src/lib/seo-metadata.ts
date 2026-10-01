@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { isSitePagePath, sitePageSlugFromPath } from '@varnarc/validation';
 import { apiPublicFetch } from '@/services/api-client';
 import { brandTitleOnce } from '@/lib/seo-defaults';
 import { getPublicSiteUrlSync } from '@/lib/public-site-url';
@@ -40,6 +41,30 @@ export async function fetchSeoOverride(
   }
 }
 
+/** SEO saved in Admin → Pages for a built-in site route. */
+export async function fetchSitePageSeo(path: string): Promise<SeoOverride | null> {
+  const pathname = path.startsWith('/') ? path : `/${path}`;
+  const clean = pathname.split('?')[0]?.replace(/\/$/, '') || '/';
+  const normalized = clean === '' ? '/' : clean;
+  if (!isSitePagePath(normalized)) return null;
+  try {
+    const { data } = await apiPublicFetch<{ seo?: SeoOverride | null }>(
+      `/pages/slug/${sitePageSlugFromPath(normalized)}`,
+      { next: { revalidate: 120 } },
+    );
+    return data?.seo ?? null;
+  } catch {
+    return null;
+  }
+}
+
+function prefer(primary?: string | null, fallback?: string | null) {
+  const first = primary?.trim();
+  if (first) return first;
+  const second = fallback?.trim();
+  return second || null;
+}
+
 function parseRobots(robots?: string | null): Metadata['robots'] | undefined {
   if (!robots?.trim()) return undefined;
   const value = robots.toLowerCase();
@@ -53,8 +78,23 @@ function parseRobots(robots?: string | null): Metadata['robots'] | undefined {
 export async function buildSeoMetadata(input: SeoMetadataInput): Promise<Metadata> {
   const baseUrl = getPublicSiteUrlSync();
   const path = input.path.startsWith('/') ? input.path : `/${input.path}`;
-  const override =
-    input.entityId != null ? await fetchSeoOverride(input.entityType, input.entityId) : null;
+  const [entityOverride, siteOverride] = await Promise.all([
+    input.entityId != null ? fetchSeoOverride(input.entityType, input.entityId) : null,
+    fetchSitePageSeo(path),
+  ]);
+  const override: SeoOverride | null =
+    entityOverride || siteOverride
+      ? {
+          title: prefer(entityOverride?.title, siteOverride?.title),
+          description: prefer(entityOverride?.description, siteOverride?.description),
+          metaKeywords: prefer(entityOverride?.metaKeywords, siteOverride?.metaKeywords),
+          canonicalUrl: prefer(entityOverride?.canonicalUrl, siteOverride?.canonicalUrl),
+          ogImage: prefer(entityOverride?.ogImage, siteOverride?.ogImage),
+          robots: entityOverride?.robots || siteOverride?.robots,
+          twitterCard: entityOverride?.twitterCard || siteOverride?.twitterCard,
+          language: entityOverride?.language || siteOverride?.language,
+        }
+      : null;
 
   const rawTitle = override?.title?.trim() || input.title;
   const title = brandTitleOnce(rawTitle);

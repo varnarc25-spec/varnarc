@@ -28,7 +28,7 @@ const TOOLS = [
 
 export function RelatedCalculators() {
   return (
-    <section className="mx-auto mt-10 max-w-[960px]" aria-label="Related automobile calculators">
+    <section className="mt-10 w-full" aria-label="Related automobile calculators">
       <h2 className="text-xl font-extrabold text-[#0b1f3a]">Related automobile calculators</h2>
       <ul className="mt-4 grid gap-3 sm:grid-cols-2">
         {TOOLS.map((tool) => (

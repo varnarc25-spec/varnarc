@@ -11,11 +11,19 @@ type PageDetail = {
   content: string | null;
   status: string;
   publishedAt: string | null;
+  metadata?: { kind?: string; path?: string } | null;
   seo: {
     title: string | null;
     description: string | null;
+    metaKeywords?: string | null;
+    ogImage?: string | null;
   } | null;
 };
+
+function sitePathOf(metadata: PageDetail['metadata']) {
+  if (metadata?.kind === 'site' && metadata.path) return metadata.path;
+  return null;
+}
 
 type VersionRow = {
   id: string;
@@ -24,11 +32,7 @@ type VersionRow = {
   createdAt: string;
 };
 
-export default async function PageDetailPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
+export default async function PageDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const [result, versionsResult] = await Promise.all([
     apiServerFetch<PageDetail>(`/pages/${id}`),
@@ -45,7 +49,10 @@ export default async function PageDetailPage({
             <CardDescription>{result.error || 'Not found'}</CardDescription>
           </CardHeader>
         </Card>
-        <Link href="/pages" className="mt-4 inline-block text-sm text-[var(--varnarc-brand)] hover:underline">
+        <Link
+          href="/pages"
+          className="mt-4 inline-block text-sm text-[var(--varnarc-brand)] hover:underline"
+        >
           Back to pages
         </Link>
       </div>
@@ -53,13 +60,14 @@ export default async function PageDetailPage({
   }
 
   const page = result.data;
+  const sitePath = sitePathOf(page.metadata);
   const versions = Array.isArray(versionsResult.data) ? versionsResult.data : [];
 
   return (
     <div className="space-y-6">
       <PageHeader
         title={page.title}
-        description={`/${page.slug}`}
+        description={sitePath ?? `/p/${page.slug}`}
         actions={<Badge>{page.status}</Badge>}
       />
       <PageEditActions
@@ -70,6 +78,9 @@ export default async function PageDetailPage({
         status={page.status}
         seoTitle={page.seo?.title ?? null}
         seoDescription={page.seo?.description ?? null}
+        seoKeywords={page.seo?.metaKeywords ?? null}
+        ogImage={page.seo?.ogImage ?? null}
+        sitePath={sitePath}
         publishedAt={page.publishedAt ?? null}
       />
 

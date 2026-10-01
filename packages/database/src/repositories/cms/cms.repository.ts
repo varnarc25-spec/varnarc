@@ -483,6 +483,29 @@ export class PageRepository extends BaseRepository {
     return this.db.page.findFirst({ where: { slug, deletedAt: null } });
   }
 
+  /** Insert website routes that are not already CMS pages. Existing rows are left unchanged. */
+  async ensureSitePages(entries: Array<{ title: string; slug: string; path: string }>) {
+    if (!entries.length) return 0;
+    const existing = await this.db.page.findMany({
+      where: { slug: { in: entries.map((entry) => entry.slug) }, deletedAt: null },
+      select: { slug: true },
+    });
+    const have = new Set(existing.map((row) => row.slug));
+    const missing = entries.filter((entry) => !have.has(entry.slug));
+    if (!missing.length) return 0;
+    const created = await this.db.page.createMany({
+      data: missing.map((entry) => ({
+        title: entry.title,
+        slug: entry.slug,
+        status: 'PUBLISHED' as const,
+        publishedAt: new Date(),
+        metadata: { kind: 'site', path: entry.path },
+      })),
+      skipDuplicates: true,
+    });
+    return created.count;
+  }
+
   list(params: CursorPageParams & { status?: PublishStatus; search?: string } = {}) {
     return listActiveWithCursor(this.db.page, {
       ...params,

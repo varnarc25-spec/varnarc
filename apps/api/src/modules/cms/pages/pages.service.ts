@@ -1,29 +1,29 @@
-import { BadRequestException, Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import type { Repositories } from '@varnarc/database';
-import type {
-  CreatePageInput,
-  CursorPaginationQuery,
-  ScheduleContentInput,
-  UpdatePageInput,
+import {
+  SITE_PAGES,
+  type CreatePageInput,
+  type CursorPaginationQuery,
+  type ScheduleContentInput,
+  type UpdatePageInput,
 } from '@varnarc/validation';
 import { REPOS } from '../../../database/database.module';
-import {
-  CACHE_MANAGER,
-  cmsCacheKeys,
-  invalidateCmsCache,
-  type Cache,
-} from '../cms-cache';
+import { CACHE_MANAGER, cmsCacheKeys, invalidateCmsCache, type Cache } from '../cms-cache';
 import { SearchIndexerService } from '../../search/search-indexer.service';
 
 @Injectable()
 export class PagesService {
+  private readonly logger = new Logger(PagesService.name);
+  private sitePagesSynced = false;
+
   constructor(
     @Inject(REPOS) private readonly repos: Repositories,
     @Inject(CACHE_MANAGER) private readonly cache: Cache,
     private readonly searchIndexer: SearchIndexerService,
   ) {}
 
-  list(query: CursorPaginationQuery & { status?: string }) {
+  async list(query: CursorPaginationQuery & { status?: string }) {
+    await this.ensureSitePages();
     return this.repos.pages.list({
       cursor: query.cursor,
       limit: query.limit,
@@ -50,6 +50,7 @@ export class PagesService {
     const cached = await this.cache.get<unknown>(cacheKey);
     if (cached) return cached;
 
+    await this.ensureSitePages();
     const row = await this.repos.pages.findBySlug(slug);
     if (!row || row.status !== 'PUBLISHED') {
       throw new NotFoundException({
@@ -61,6 +62,30 @@ export class PagesService {
     const payload = { ...row, seo };
     await this.cache.set(cacheKey, payload, 60_000);
     return payload;
+  }
+
+  private async ensureSitePages() {
+    if (this.sitePagesSynced) return;
+    try {
+      await this.repos.pages.ensureSitePages(SITE_PAGES);
+      this.sitePagesSynced = true;
+    } catch (error) {
+      this.logger.warn(
+        `Site pages were not synced: ${error instanceof Error ? error.message : 'unknown error'}`,
+      );
+    }
+  }
+
+  private seoWrite(seo: NonNullable<CreatePageInput['seo']>) {
+    return {
+      ...(seo.title !== undefined ? { title: seo.title } : {}),
+      ...(seo.description !== undefined ? { description: seo.description } : {}),
+      ...(seo.metaKeywords !== undefined ? { metaKeywords: seo.metaKeywords } : {}),
+      ...(seo.canonicalUrl !== undefined ? { canonicalUrl: seo.canonicalUrl || null } : {}),
+      ...(seo.ogImage !== undefined ? { ogImage: seo.ogImage || null } : {}),
+      ...(seo.robots !== undefined ? { robots: seo.robots } : {}),
+      ...(seo.structuredData !== undefined ? { structuredData: seo.structuredData as never } : {}),
+    };
   }
 
   private async bust(slug?: string | null) {
@@ -98,14 +123,7 @@ export class PagesService {
     });
 
     if (seo) {
-      await this.repos.seo.upsert('page', page.id, {
-        title: seo.title ?? undefined,
-        description: seo.description ?? undefined,
-        canonicalUrl: seo.canonicalUrl || undefined,
-        ogImage: seo.ogImage || undefined,
-        robots: seo.robots ?? undefined,
-        structuredData: seo.structuredData as never,
-      });
+      await this.repos.seo.upsert('page', page.id, this.seoWrite(seo));
     }
 
     await this.audit(actorId, 'page.create', page.id, undefined, {
@@ -121,6 +139,10 @@ export class PagesService {
   async update(id: string, input: UpdatePageInput, actorId: string) {
     const existing = await this.getById(id);
     const { seo, ...rest } = input;
+    const metadata = existing.metadata as { kind?: string } | null;
+    if (metadata && typeof metadata === 'object' && metadata.kind === 'site') {
+      delete rest.slug;
+    }
     await this.repos.pages.update(id, {
       ...rest,
       metadata: rest.metadata as never,
@@ -128,21 +150,20 @@ export class PagesService {
     });
 
     if (seo) {
-      await this.repos.seo.upsert('page', id, {
-        title: seo.title ?? undefined,
-        description: seo.description ?? undefined,
-        canonicalUrl: seo.canonicalUrl || undefined,
-        ogImage: seo.ogImage || undefined,
-        robots: seo.robots ?? undefined,
-        structuredData: seo.structuredData as never,
-      });
+      await this.repos.seo.upsert('page', id, this.seoWrite(seo));
     }
 
     const updated = await this.getById(id);
-    await this.audit(actorId, 'page.update', id, { status: existing.status }, {
-      status: updated.status,
-      title: updated.title,
-    });
+    await this.audit(
+      actorId,
+      'page.update',
+      id,
+      { status: existing.status },
+      {
+        status: updated.status,
+        title: updated.title,
+      },
+    );
     await this.bust(existing.slug);
     await this.bust(updated.slug);
     return updated;
@@ -157,9 +178,15 @@ export class PagesService {
         error: { code: 'NOT_FOUND', message: 'Page not found.' },
       });
     }
-    await this.audit(actorId, 'page.publish', id, { status: existing.status }, {
-      status: 'PUBLISHED',
-    });
+    await this.audit(
+      actorId,
+      'page.publish',
+      id,
+      { status: existing.status },
+      {
+        status: 'PUBLISHED',
+      },
+    );
     await this.bust(existing.slug);
     void this.searchIndexer.indexPage(id);
     return this.getById(id);
@@ -174,10 +201,16 @@ export class PagesService {
         error: { code: 'NOT_FOUND', message: 'Page not found.' },
       });
     }
-    await this.audit(actorId, 'page.schedule', id, { status: existing.status }, {
-      status: 'SCHEDULED',
-      publishedAt: input.publishedAt.toISOString(),
-    });
+    await this.audit(
+      actorId,
+      'page.schedule',
+      id,
+      { status: existing.status },
+      {
+        status: 'SCHEDULED',
+        publishedAt: input.publishedAt.toISOString(),
+      },
+    );
     await this.bust(existing.slug);
     return this.getById(id);
   }
@@ -191,9 +224,15 @@ export class PagesService {
         error: { code: 'NOT_FOUND', message: 'Page not found.' },
       });
     }
-    await this.audit(actorId, 'page.submit_review', id, { status: existing.status }, {
-      status: 'REVIEW',
-    });
+    await this.audit(
+      actorId,
+      'page.submit_review',
+      id,
+      { status: existing.status },
+      {
+        status: 'REVIEW',
+      },
+    );
     return this.getById(id);
   }
 
@@ -245,9 +284,15 @@ export class PagesService {
         error: { code: 'NOT_FOUND', message: 'Page not found.' },
       });
     }
-    await this.audit(actorId, 'page.approve_review', id, { status: existing.status }, {
-      status: 'DRAFT',
-    });
+    await this.audit(
+      actorId,
+      'page.approve_review',
+      id,
+      { status: existing.status },
+      {
+        status: 'DRAFT',
+      },
+    );
     return this.getById(id);
   }
 
@@ -263,10 +308,16 @@ export class PagesService {
         error: { code: 'NOT_FOUND', message: 'Page not found.' },
       });
     }
-    await this.audit(actorId, 'page.reject_review', id, { status: existing.status }, {
-      status: 'DRAFT',
-      notes: notes ?? null,
-    });
+    await this.audit(
+      actorId,
+      'page.reject_review',
+      id,
+      { status: existing.status },
+      {
+        status: 'DRAFT',
+        notes: notes ?? null,
+      },
+    );
     return this.getById(id);
   }
 

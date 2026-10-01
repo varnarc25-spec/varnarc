@@ -60,7 +60,7 @@ export const RESALE_FAQS: Array<{ question: string; answer: string }> = [
 
 export function ResaleValueGuide() {
   return (
-    <div className="mx-auto mt-12 max-w-[960px] space-y-10 text-sm leading-relaxed text-slate-700">
+    <div className="mt-12 w-full space-y-10 text-sm leading-relaxed text-slate-700">
       <section id="how-valuation-works" className="scroll-mt-24">
         <h2 className="text-xl font-extrabold text-[#0b1f3a]">
           How Varnarc estimates your car&apos;s resale value

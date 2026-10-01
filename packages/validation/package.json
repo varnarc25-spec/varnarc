@@ -11,6 +11,7 @@
     }
   },
   "scripts": {
+    "prebuild": "node ../../scripts/generate-site-pages.mjs",
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "clean": "rm -rf dist",
