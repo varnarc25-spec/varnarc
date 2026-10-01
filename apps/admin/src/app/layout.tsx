@@ -31,8 +31,12 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
       </html>
     );
   }
-  const pathname = (await headers()).get('x-middleware-pathname') ?? '';
-  const onAuthRoute = pathname === '/login' || pathname.startsWith('/api/admin/auth');
+  const headerList = await headers();
+  const pathname = headerList.get('x-middleware-pathname') ?? '';
+  const onAuthRoute =
+    pathname === '/login' ||
+    pathname.startsWith('/login/') ||
+    pathname.startsWith('/api/admin/auth');
 
   if (onAuthRoute) {
     return (

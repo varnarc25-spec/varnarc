@@ -1,6 +1,7 @@
 import { SiteHeader } from '@/components/site-header';
 import { loadHeaderUser } from '@/lib/header-user';
-import { isAuthUiEnabled } from '@varnarc/auth';
+import { isAuth0Configured, isAuthUiEnabled } from '@varnarc/auth';
+import { resolveAuth0RuntimeConfig } from '@/lib/auth0-config';
 
 export async function HeaderWithUser({
   navItems,
@@ -15,11 +16,11 @@ export async function HeaderWithUser({
   logoUrl?: string | null;
   stickyHeader?: boolean;
 }) {
-  const user = await loadHeaderUser();
+  const [user, runtime] = await Promise.all([loadHeaderUser(), resolveAuth0RuntimeConfig()]);
   return (
     <SiteHeader
       user={user}
-      authConfigured={isAuthUiEnabled()}
+      authConfigured={Boolean(runtime?.configured) || isAuth0Configured() || isAuthUiEnabled()}
       navItems={navItems}
       siteName={siteName}
       tagline={tagline}

@@ -4,6 +4,17 @@ import type { PrismaClient } from '@prisma/client';
  * Seed loan hub categories only — no fabricated product rates.
  * Editorial/product data must be entered via admin with source verification.
  */
+const LOAN_HUB_META_TITLE: Record<string, string> = {
+  'personal-loan': 'Compare Personal Loans | Rates, EMI & Eligibility',
+  'home-loan': 'Compare Home Loans | Rates, EMI, LTV & Eligibility',
+  'car-loan': 'Compare Car Loans | New & Used Vehicle Financing',
+  'education-loan': 'Education Loan Planner | Cost, Moratorium & Government Support',
+  'business-loan': 'Business Loan Calculator, Eligibility & Comparison | Varnarc',
+  'gold-loan': 'Gold Loan Calculator, Eligibility & Comparison',
+  'two-wheeler-loan': 'Two-Wheeler Loan Calculator, EMI & Eligibility',
+  'loan-against-property': 'Loan Against Property Calculator, LTV & Eligibility',
+};
+
 export const LOAN_HUB_CATEGORIES = [
   {
     name: 'Personal Loan',
@@ -115,7 +126,7 @@ export async function seedLoanCategories(prisma: PrismaClient) {
       status: 'PUBLISHED' as const,
       publishedAt: new Date(),
       // Intentionally omit interest rate / amount ranges — set via admin after verification.
-      metaTitle: `Compare ${cat.name}s`,
+      metaTitle: LOAN_HUB_META_TITLE[cat.slug] ?? `Compare ${cat.name}`,
       metaDescription: cat.introduction,
       contentSections: {
         whatIs: null,

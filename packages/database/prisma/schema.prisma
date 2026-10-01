@@ -3206,18 +3206,26 @@ model AutomobileManufacturer {
   country        String?
   foundedYear    Int?          @map("founded_year")
   website        String?
+  tagline        String?
   description    String?
-  featured       Boolean       @default(false)
-  status         PublishStatus @default(DRAFT)
-  seoTitle       String?       @map("seo_title")
-  seoDescription String?       @map("seo_description")
-  createdAt      DateTime      @default(now()) @map("created_at")
-  updatedAt      DateTime      @updatedAt @map("updated_at")
-  deletedAt      DateTime?     @map("deleted_at")
-  createdBy      String?       @map("created_by") @db.Uuid
-  updatedBy      String?       @map("updated_by") @db.Uuid
-  vehicles       AutomobileVehicle[]
+  featured                Boolean       @default(false)
+  availableInIndia        Boolean       @default(false) @map("available_in_india")
+  indiaAvailabilityStatus String?       @map("india_availability_status")
+  indiaWebsite            String?       @map("india_website")
+  indiaVerifiedAt         DateTime?     @map("india_verified_at")
+  indiaVerificationNote   String?       @map("india_verification_note")
+  status                  PublishStatus @default(DRAFT)
+  seoTitle                String?       @map("seo_title")
+  seoDescription          String?       @map("seo_description")
+  createdAt               DateTime      @default(now()) @map("created_at")
+  updatedAt               DateTime      @updatedAt @map("updated_at")
+  deletedAt               DateTime?     @map("deleted_at")
+  createdBy               String?       @map("created_by") @db.Uuid
+  updatedBy               String?       @map("updated_by") @db.Uuid
+  vehicles                AutomobileVehicle[]
+  carModels               AutomobileCarModel[]
   @@index([status])
+  @@index([availableInIndia])
   @@map("automobile_manufacturers")
 }
 
@@ -3269,6 +3277,10 @@ model AutomobileVehicle {
   expertRating         Decimal?      @map("expert_rating") @db.Decimal(3, 2)
   featured             Boolean       @default(false)
   sponsored            Boolean       @default(false)
+  availableInIndia     Boolean       @default(false) @map("available_in_india")
+  indiaAvailability    String?       @map("india_availability")
+  primaryMarket        String        @default("IN") @map("primary_market") @db.VarChar(2)
+  catalogVariantId     String?       @map("catalog_variant_id") @db.Uuid
   status               PublishStatus @default(DRAFT)
   seoTitle             String?       @map("seo_title")
   seoDescription       String?       @map("seo_description")
@@ -3279,9 +3291,11 @@ model AutomobileVehicle {
   createdBy            String?       @map("created_by") @db.Uuid
   updatedBy            String?       @map("updated_by") @db.Uuid
   manufacturer         AutomobileManufacturer @relation(fields: [manufacturerId], references: [id], onDelete: Cascade)
+  catalogVariant       AutomobileCatalogVariant? @relation(fields: [catalogVariantId], references: [id], onDelete: SetNull)
   maintenanceSchedules AutomobileMaintenanceSchedule[]
   images               AutomobileVehicleImage[]
   reviewLinks          AutomobileVehicleReview[]
+  prices               AutomobileVehiclePrice[]
   @@unique([manufacturerId, model, variant])
   @@index([status])
   @@index([manufacturerId])
@@ -3290,6 +3304,8 @@ model AutomobileVehicle {
   @@index([seatingCapacity])
   @@index([exShowroomPrice])
   @@index([manufacturerId, model])
+  @@index([availableInIndia])
+  @@index([catalogVariantId])
   @@map("automobile_vehicles")
 }
 
@@ -3314,12 +3330,47 @@ model AutomobileImageCache {
   @@map("automobile_image_cache")
 }
 
+model AutomobileVehiclePrice {
+  id            String    @id @default(uuid()) @db.Uuid
+  vehicleId     String    @map("vehicle_id") @db.Uuid
+  countryCode   String    @map("country_code") @db.VarChar(2)
+  currencyCode  String    @map("currency_code") @db.VarChar(3)
+  market        String?
+  priceType     String    @map("price_type")
+  amount        Decimal?  @db.Decimal(14, 2)
+  priceMin      Decimal?  @map("price_min") @db.Decimal(14, 2)
+  priceMax      Decimal?  @map("price_max") @db.Decimal(14, 2)
+  city          String?
+  state         String?
+  available     Boolean   @default(false)
+  sourceName    String?   @map("source_name")
+  sourceType    String?   @map("source_type")
+  sourceUrl     String?   @map("source_url")
+  verified      Boolean   @default(false)
+  verifiedAt    DateTime? @map("verified_at")
+  effectiveFrom DateTime  @default(now()) @map("effective_from")
+  effectiveTo   DateTime? @map("effective_to")
+  isCurrent     Boolean   @default(true) @map("is_current")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+  vehicle       AutomobileVehicle @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+
+  @@index([vehicleId, countryCode, isCurrent])
+  @@index([vehicleId, isCurrent])
+  @@map("automobile_vehicle_prices")
+}
+
 model AutomobileVehicleImage {
   id           String    @id @default(uuid()) @db.Uuid
   vehicleId    String    @map("vehicle_id") @db.Uuid
   mediaId      String?   @map("media_id") @db.Uuid
   imageUrl     String?   @map("image_url")
   altText      String?   @map("alt_text")
+  imageType    String?   @map("image_type")
+  sourceUrl    String?   @map("source_url")
+  sourceName   String?   @map("source_name")
+  market       String?   @db.VarChar(2)
+  official     Boolean   @default(false)
   displayOrder Int       @default(0) @map("display_order")
   createdAt    DateTime  @default(now()) @map("created_at")
   updatedAt    DateTime  @updatedAt @map("updated_at")
@@ -3405,6 +3456,606 @@ model AutomobileComparison {
   updatedBy   String?       @map("updated_by") @db.Uuid
   @@index([status])
   @@map("automobile_comparisons")
+}
+
+model AutomobileCarModel {
+  id                 String        @id @default(uuid()) @db.Uuid
+  brandId            String        @map("brand_id") @db.Uuid
+  name               String
+  slug               String
+  generation         String?
+  facelift           String?
+  launchYear         Int?          @map("launch_year")
+  discontinuedYear   Int?          @map("discontinued_year")
+  bodyType           String?       @map("body_type")
+  vehicleSegment     String?       @map("vehicle_segment")
+  description        String?
+  status             PublishStatus @default(DRAFT)
+  seoTitle           String?       @map("seo_title")
+  seoDescription     String?       @map("seo_description")
+  createdAt          DateTime      @default(now()) @map("created_at")
+  updatedAt          DateTime      @updatedAt @map("updated_at")
+  deletedAt          DateTime?     @map("deleted_at")
+  createdBy          String?       @map("created_by") @db.Uuid
+  updatedBy          String?       @map("updated_by") @db.Uuid
+  brand              AutomobileManufacturer @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  variants           AutomobileCatalogVariant[]
+  @@unique([brandId, slug])
+  @@index([brandId, status])
+  @@index([bodyType])
+  @@index([vehicleSegment])
+  @@map("automobile_car_models")
+}
+
+model AutomobileCatalogVariant {
+  id                String        @id @default(uuid()) @db.Uuid
+  modelId           String        @map("model_id") @db.Uuid
+  name              String
+  slug              String
+  variantCode       String?       @map("variant_code")
+  modelYear         Int?          @map("model_year")
+  launchDate        DateTime?     @map("launch_date") @db.Date
+  discontinuedDate  DateTime?     @map("discontinued_date") @db.Date
+  fuelType          String?       @map("fuel_type")
+  transmissionType  String?       @map("transmission_type")
+  drivetrain        String?
+  exShowroomPrice   Decimal?      @map("ex_showroom_price") @db.Decimal(14, 2)
+  status            PublishStatus @default(DRAFT)
+  seoTitle          String?       @map("seo_title")
+  seoDescription    String?       @map("seo_description")
+  sourceName        String?       @map("source_name")
+  sourceUrl         String?       @map("source_url")
+  sourceDate        DateTime?     @map("source_date") @db.Date
+  verified          Boolean       @default(false)
+  verifiedBy        String?       @map("verified_by") @db.Uuid
+  createdAt         DateTime      @default(now()) @map("created_at")
+  updatedAt         DateTime      @updatedAt @map("updated_at")
+  deletedAt         DateTime?     @map("deleted_at")
+  createdBy         String?       @map("created_by") @db.Uuid
+  updatedBy         String?       @map("updated_by") @db.Uuid
+  model             AutomobileCarModel @relation(fields: [modelId], references: [id], onDelete: Cascade)
+  engine            AutomobileEngineSpec?
+  evSpec            AutomobileEvSpec?
+  fuelEconomy       AutomobileFuelEconomy?
+  performance       AutomobilePerformanceSpec?
+  dimensions        AutomobileDimensionSpec?
+  chassis           AutomobileChassisSpec?
+  steering          AutomobileSteeringSpec?
+  wheels            AutomobileWheelSpec?
+  lighting          AutomobileLightingSpec?
+  connectivity      AutomobileConnectivitySpec?
+  warranty          AutomobileWarrantySpec?
+  ownership         AutomobileOwnershipCost?
+  safetyRating      AutomobileSafetyRating?
+  prices            AutomobileVariantPrice[]
+  onRoadPrices      AutomobileOnRoadPrice[]
+  features          AutomobileVariantFeature[]
+  images            AutomobileCatalogImage[]
+  usedVehicles      AutomobileUsedVehicle[]
+  listingVehicles   AutomobileVehicle[]
+  @@unique([modelId, slug])
+  @@index([modelId, status])
+  @@index([fuelType])
+  @@index([transmissionType])
+  @@index([drivetrain])
+  @@index([exShowroomPrice])
+  @@index([modelYear])
+  @@map("automobile_catalog_variants")
+}
+
+model AutomobileEngineSpec {
+  id                 String   @id @default(uuid()) @db.Uuid
+  variantId          String   @unique @map("variant_id") @db.Uuid
+  engineType         String?  @map("engine_type")
+  engineName         String?  @map("engine_name")
+  engineCode         String?  @map("engine_code")
+  displacementCc     Decimal? @map("displacement_cc") @db.Decimal(10, 2)
+  cylinders          Int?
+  valvesPerCylinder  Int?     @map("valves_per_cylinder")
+  totalValves        Int?     @map("total_valves")
+  aspiration         String?
+  fuelSystem         String?  @map("fuel_system")
+  maxPowerBhp        Decimal? @map("max_power_bhp") @db.Decimal(8, 2)
+  maxPowerKw         Decimal? @map("max_power_kw") @db.Decimal(8, 2)
+  maxPowerRpm        Int?     @map("max_power_rpm")
+  maxTorqueNm        Decimal? @map("max_torque_nm") @db.Decimal(8, 2)
+  maxTorqueRpm       Int?     @map("max_torque_rpm")
+  compressionRatio   String?  @map("compression_ratio")
+  boreMm             Decimal? @map("bore_mm") @db.Decimal(8, 2)
+  strokeMm           Decimal? @map("stroke_mm") @db.Decimal(8, 2)
+  startStop          Boolean? @map("start_stop")
+  turbocharger       Boolean?
+  supercharger       Boolean?
+  sourceName         String?  @map("source_name")
+  sourceUrl          String?  @map("source_url")
+  sourceDate         DateTime? @map("source_date") @db.Date
+  verified           Boolean  @default(false)
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+  variant            AutomobileCatalogVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  @@index([displacementCc])
+  @@index([maxPowerBhp])
+  @@map("automobile_engine_specs")
+}
+
+model AutomobileEvSpec {
+  id                         String    @id @default(uuid()) @db.Uuid
+  variantId                  String    @unique @map("variant_id") @db.Uuid
+  batteryCapacityKwh         Decimal?  @map("battery_capacity_kwh") @db.Decimal(8, 2)
+  usableBatteryCapacityKwh   Decimal?  @map("usable_battery_capacity_kwh") @db.Decimal(8, 2)
+  batteryType                String?   @map("battery_type")
+  batteryWarrantyYears       Int?      @map("battery_warranty_years")
+  batteryWarrantyKm          Int?      @map("battery_warranty_km")
+  motorPowerKw               Decimal?  @map("motor_power_kw") @db.Decimal(8, 2)
+  motorPowerBhp              Decimal?  @map("motor_power_bhp") @db.Decimal(8, 2)
+  motorTorqueNm              Decimal?  @map("motor_torque_nm") @db.Decimal(8, 2)
+  rangeClaimedKm             Int?      @map("range_claimed_km")
+  rangeRealWorldKm           Int?      @map("range_real_world_km")
+  chargingType               String?   @map("charging_type")
+  acChargingKw               Decimal?  @map("ac_charging_kw") @db.Decimal(8, 2)
+  dcFastChargingKw           Decimal?  @map("dc_fast_charging_kw") @db.Decimal(8, 2)
+  chargingTimeAc             String?   @map("charging_time_ac")
+  chargingTimeDc             String?   @map("charging_time_dc")
+  dcChargeTime1080           String?   @map("dc_charge_time_10_80")
+  regenerativeBraking        Boolean?  @map("regenerative_braking")
+  chargingConnector          String?   @map("charging_connector")
+  sourceName                 String?   @map("source_name")
+  sourceUrl                  String?   @map("source_url")
+  sourceDate                 DateTime? @map("source_date") @db.Date
+  verified                   Boolean   @default(false)
+  createdAt                  DateTime  @default(now()) @map("created_at")
+  updatedAt                  DateTime  @updatedAt @map("updated_at")
+  variant                    AutomobileCatalogVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  @@index([batteryCapacityKwh])
+  @@index([rangeClaimedKm])
+  @@map("automobile_ev_specs")
+}
+
+model AutomobileFuelEconomy {
+  id                       String    @id @default(uuid()) @db.Uuid
+  variantId                String    @unique @map("variant_id") @db.Uuid
+  claimedMileage           Decimal?  @map("claimed_mileage") @db.Decimal(8, 2)
+  cityMileage              Decimal?  @map("city_mileage") @db.Decimal(8, 2)
+  highwayMileage           Decimal?  @map("highway_mileage") @db.Decimal(8, 2)
+  realWorldMileage         Decimal?  @map("real_world_mileage") @db.Decimal(8, 2)
+  claimedRange             Decimal?  @map("claimed_range") @db.Decimal(8, 2)
+  mileageUnit              String    @default("km/l") @map("mileage_unit")
+  fuelTankCapacityLitre    Decimal?  @map("fuel_tank_capacity_litre") @db.Decimal(8, 2)
+  energyConsumptionKwh100  Decimal?  @map("energy_consumption_kwh_100km") @db.Decimal(8, 2)
+  emissionStandard         String?   @map("emission_standard")
+  co2EmissionGKm           Decimal?  @map("co2_emission_g_km") @db.Decimal(8, 2)
+  sourceName               String?   @map("source_name")
+  sourceUrl                String?   @map("source_url")
+  sourceDate               DateTime? @map("source_date") @db.Date
+  verified                 Boolean   @default(false)
+  createdAt                DateTime  @default(now()) @map("created_at")
+  updatedAt                DateTime  @updatedAt @map("updated_at")
+  variant                  AutomobileCatalogVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  @@index([claimedMileage])
+  @@map("automobile_fuel_economy")
+}
+
+model AutomobilePerformanceSpec {
+  id                     String    @id @default(uuid()) @db.Uuid
+  variantId              String    @unique @map("variant_id") @db.Uuid
+  topSpeedKmph           Decimal?  @map("top_speed_kmph") @db.Decimal(8, 2)
+  acceleration0100Kmph   Decimal?  @map("acceleration_0_100_kmph") @db.Decimal(8, 2)
+  acceleration060Kmph    Decimal?  @map("acceleration_0_60_kmph") @db.Decimal(8, 2)
+  quarterMile            Decimal?  @map("quarter_mile") @db.Decimal(8, 2)
+  braking1000Kmph        Decimal?  @map("braking_100_0_kmph") @db.Decimal(8, 2)
+  powerToWeightRatio     Decimal?  @map("power_to_weight_ratio") @db.Decimal(10, 4)
+  torqueToWeightRatio    Decimal?  @map("torque_to_weight_ratio") @db.Decimal(10, 4)
+  sourceName             String?   @map("source_name")
+  sourceUrl              String?   @map("source_url")
+  sourceDate             DateTime? @map("source_date") @db.Date
+  verified               Boolean   @default(false)
+  createdAt              DateTime  @default(now()) @map("created_at")
+  updatedAt              DateTime  @updatedAt @map("updated_at")
+  variant                AutomobileCatalogVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  @@map("automobile_performance_specs")
+}
+
+model AutomobileDimensionSpec {
+  id                         String    @id @default(uuid()) @db.Uuid
+  variantId                  String    @unique @map("variant_id") @db.Uuid
+  lengthMm                   Int?      @map("length_mm")
+  widthMm                    Int?      @map("width_mm")
+  heightMm                   Int?      @map("height_mm")
+  wheelbaseMm                Int?      @map("wheelbase_mm")
+  groundClearanceMm          Int?      @map("ground_clearance_mm")
+  kerbWeightKg               Int?      @map("kerb_weight_kg")
+  grossWeightKg              Int?      @map("gross_weight_kg")
+  bootSpaceLitre             Int?      @map("boot_space_litre")
+  bootSpaceSeatsFoldedLitre  Int?      @map("boot_space_seats_folded_litre")
+  fuelTankCapacityLitre      Decimal?  @map("fuel_tank_capacity_litre") @db.Decimal(8, 2)
+  turningRadiusM             Decimal?  @map("turning_radius_m") @db.Decimal(6, 2)
+  seatingCapacity            Int?      @map("seating_capacity")
+  numberOfDoors              Int?      @map("number_of_doors")
+  sourceName                 String?   @map("source_name")
+  sourceUrl                  String?   @map("source_url")
+  sourceDate                 DateTime? @map("source_date") @db.Date
+  verified                   Boolean   @default(false)
+  createdAt                  DateTime  @default(now()) @map("created_at")
+  updatedAt                  DateTime  @updatedAt @map("updated_at")
+  variant                    AutomobileCatalogVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  @@index([seatingCapacity])
+  @@index([groundClearanceMm])
+  @@index([bootSpaceLitre])
+  @@map("automobile_dimension_specs")
+}
+
+model AutomobileChassisSpec {
+  id                    String    @id @default(uuid()) @db.Uuid
+  variantId             String    @unique @map("variant_id") @db.Uuid
+  frontSuspension       String?   @map("front_suspension")
+  rearSuspension        String?   @map("rear_suspension")
+  frontSuspensionType   String?   @map("front_suspension_type")
+  rearSuspensionType    String?   @map("rear_suspension_type")
+  frontBrakeType        String?   @map("front_brake_type")
+  rearBrakeType         String?   @map("rear_brake_type")
+  parkingBrakeType      String?   @map("parking_brake_type")
+  createdAt             DateTime  @default(now()) @map("created_at")
+  updatedAt             DateTime  @updatedAt @map("updated_at")
+  variant               AutomobileCatalogVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  @@map("automobile_chassis_specs")
+}
+
+model AutomobileSteeringSpec {
+  id                   String    @id @default(uuid()) @db.Uuid
+  variantId            String    @unique @map("variant_id") @db.Uuid
+  steeringType         String?   @map("steering_type")
+  steeringAssistance   String?   @map("steering_assistance")
+  steeringAdjustment   String?   @map("steering_adjustment")
+  steeringTurns        Decimal?  @map("steering_turns") @db.Decimal(6, 2)
+  minimumTurningRadius Decimal?  @map("minimum_turning_radius") @db.Decimal(6, 2)
+  createdAt            DateTime  @default(now()) @map("created_at")
+  updatedAt            DateTime  @updatedAt @map("updated_at")
+  variant              AutomobileCatalogVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  @@map("automobile_steering_specs")
+}
+
+model AutomobileWheelSpec {
+  id               String    @id @default(uuid()) @db.Uuid
+  variantId        String    @unique @map("variant_id") @db.Uuid
+  wheelSizeInches  Decimal?  @map("wheel_size_inches") @db.Decimal(6, 2)
+  wheelMaterial    String?   @map("wheel_material")
+  tyreSizeFront    String?   @map("tyre_size_front")
+  tyreSizeRear     String?   @map("tyre_size_rear")
+  spareWheelSize   String?   @map("spare_wheel_size")
+  spareWheelType   String?   @map("spare_wheel_type")
+  tyreProfile      String?   @map("tyre_profile")
+  tyreWidth        String?   @map("tyre_width")
+  alloyWheels      Boolean?  @map("alloy_wheels")
+  runFlatTyres     Boolean?  @map("run_flat_tyres")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+  variant          AutomobileCatalogVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  @@map("automobile_wheel_specs")
+}
+
+model AutomobileLightingSpec {
+  id                     String    @id @default(uuid()) @db.Uuid
+  variantId              String    @unique @map("variant_id") @db.Uuid
+  headlampType           String?   @map("headlamp_type")
+  headlampProjector      Boolean?  @map("headlamp_projector")
+  headlampLed            Boolean?  @map("headlamp_led")
+  headlampMatrixLed      Boolean?  @map("headlamp_matrix_led")
+  adaptiveHeadlights     Boolean?  @map("adaptive_headlights")
+  automaticHighBeam      Boolean?  @map("automatic_high_beam")
+  daytimeRunningLights   Boolean?  @map("daytime_running_lights")
+  fogLampType            String?   @map("fog_lamp_type")
+  tailLampType           String?   @map("tail_lamp_type")
+  ambientLighting        Boolean?  @map("ambient_lighting")
+  createdAt              DateTime  @default(now()) @map("created_at")
+  updatedAt              DateTime  @updatedAt @map("updated_at")
+  variant                AutomobileCatalogVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  @@map("automobile_lighting_specs")
+}
+
+model AutomobileConnectivitySpec {
+  id                     String    @id @default(uuid()) @db.Uuid
+  variantId              String    @unique @map("variant_id") @db.Uuid
+  connectedCar           Boolean?  @map("connected_car")
+  mobileApp              Boolean?  @map("mobile_app")
+  gps                    Boolean?
+  vehicleTracking        Boolean?  @map("vehicle_tracking")
+  geofencing             Boolean?
+  remoteLockUnlock       Boolean?  @map("remote_lock_unlock")
+  remoteHorn             Boolean?  @map("remote_horn")
+  remoteLight            Boolean?  @map("remote_light")
+  remoteVehicleStatus    Boolean?  @map("remote_vehicle_status")
+  emergencyAssistance    Boolean?  @map("emergency_assistance")
+  stolenVehicleTracking  Boolean?  @map("stolen_vehicle_tracking")
+  esim                   Boolean?
+  wifiHotspot            Boolean?  @map("wifi_hotspot")
+  createdAt              DateTime  @default(now()) @map("created_at")
+  updatedAt              DateTime  @updatedAt @map("updated_at")
+  variant                AutomobileCatalogVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  @@map("automobile_connectivity_specs")
+}
+
+model AutomobileWarrantySpec {
+  id                     String    @id @default(uuid()) @db.Uuid
+  variantId              String    @unique @map("variant_id") @db.Uuid
+  standardWarrantyYears  Int?      @map("standard_warranty_years")
+  standardWarrantyKm     Int?      @map("standard_warranty_km")
+  engineWarrantyYears    Int?      @map("engine_warranty_years")
+  engineWarrantyKm       Int?      @map("engine_warranty_km")
+  batteryWarrantyYears   Int?      @map("battery_warranty_years")
+  batteryWarrantyKm      Int?      @map("battery_warranty_km")
+  extendedWarranty       Boolean?  @map("extended_warranty")
+  warrantyNotes          String?   @map("warranty_notes")
+  createdAt              DateTime  @default(now()) @map("created_at")
+  updatedAt              DateTime  @updatedAt @map("updated_at")
+  variant                AutomobileCatalogVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  @@map("automobile_warranty_specs")
+}
+
+model AutomobileOwnershipCost {
+  id                            String    @id @default(uuid()) @db.Uuid
+  variantId                     String    @unique @map("variant_id") @db.Uuid
+  estimatedAnnualServiceCost    Decimal?  @map("estimated_annual_service_cost") @db.Decimal(12, 2)
+  serviceIntervalKm             Int?      @map("service_interval_km")
+  serviceIntervalMonths         Int?      @map("service_interval_months")
+  warrantyYears                 Int?      @map("warranty_years")
+  warrantyKm                    Int?      @map("warranty_km")
+  extendedWarrantyAvailable     Boolean?  @map("extended_warranty_available")
+  roadsideAssistance            Boolean?  @map("roadside_assistance")
+  roadsideAssistanceYears       Int?      @map("roadside_assistance_years")
+  insuranceEstimate             Decimal?  @map("insurance_estimate") @db.Decimal(12, 2)
+  tyreCost                      Decimal?  @map("tyre_cost") @db.Decimal(12, 2)
+  batteryCost                   Decimal?  @map("battery_cost") @db.Decimal(12, 2)
+  brakePadCost                  Decimal?  @map("brake_pad_cost") @db.Decimal(12, 2)
+  estimatedMaintenance5Year     Decimal?  @map("estimated_maintenance_5_year") @db.Decimal(12, 2)
+  estimatedFuelCostAnnual       Decimal?  @map("estimated_fuel_cost_annual") @db.Decimal(12, 2)
+  estimatedEvChargingCostAnnual Decimal?  @map("estimated_ev_charging_cost_annual") @db.Decimal(12, 2)
+  source                        String?
+  sourceDate                    DateTime? @map("source_date") @db.Date
+  assumptions                   String?
+  createdAt                     DateTime  @default(now()) @map("created_at")
+  updatedAt                     DateTime  @updatedAt @map("updated_at")
+  variant                       AutomobileCatalogVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  @@map("automobile_ownership_costs")
+}
+
+model AutomobileSafetyRating {
+  id                       String    @id @default(uuid()) @db.Uuid
+  variantId                String    @unique @map("variant_id") @db.Uuid
+  ncapRating               Decimal?  @map("ncap_rating") @db.Decimal(3, 1)
+  ncapRatingBody           String?   @map("ncap_rating_body")
+  ncapAdultOccupantScore   Decimal?  @map("ncap_adult_occupant_score") @db.Decimal(6, 2)
+  ncapChildOccupantScore   Decimal?  @map("ncap_child_occupant_score") @db.Decimal(6, 2)
+  ncapSafetyAssistScore    Decimal?  @map("ncap_safety_assist_score") @db.Decimal(6, 2)
+  ncapYear                 Int?      @map("ncap_year")
+  ratingAgency             String?   @map("rating_agency")
+  sourceName               String?   @map("source_name")
+  sourceUrl                String?   @map("source_url")
+  createdAt                DateTime  @default(now()) @map("created_at")
+  updatedAt                DateTime  @updatedAt @map("updated_at")
+  variant                  AutomobileCatalogVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  @@index([ncapRating])
+  @@map("automobile_safety_ratings")
+}
+
+model AutomobileVariantPrice {
+  id              String    @id @default(uuid()) @db.Uuid
+  variantId       String    @map("variant_id") @db.Uuid
+  exShowroomPrice Decimal?  @map("ex_showroom_price") @db.Decimal(14, 2)
+  basePrice       Decimal?  @map("base_price") @db.Decimal(14, 2)
+  topPrice        Decimal?  @map("top_price") @db.Decimal(14, 2)
+  city            String?
+  state           String?
+  effectiveFrom   DateTime  @map("effective_from") @db.Date
+  effectiveTo     DateTime? @map("effective_to") @db.Date
+  priceSource     String?   @map("price_source")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  variant         AutomobileCatalogVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  @@index([variantId, city, effectiveFrom])
+  @@index([exShowroomPrice])
+  @@map("automobile_variant_prices")
+}
+
+model AutomobileOnRoadPrice {
+  id               String    @id @default(uuid()) @db.Uuid
+  variantId        String    @map("variant_id") @db.Uuid
+  city             String
+  state            String?
+  exShowroom       Decimal?  @map("ex_showroom") @db.Decimal(14, 2)
+  roadTax          Decimal?  @map("road_tax") @db.Decimal(14, 2)
+  registrationFee  Decimal?  @map("registration_fee") @db.Decimal(14, 2)
+  insurance        Decimal?
+  fastag           Decimal?
+  handlingCharges  Decimal?  @map("handling_charges") @db.Decimal(14, 2)
+  accessories      Decimal?
+  otherCharges     Decimal?  @map("other_charges") @db.Decimal(14, 2)
+  discounts        Decimal?
+  onRoadPrice      Decimal?  @map("on_road_price") @db.Decimal(14, 2)
+  effectiveFrom    DateTime  @map("effective_from") @db.Date
+  createdAt        DateTime  @default(now()) @map("created_at")
+  variant          AutomobileCatalogVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  @@index([variantId, city])
+  @@map("automobile_on_road_prices")
+}
+
+model AutomobileFeatureCategory {
+  id            String    @id @default(uuid()) @db.Uuid
+  name          String
+  slug          String    @unique
+  displayOrder  Int       @default(0) @map("display_order")
+  status        String    @default("ACTIVE")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+  features      AutomobileFeature[]
+  @@map("automobile_feature_categories")
+}
+
+model AutomobileFeature {
+  id                  String    @id @default(uuid()) @db.Uuid
+  categoryId          String    @map("category_id") @db.Uuid
+  name                String
+  slug                String    @unique
+  dataType            String    @map("data_type")
+  unit                String?
+  description         String?
+  comparisonEnabled   Boolean   @default(true) @map("comparison_enabled")
+  filterEnabled       Boolean   @default(true) @map("filter_enabled")
+  displayOrder        Int       @default(0) @map("display_order")
+  status              String    @default("ACTIVE")
+  createdAt           DateTime  @default(now()) @map("created_at")
+  updatedAt           DateTime  @updatedAt @map("updated_at")
+  category            AutomobileFeatureCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  values              AutomobileVariantFeature[]
+  @@index([categoryId, displayOrder])
+  @@index([filterEnabled, status])
+  @@map("automobile_features")
+}
+
+model AutomobileVariantFeature {
+  id            String    @id @default(uuid()) @db.Uuid
+  variantId     String    @map("variant_id") @db.Uuid
+  featureId     String    @map("feature_id") @db.Uuid
+  value         String?
+  numericValue  Decimal?  @map("numeric_value") @db.Decimal(14, 4)
+  booleanValue  Boolean?  @map("boolean_value")
+  displayValue  String?   @map("display_value")
+  unit          String?
+  source        String?
+  sourceDate    DateTime? @map("source_date") @db.Date
+  variant       AutomobileCatalogVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  feature       AutomobileFeature @relation(fields: [featureId], references: [id], onDelete: Cascade)
+  @@unique([variantId, featureId])
+  @@index([featureId, numericValue])
+  @@index([featureId, booleanValue])
+  @@map("automobile_variant_features")
+}
+
+model AutomobileCatalogImage {
+  id           String    @id @default(uuid()) @db.Uuid
+  variantId    String    @map("variant_id") @db.Uuid
+  imageUrl     String    @map("image_url")
+  imageType    String    @default("Other") @map("image_type")
+  displayOrder Int       @default(0) @map("display_order")
+  isPrimary    Boolean   @default(false) @map("is_primary")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  variant      AutomobileCatalogVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  @@index([variantId, displayOrder])
+  @@map("automobile_catalog_images")
+}
+
+model AutomobileUsedVehicle {
+  id                     String    @id @default(uuid()) @db.Uuid
+  variantId              String    @map("variant_id") @db.Uuid
+  sellerId               String?   @map("seller_id") @db.Uuid
+  registrationNumber     String?   @map("registration_number")
+  registrationDate       DateTime? @map("registration_date") @db.Date
+  manufacturingDate      DateTime? @map("manufacturing_date") @db.Date
+  vin                    String?
+  engineNumber           String?   @map("engine_number")
+  chassisNumber          String?   @map("chassis_number")
+  color                  String?
+  odometerKm             Int?      @map("odometer_km")
+  ownerCount             Int?      @map("owner_count")
+  insuranceExpiry        DateTime? @map("insurance_expiry") @db.Date
+  pucExpiry              DateTime? @map("puc_expiry") @db.Date
+  rcStatus               String?   @map("rc_status")
+  loanStatus             String?   @map("loan_status")
+  accidentHistory        Boolean?  @map("accident_history")
+  serviceHistoryAvailable Boolean? @map("service_history_available")
+  serviceHistoryType     String?   @map("service_history_type")
+  vehicleCondition       String?   @map("vehicle_condition")
+  askingPrice            Decimal?  @map("asking_price") @db.Decimal(14, 2)
+  negotiable             Boolean   @default(true)
+  city                   String?
+  locality               String?
+  pincode                String?
+  latitude               Decimal?  @db.Decimal(10, 7)
+  longitude              Decimal?  @db.Decimal(10, 7)
+  listingStatus          String    @default("DRAFT") @map("listing_status")
+  createdAt              DateTime  @default(now()) @map("created_at")
+  updatedAt              DateTime  @updatedAt @map("updated_at")
+  deletedAt              DateTime? @map("deleted_at")
+  createdBy              String?   @map("created_by") @db.Uuid
+  updatedBy              String?   @map("updated_by") @db.Uuid
+  variant                AutomobileCatalogVariant @relation(fields: [variantId], references: [id], onDelete: Restrict)
+  condition              AutomobileUsedCondition?
+  serviceHistory         AutomobileUsedServiceRecord[]
+  documents              AutomobileUsedDocument[]
+  images                 AutomobileUsedImage[]
+  @@index([variantId, listingStatus])
+  @@index([city, listingStatus])
+  @@index([askingPrice])
+  @@index([createdAt])
+  @@map("automobile_used_vehicles")
+}
+
+model AutomobileUsedCondition {
+  id                      String   @id @default(uuid()) @db.Uuid
+  vehicleId               String   @unique @map("vehicle_id") @db.Uuid
+  overallCondition        String?  @map("overall_condition")
+  exteriorCondition       String?  @map("exterior_condition")
+  interiorCondition       String?  @map("interior_condition")
+  engineCondition         String?  @map("engine_condition")
+  transmissionCondition   String?  @map("transmission_condition")
+  suspensionCondition     String?  @map("suspension_condition")
+  tyreCondition           String?  @map("tyre_condition")
+  brakeCondition          String?  @map("brake_condition")
+  electricalCondition     String?  @map("electrical_condition")
+  acCondition             String?  @map("ac_condition")
+  accidentHistory         Boolean? @map("accident_history")
+  floodDamage             Boolean? @map("flood_damage")
+  fireDamage              Boolean? @map("fire_damage")
+  majorRepair             Boolean? @map("major_repair")
+  repainting              Boolean?
+  panelReplacement        Boolean? @map("panel_replacement")
+  createdAt               DateTime @default(now()) @map("created_at")
+  updatedAt               DateTime @updatedAt @map("updated_at")
+  vehicle                 AutomobileUsedVehicle @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  @@map("automobile_used_conditions")
+}
+
+model AutomobileUsedServiceRecord {
+  id            String    @id @default(uuid()) @db.Uuid
+  vehicleId     String    @map("vehicle_id") @db.Uuid
+  serviceDate   DateTime  @map("service_date") @db.Date
+  serviceKm     Int?      @map("service_km")
+  serviceCenter String?   @map("service_center")
+  serviceType   String    @map("service_type")
+  amount        Decimal?  @db.Decimal(12, 2)
+  description   String?
+  invoiceUrl    String?   @map("invoice_url")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  vehicle       AutomobileUsedVehicle @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  @@index([vehicleId, serviceDate])
+  @@map("automobile_used_service_history")
+}
+
+model AutomobileUsedDocument {
+  id                 String    @id @default(uuid()) @db.Uuid
+  vehicleId          String    @map("vehicle_id") @db.Uuid
+  documentType       String    @map("document_type")
+  documentUrl        String?   @map("document_url")
+  documentNumber     String?   @map("document_number")
+  issueDate          DateTime? @map("issue_date") @db.Date
+  expiryDate         DateTime? @map("expiry_date") @db.Date
+  verificationStatus String    @default("UNVERIFIED") @map("verification_status")
+  verifiedAt         DateTime? @map("verified_at")
+  createdAt          DateTime  @default(now()) @map("created_at")
+  vehicle            AutomobileUsedVehicle @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  @@index([vehicleId])
+  @@map("automobile_used_documents")
+}
+
+model AutomobileUsedImage {
+  id           String   @id @default(uuid()) @db.Uuid
+  vehicleId    String   @map("vehicle_id") @db.Uuid
+  imageUrl     String   @map("image_url")
+  imageType    String   @default("Other") @map("image_type")
+  displayOrder Int      @default(0) @map("display_order")
+  isPrimary    Boolean  @default(false) @map("is_primary")
+  createdAt    DateTime @default(now()) @map("created_at")
+  vehicle      AutomobileUsedVehicle @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  @@index([vehicleId, displayOrder])
+  @@map("automobile_used_images")
 }
 
 model Car {

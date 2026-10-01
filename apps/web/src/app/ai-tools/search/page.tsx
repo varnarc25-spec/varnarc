@@ -6,11 +6,15 @@ import { AiToolCard } from '@/components/ai-tools/ai-tool-card';
 import { AiToolsSearchForm } from '@/components/ai-tools/ai-tools-search-form';
 import { unwrapList, type AiToolListItem } from '@/components/ai-tools/types';
 import { apiPublicFetch } from '@/services/api-client';
+import { aiCategoryCopy } from '@/lib/editorial-copy';
+
+const searchCopy = aiCategoryCopy('search', 'Search');
 
 export const metadata: Metadata = {
-  title: 'Search AI Tools',
-  description: 'Filter AI tools by category, pricing, free plan, and API availability.',
+  title: searchCopy.title,
+  description: searchCopy.description,
   alternates: { canonical: '/ai-tools/search' },
+  robots: { index: true, follow: true },
 };
 
 export const revalidate = 60;
@@ -44,8 +48,8 @@ export default async function AiToolsSearchPage({ searchParams }: Props) {
 
   return (
     <ContentLayout
-      title="Search AI Tools"
-      description="Find tools by name, category, pricing model, and capabilities."
+      title={searchCopy.title}
+      description={searchCopy.intro}
       breadcrumbs={[
         { label: 'Home', href: '/' },
         { label: 'AI Tools', href: '/ai-tools' },

@@ -123,7 +123,11 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
       <html lang="en" className={`${sans.variable} ${display.variable}`} suppressHydrationWarning>
         <body className={sans.className}>
           <AppProviders themeStyleBlock={undefined} isAuthenticated={false}>
-            <SiteHeader user={null} authConfigured={false} navItems={[{ label: 'Home', href: '/' }]} />
+            <SiteHeader
+              user={null}
+              authConfigured={false}
+              navItems={[{ label: 'Home', href: '/' }]}
+            />
             <main id="main-content">{children}</main>
             <SiteFooter />
           </AppProviders>
@@ -149,6 +153,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
   const footerTokens = activeTheme?.tokens?.footer ?? {};
   const stickyHeader = activeTheme?.tokens?.navigation?.stickyHeader !== false;
   const adsenseClient = getAdsenseClientFromConfig(adsenseConfig);
+  const injectMarketingTags = process.env.NODE_ENV === 'production';
   const fontsHref = googleFontsHref(
     activeTheme?.googleFonts ?? activeTheme?.fonts?.googleFonts ?? undefined,
   );
@@ -156,7 +161,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
   return (
     <html lang="en" className={`${sans.variable} ${display.variable}`} suppressHydrationWarning>
       <head>
-        {gaId ? <GoogleAnalyticsHead gaId={gaId} /> : null}
+        {injectMarketingTags && gaId ? <GoogleAnalyticsHead gaId={gaId} /> : null}
         {(() => {
           const runtimeEnvScript = getRuntimePublicEnvScript();
           return runtimeEnvScript ? (
@@ -170,7 +175,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
             <link rel="stylesheet" href={fontsHref} />
           </>
         ) : null}
-        {adsenseClient ? (
+        {injectMarketingTags && adsenseClient ? (
           <>
             <meta name="google-adsense-account" content={adsenseClient} />
             <script

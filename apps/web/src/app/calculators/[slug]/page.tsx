@@ -16,6 +16,7 @@ import {
 } from '@/lib/automobile/seo-pages';
 import { AUTOMOBILE_CALCULATOR_LINKS } from '@/services/automobile';
 import { buildSeoMetadata } from '@/lib/seo-metadata';
+import { breadcrumbJsonLd } from '@/lib/seo-json-ld';
 import { apiPublicFetch, ApiError } from '@/services/api-client';
 import { RecordContentView } from '@/components/record-content-view';
 import { SectionErrorBoundary } from '@/components/shared/section-error-boundary';
@@ -212,14 +213,11 @@ export default async function CalculatorDetailPage({ params, searchParams }: Pro
   const jsonLd = {
     '@context': 'https://schema.org',
     '@graph': [
-      {
-        '@type': 'BreadcrumbList',
-        itemListElement: [
-          { '@type': 'ListItem', position: 1, name: 'Home', item: '/' },
-          { '@type': 'ListItem', position: 2, name: 'Calculators', item: '/calculators' },
-          { '@type': 'ListItem', position: 3, name },
-        ],
-      },
+      breadcrumbJsonLd([
+        { name: 'Home', url: '/' },
+        { name: 'Calculators', url: '/calculators' },
+        { name, url: `/calculators/${slug}` },
+      ]),
       {
         '@type': 'FAQPage',
         mainEntity: faq.map((item) => ({

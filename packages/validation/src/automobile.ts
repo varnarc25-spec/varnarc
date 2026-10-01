@@ -15,8 +15,19 @@ export const createAutomobileManufacturerSchema = z.object({
   country: z.string().max(80).optional().nullable(),
   foundedYear: z.number().int().min(1800).max(2100).optional().nullable(),
   website: z.string().url().max(500).optional().nullable().or(z.literal('')),
+  tagline: z.string().max(160).optional().nullable(),
   description: z.string().max(5000).optional().nullable(),
   featured: z.boolean().default(false),
+  availableInIndia: z.boolean().default(false),
+  indiaAvailabilityStatus: z.string().max(80).optional().nullable(),
+  indiaWebsite: z.string().url().max(500).optional().nullable().or(z.literal('')),
+  indiaVerifiedDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional()
+    .nullable()
+    .or(z.literal('')),
+  indiaVerificationNote: z.string().max(2000).optional().nullable(),
   status: publishStatusSchema.default('DRAFT'),
   seoTitle: z.string().max(200).optional().nullable(),
   seoDescription: z.string().max(500).optional().nullable(),
@@ -65,6 +76,12 @@ export const createAutomobileVehicleSchema = z.object({
   expertRating: z.number().min(0).max(5).optional().nullable(),
   featured: z.boolean().default(false),
   sponsored: z.boolean().default(false),
+  availableInIndia: z.boolean().optional(),
+  indiaAvailability: z
+    .enum(['EXACT_VARIANT', 'MODEL_ONLY', 'NOT_AVAILABLE', 'UNVERIFIED'])
+    .optional()
+    .nullable(),
+  primaryMarket: z.enum(['IN', 'GB', 'US', 'AE', 'AU', 'DE', 'JP']).optional(),
   status: publishStatusSchema.default('DRAFT'),
   seoTitle: z.string().max(200).optional().nullable(),
   seoDescription: z.string().max(500).optional().nullable(),
@@ -129,9 +146,17 @@ export const automobileListQuerySchema = cursorPaginationQuerySchema.extend({
   minGroundClearance: z.coerce.number().min(0).optional(),
   minEngineCc: z.coerce.number().min(0).optional(),
   maxEngineCc: z.coerce.number().min(0).optional(),
+  modelYear: z.coerce.number().int().min(1950).max(2100).optional(),
   modelYearFrom: z.coerce.number().int().min(1950).max(2100).optional(),
+  modelYearTo: z.coerce.number().int().min(1950).max(2100).optional(),
   launchMode: z.enum(['current', 'upcoming', 'launches']).optional(),
   groupByModel: z.coerce.boolean().optional(),
+  availableInIndia: z.preprocess((value) => {
+    if (value === undefined || value === null || value === '') return undefined;
+    if (value === true || value === 'true' || value === '1') return true;
+    if (value === false || value === 'false' || value === '0') return false;
+    return value;
+  }, z.boolean().optional()),
   sort: z.enum(['featured', 'price_asc', 'price_desc', 'mileage', 'newest']).optional(),
   page: z.coerce.number().int().min(1).optional(),
 });
@@ -169,6 +194,10 @@ export const automobileRefreshPricesSchema = z.object({
   limit: z.coerce.number().int().min(1).max(20).optional().default(10),
 });
 
+export const automobileExistingSlugsSchema = z.object({
+  slugs: z.array(z.string().trim().min(1).max(200)).min(1).max(500),
+});
+
 export type CreateAutomobileManufacturerInput = z.infer<typeof createAutomobileManufacturerSchema>;
 export type UpdateAutomobileManufacturerInput = z.infer<typeof updateAutomobileManufacturerSchema>;
 export type CreateAutomobileVehicleInput = z.infer<typeof createAutomobileVehicleSchema>;
@@ -182,3 +211,4 @@ export type AutomobileAffiliateClickInput = z.infer<typeof automobileAffiliateCl
 export type AutomobileAffiliateLeadInput = z.infer<typeof automobileAffiliateLeadSchema>;
 export type AutomobileGalleryImageInput = z.infer<typeof automobileGalleryImageSchema>;
 export type AutomobileRefreshPricesInput = z.infer<typeof automobileRefreshPricesSchema>;
+export type AutomobileExistingSlugsInput = z.infer<typeof automobileExistingSlugsSchema>;

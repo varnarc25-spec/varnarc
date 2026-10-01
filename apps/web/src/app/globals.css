@@ -256,7 +256,41 @@ select:focus-visible {
   line-height: 1.5;
 }
 
-/* CMP cookie banner — less dominant on finance pages */
+/* CMP: never dim the hero. Force every layout to a bottom bar. */
+.cmp-banner-root .cmp-overlay {
+  display: none !important;
+}
+
+.cmp-banner-root .cmp-banner {
+  position: fixed !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  top: auto !important;
+  transform: none !important;
+  width: 100% !important;
+  max-width: none !important;
+  inset: auto 0 0 0 !important;
+  border-radius: 0 !important;
+  z-index: 2147483647;
+}
+
+.cmp-banner-root .cmp-layout-center_modal,
+.cmp-banner-root .cmp-layout-multi_step_modal,
+.cmp-banner-root .cmp-layout-fullscreen,
+.cmp-banner-root .cmp-layout-side_panel,
+.cmp-banner-root .cmp-layout-top_bar,
+.cmp-banner-root .cmp-layout-corner_popup,
+.cmp-banner-root .cmp-layout-compact {
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  top: auto !important;
+  transform: none !important;
+  width: 100% !important;
+  max-height: min(40vh, 280px);
+  overflow: auto;
+}
 .cmp-banner-root {
   --cmp-font-size: 14px;
   --cmp-spacing: 0.75rem;

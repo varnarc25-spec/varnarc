@@ -40,7 +40,15 @@ export default async function VehicleOnRoadPricePage({ params }: Props) {
     notFound();
   }
 
-  const ex = vehicle.exShowroomPrice != null ? Number(vehicle.exShowroomPrice) : null;
+  const verifiedIndia = vehicle.pricingView?.currentPrice;
+  const ex =
+    verifiedIndia?.currency === 'INR' && verifiedIndia.verified && verifiedIndia.amount != null
+      ? Number(verifiedIndia.amount)
+      : vehicle.pricingView?.otherMarkets?.some((price) => price.market === 'GB')
+        ? null
+        : vehicle.exShowroomPrice != null
+          ? Number(vehicle.exShowroomPrice)
+          : null;
   const hasPrice = ex != null && Number.isFinite(ex) && ex > 0;
   const rto = hasPrice ? ex * AUTOMOBILE_ONROAD_METHOD.rtoRate : null;
   const ins = hasPrice ? ex * AUTOMOBILE_ONROAD_METHOD.insuranceRate : null;
@@ -87,7 +95,7 @@ export default async function VehicleOnRoadPricePage({ params }: Props) {
         </dl>
       ) : (
         <p className="text-sm">
-          No published ex-showroom on this record.{' '}
+          No verified Indian ex-showroom price is stored for this vehicle.{' '}
           <Link className="text-[#ea580c] underline" href="/automobile/calculators/on-road-price">
             Open the calculator
           </Link>

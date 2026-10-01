@@ -1,11 +1,11 @@
-import { Prisma, type PrismaClient, type SearchEntityType, type PublishStatus } from '@prisma/client';
-import { BaseRepository } from '../base.repository';
 import {
-  decodeCursor,
-  encodeCursor,
-  normalizeLimit,
-  toCursorPayload,
-} from '../../pagination';
+  Prisma,
+  type PrismaClient,
+  type SearchEntityType,
+  type PublishStatus,
+} from '@prisma/client';
+import { BaseRepository } from '../base.repository';
+import { decodeCursor, encodeCursor, normalizeLimit, toCursorPayload } from '../../pagination';
 
 const REINDEX_BATCH = 1000;
 
@@ -82,12 +82,14 @@ function toDecimal(value: number | string | null | undefined): Prisma.Decimal | 
   return new Prisma.Decimal(value);
 }
 
-function authorLabel(user?: {
-  displayName?: string | null;
-  firstName?: string | null;
-  lastName?: string | null;
-  email?: string | null;
-} | null): string | null {
+function authorLabel(
+  user?: {
+    displayName?: string | null;
+    firstName?: string | null;
+    lastName?: string | null;
+    email?: string | null;
+  } | null,
+): string | null {
   if (!user) return null;
   if (user.displayName?.trim()) return user.displayName.trim();
   const name = [user.firstName, user.lastName].filter(Boolean).join(' ').trim();
@@ -786,7 +788,7 @@ export class SearchIndexRepository extends BaseRepository {
     n += await this.forEachBatch(
       ({ take, skip }) =>
         this.db.automobileVehicle.findMany({
-          where: { deletedAt: null, status: 'PUBLISHED' },
+          where: { deletedAt: null, status: 'PUBLISHED', availableInIndia: true },
           take,
           skip,
           orderBy: { id: 'asc' },
@@ -877,9 +879,7 @@ export class SearchIndexRepository extends BaseRepository {
         }),
       async (b) => {
         const loc = b.locations[0];
-        const location = loc
-          ? [loc.city, loc.state, loc.country].filter(Boolean).join(', ')
-          : null;
+        const location = loc ? [loc.city, loc.state, loc.country].filter(Boolean).join(', ') : null;
         await this.upsert({
           entityType: 'DEALER',
           entityId: b.id,
@@ -968,9 +968,7 @@ export class SearchIndexRepository extends BaseRepository {
         }),
       async (b) => {
         const loc = b.locations[0];
-        const location = loc
-          ? [loc.city, loc.state, loc.country].filter(Boolean).join(', ')
-          : null;
+        const location = loc ? [loc.city, loc.state, loc.country].filter(Boolean).join(', ') : null;
         await this.upsert({
           entityType: 'BUSINESS',
           entityId: b.id,

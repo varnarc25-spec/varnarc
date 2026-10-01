@@ -5,11 +5,15 @@ import { EmptyState } from '@/components/shared/empty-state';
 import { AiToolCard } from '@/components/ai-tools/ai-tool-card';
 import { unwrapList, type AiToolListItem } from '@/components/ai-tools/types';
 import { apiPublicFetch } from '@/services/api-client';
+import { aiCategoryCopy } from '@/lib/editorial-copy';
+
+const trendingCopy = aiCategoryCopy('trending', 'Trending');
 
 export const metadata: Metadata = {
-  title: 'Trending AI Tools',
-  description: 'Most popular AI tools on Varnarc.',
+  title: trendingCopy.title,
+  description: trendingCopy.description,
   alternates: { canonical: '/ai-tools/trending' },
+  robots: { index: true, follow: true },
 };
 
 export const revalidate = 60;
@@ -23,8 +27,8 @@ export default async function AiToolsTrendingPage() {
 
   return (
     <ContentLayout
-      title="Trending AI Tools"
-      description="Popular tools ranked by views and engagement."
+      title={trendingCopy.title}
+      description={trendingCopy.intro}
       breadcrumbs={[
         { label: 'Home', href: '/' },
         { label: 'AI Tools', href: '/ai-tools' },

@@ -1,12 +1,15 @@
 ---
 description: Prisma schema and repository conventions
 globs: packages/database/**/*
-alwaysApply: false
+alwaysApply: true
 ---
 
 # Database Rules
 
 - Schema: `packages/database/prisma/schema.prisma`
+- **Always apply schema changes to live VPS Postgres** (`prisma migrate deploy`). Local `:5432` is not the product database.
+- Live from a laptop: SSH tunnel `5433 → VPS 127.0.0.1:5432`, then `DATABASE_DIRECT_URL` / `scripts/db-migrate-live.sh`. Never `migrate:dev` against live.
+- On the VPS: `scripts/vps/migrate.sh` (same `DATABASE_URL` as Compose).
 - UUID PKs, `snake_case` columns (`@map`), soft deletes (`deletedAt`) where applicable
 - Migrations in `prisma/migrations/` — never edit applied migrations
 - Repositories in `packages/database/src/repositories/`; export via `createRepositories()`

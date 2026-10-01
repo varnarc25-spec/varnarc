@@ -6,16 +6,10 @@ import Link from 'next/link';
 import { Card, CardDescription, CardHeader, CardTitle } from '@varnarc/ui';
 import { Car } from 'lucide-react';
 import { getApiBaseUrl } from '@/services/api-client';
+import { formatIndianVehiclePrice } from '@varnarc/validation';
 
 export function formatAutomobileInr(value: number | string | null | undefined): string | null {
-  if (value == null || value === '') return null;
-  const n = Number(value);
-  if (!Number.isFinite(n)) return `₹${value}`;
-  return new Intl.NumberFormat('en-IN', {
-    style: 'currency',
-    currency: 'INR',
-    maximumFractionDigits: 0,
-  }).format(n);
+  return formatIndianVehiclePrice(value);
 }
 
 export type AutomobileVehicleCardData = {
@@ -52,9 +46,7 @@ export function AutomobileVehicleCard({
 }) {
   const image = vehicle.imageUrl || vehicle.images?.find((img) => img?.imageUrl)?.imageUrl || null;
   const mileage =
-    vehicle.mileage != null && vehicle.mileage !== ''
-      ? `${vehicle.mileage} km/l`
-      : null;
+    vehicle.mileage != null && vehicle.mileage !== '' ? `${vehicle.mileage} km/l` : null;
   const specs = [
     vehicle.fuelType,
     vehicle.bodyType,
@@ -75,11 +67,11 @@ export function AutomobileVehicleCard({
     <Link href={href} className="block transition hover:opacity-95">
       <Card className="h-full overflow-hidden">
         {image ? (
-            <div className="aspect-video bg-slate-100">
+          <div className="aspect-video bg-slate-100">
             <img src={image} alt="" className="h-full w-full object-cover" />
           </div>
         ) : (
-            <div className="flex aspect-video items-center justify-center bg-[var(--varnarc-muted)] text-[#ea580c]">
+          <div className="flex aspect-video items-center justify-center bg-[var(--varnarc-muted)] text-[#ea580c]">
             <Car className="h-8 w-8" aria-hidden />
           </div>
         )}

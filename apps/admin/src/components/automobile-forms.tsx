@@ -349,22 +349,42 @@ export function AutomobileManufacturerEditForm({
     name: string;
     slug: string;
     country?: string | null;
+    foundedYear?: number | null;
     website?: string | null;
+    tagline?: string | null;
     description?: string | null;
     logoUrl?: string | null;
     logoMediaId?: string | null;
     featured?: boolean;
+    availableInIndia?: boolean;
+    indiaAvailabilityStatus?: string | null;
+    indiaWebsite?: string | null;
+    indiaVerifiedDate?: string | null;
+    indiaVerificationNote?: string | null;
   };
 }) {
   const router = useRouter();
   const [name, setName] = useState(initial.name);
   const [slug, setSlug] = useState(initial.slug);
   const [country, setCountry] = useState(initial.country ?? '');
+  const [foundedYear, setFoundedYear] = useState(
+    initial.foundedYear != null ? String(initial.foundedYear) : '',
+  );
   const [website, setWebsite] = useState(initial.website ?? '');
+  const [tagline, setTagline] = useState(initial.tagline ?? '');
   const [description, setDescription] = useState(initial.description ?? '');
   const [logoMediaId, setLogoMediaId] = useState<string | null>(initial.logoMediaId ?? null);
   const [logoUrl, setLogoUrl] = useState(initial.logoUrl ?? '');
   const [featured, setFeatured] = useState(Boolean(initial.featured));
+  const [availableInIndia, setAvailableInIndia] = useState(Boolean(initial.availableInIndia));
+  const [indiaAvailabilityStatus, setIndiaAvailabilityStatus] = useState(
+    initial.indiaAvailabilityStatus ?? '',
+  );
+  const [indiaWebsite, setIndiaWebsite] = useState(initial.indiaWebsite ?? '');
+  const [indiaVerifiedDate, setIndiaVerifiedDate] = useState(initial.indiaVerifiedDate ?? '');
+  const [indiaVerificationNote, setIndiaVerificationNote] = useState(
+    initial.indiaVerificationNote ?? '',
+  );
   const [message, setMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -379,11 +399,18 @@ export function AutomobileManufacturerEditForm({
           name,
           slug,
           country: country || undefined,
+          foundedYear: foundedYear ? Number(foundedYear) : null,
           website: website || undefined,
+          tagline: tagline || null,
           description: description || undefined,
           logoMediaId,
           logoUrl: logoUrl || undefined,
           featured,
+          availableInIndia,
+          indiaAvailabilityStatus: indiaAvailabilityStatus || null,
+          indiaWebsite: indiaWebsite || null,
+          indiaVerifiedDate: indiaVerifiedDate || null,
+          indiaVerificationNote: indiaVerificationNote || null,
         }),
       });
       const json = (await res.json()) as { error?: { message?: string } };
@@ -420,9 +447,22 @@ export function AutomobileManufacturerEditForm({
         />
         <input
           className={inputClass}
+          placeholder="Founded year"
+          inputMode="numeric"
+          value={foundedYear}
+          onChange={(e) => setFoundedYear(e.target.value)}
+        />
+        <input
+          className={inputClass}
           placeholder="Website URL"
           value={website}
           onChange={(e) => setWebsite(e.target.value)}
+        />
+        <input
+          className={`${inputClass} md:col-span-2`}
+          placeholder="Slogan"
+          value={tagline}
+          onChange={(e) => setTagline(e.target.value)}
         />
         <div className="md:col-span-2">
           <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-[var(--varnarc-subtle)]">
@@ -445,6 +485,38 @@ export function AutomobileManufacturerEditForm({
           />
           Featured
         </label>
+        <label className="flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            checked={availableInIndia}
+            onChange={(e) => setAvailableInIndia(e.target.checked)}
+          />
+          Available in India
+        </label>
+        <input
+          className={inputClass}
+          placeholder="India availability status"
+          value={indiaAvailabilityStatus}
+          onChange={(e) => setIndiaAvailabilityStatus(e.target.value)}
+        />
+        <input
+          className={inputClass}
+          placeholder="India website URL"
+          value={indiaWebsite}
+          onChange={(e) => setIndiaWebsite(e.target.value)}
+        />
+        <input
+          className={inputClass}
+          type="date"
+          value={indiaVerifiedDate}
+          onChange={(e) => setIndiaVerifiedDate(e.target.value)}
+        />
+        <textarea
+          className={`${inputClass} min-h-20 py-2 md:col-span-2`}
+          placeholder="India verification note"
+          value={indiaVerificationNote}
+          onChange={(e) => setIndiaVerificationNote(e.target.value)}
+        />
         <textarea
           className={`${inputClass} min-h-24 py-2 md:col-span-2`}
           placeholder="Description"
@@ -564,7 +636,7 @@ export function AutomobileVehicleForm({
         />
         <input
           className={inputClass}
-          placeholder="Ex-showroom price (₹)"
+          placeholder="India ex-showroom in rupees (not GBP)"
           value={exShowroomPrice}
           onChange={(e) => setExShowroomPrice(e.target.value)}
         />
@@ -632,6 +704,7 @@ export function AutomobileVehicleEditForm({
     description?: string | null;
     featured?: boolean;
     sponsored?: boolean;
+    availableInIndia?: boolean;
   };
 }) {
   const manufacturersSorted = sortManufacturersByName(manufacturers);
@@ -659,6 +732,7 @@ export function AutomobileVehicleEditForm({
   const [description, setDescription] = useState(initial.description ?? '');
   const [featured, setFeatured] = useState(Boolean(initial.featured));
   const [sponsored, setSponsored] = useState(Boolean(initial.sponsored));
+  const [availableInIndia, setAvailableInIndia] = useState(Boolean(initial.availableInIndia));
   const [message, setMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -691,6 +765,7 @@ export function AutomobileVehicleEditForm({
           description: description || undefined,
           featured,
           sponsored,
+          availableInIndia,
         }),
       });
       const json = (await res.json()) as { error?: { message?: string } };
@@ -751,7 +826,7 @@ export function AutomobileVehicleEditForm({
         />
         <input
           className={inputClass}
-          placeholder="Ex-showroom price (₹)"
+          placeholder="India ex-showroom in rupees (not GBP)"
           value={exShowroomPrice}
           onChange={(e) => setExShowroomPrice(e.target.value)}
         />
@@ -812,6 +887,14 @@ export function AutomobileVehicleEditForm({
             onChange={(e) => setSponsored(e.target.checked)}
           />
           Sponsored
+        </label>
+        <label className="flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            checked={availableInIndia}
+            onChange={(e) => setAvailableInIndia(e.target.checked)}
+          />
+          Available in India
         </label>
         <textarea
           className={`${inputClass} min-h-24 py-2 md:col-span-2 lg:col-span-3`}

@@ -16,7 +16,6 @@ import {
   Shield,
   Star,
 } from 'lucide-react';
-import { NewsletterForm } from '@/features/newsletter/newsletter-form';
 import { HomeIcon } from '@/features/home/home-icons';
 import { categories, heroBg, professionals } from '@/features/home/static-data';
 import type {
@@ -521,7 +520,12 @@ export function ClassicTrustNewsletterSection() {
               <p className="mt-1 text-xs leading-snug text-slate-600">
                 Get helpful tips, latest articles and tools delivered to your inbox.
               </p>
-              <NewsletterForm variant="inline" source="homepage" className="mt-3 w-full" />
+              <Link
+                href="/newsletter"
+                className="mt-3 inline-flex min-h-11 items-center rounded-lg bg-[#0b1f3a] px-4 text-sm font-semibold text-white hover:bg-[#16345c]"
+              >
+                Subscribe on the newsletter page
+              </Link>
             </div>
             <span className="mt-1 hidden h-14 w-14 shrink-0 items-center justify-center text-[#38bdf8] sm:inline-flex">
               <Mail className="h-10 w-10" strokeWidth={1.5} />

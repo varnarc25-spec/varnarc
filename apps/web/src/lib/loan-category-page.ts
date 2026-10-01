@@ -847,6 +847,19 @@ export function resolveCategoryIntro(
   return fromCms || LOAN_CATEGORY_PAGE_DEFAULTS[slug].intro;
 }
 
+/** Seed used `Compare ${name}s` which yields "Propertys" and other broken plurals. */
+export function isNaiveLoanCategoryMetaTitle(
+  metaTitle: string,
+  categoryName?: string | null,
+): boolean {
+  const title = metaTitle.trim();
+  if (!title) return true;
+  if (/\bPropertys\b/i.test(title)) return true;
+  const name = categoryName?.trim();
+  if (name && title === `Compare ${name}s`) return true;
+  return false;
+}
+
 export function resolveCategorySeo(
   slug: LoanCategorySlug,
   category?: {
@@ -857,8 +870,13 @@ export function resolveCategorySeo(
   } | null,
 ): { title: string; description: string } {
   const defaults = LOAN_CATEGORY_PAGE_DEFAULTS[slug];
+  const cmsTitle = category?.metaTitle?.trim();
+  const title =
+    cmsTitle && !isNaiveLoanCategoryMetaTitle(cmsTitle, category?.name)
+      ? cmsTitle
+      : defaults.metaTitle;
   return {
-    title: category?.metaTitle?.trim() || defaults.metaTitle,
+    title,
     description:
       category?.metaDescription?.trim() ||
       category?.introduction?.trim() ||

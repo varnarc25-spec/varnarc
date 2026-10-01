@@ -1,5 +1,6 @@
 import { existsSync, readdirSync } from 'node:fs';
-import { join } from 'node:path';
+import { createRequire } from 'node:module';
+import { dirname, join } from 'node:path';
 import { spawn } from 'node:child_process';
 import { Inject, Injectable, ServiceUnavailableException } from '@nestjs/common';
 import type { PrismaClient } from '@varnarc/database';
@@ -10,6 +11,8 @@ export type PrismaMigrationRow = {
   finishedAt: string | null;
   rolledBack: boolean;
 };
+
+export type PrismaCli = { command: string; args: string[] };
 
 export function resolvePrismaSchemaPath(cwd = process.cwd(), env = process.env): string | null {
   const fromEnv = env.PRISMA_SCHEMA_PATH?.trim();
@@ -30,6 +33,36 @@ export function listMigrationFolders(schemaPath: string): string[] {
     .sort();
 }
 
+/** Prisma CLI: workspace root, API cwd, or the prisma package next to @varnarc/database. */
+export function resolvePrismaCli(cwd = process.cwd()): PrismaCli | null {
+  const shims = [
+    join(cwd, 'node_modules/.bin/prisma'),
+    join(cwd, '../../node_modules/.bin/prisma'),
+    join(cwd, '../../../node_modules/.bin/prisma'),
+  ];
+  for (const shim of shims) {
+    if (existsSync(shim)) return { command: shim, args: [] };
+  }
+
+  const resolveFrom = [
+    join(cwd, 'package.json'),
+    join(cwd, '../../packages/database/package.json'),
+    join(cwd, 'node_modules/@varnarc/database/package.json'),
+  ];
+  for (const from of resolveFrom) {
+    if (!existsSync(from)) continue;
+    try {
+      const req = createRequire(from);
+      const pkg = req.resolve('prisma/package.json');
+      const entry = join(dirname(pkg), 'build', 'index.js');
+      if (existsSync(entry)) return { command: process.execPath, args: [entry] };
+    } catch {
+      continue;
+    }
+  }
+  return null;
+}
+
 @Injectable()
 export class PrismaMigrateService {
   constructor(@Inject(PRISMA) private readonly db: PrismaClient) {}
@@ -42,7 +75,7 @@ export class PrismaMigrateService {
     const pending = onDisk.filter((name) => !appliedNames.has(name));
     return {
       schemaPath,
-      prismaCliAvailable: Boolean(this.prismaBin()),
+      prismaCliAvailable: Boolean(resolvePrismaCli()),
       applied,
       pending,
       onDiskCount: onDisk.length,
@@ -57,12 +90,12 @@ export class PrismaMigrateService {
         'Prisma schema is not in this API image. Rebuild the api container.',
       );
     }
-    const bin = this.prismaBin();
-    if (!bin) {
+    const cli = resolvePrismaCli();
+    if (!cli) {
       throw new ServiceUnavailableException('Prisma CLI is not installed in the API image.');
     }
 
-    const { code, stdout, stderr } = await this.runPrisma([
+    const { code, stdout, stderr } = await this.runPrisma(cli, [
       'migrate',
       'deploy',
       `--schema=${schemaPath}`,
@@ -79,12 +112,6 @@ export class PrismaMigrateService {
     };
   }
 
-  private prismaBin(): string | null {
-    const local = join(process.cwd(), 'node_modules/.bin/prisma');
-    if (existsSync(local)) return local;
-    return null;
-  }
-
   private appliedMigrations(): Promise<PrismaMigrationRow[]> {
     return this.db.$queryRaw<
       Array<{ migration_name: string; finished_at: Date | null; rolled_back_at: Date | null }>
@@ -99,13 +126,12 @@ export class PrismaMigrateService {
       .catch(() => []);
   }
 
-  private runPrisma(args: string[]): Promise<{ code: number; stdout: string; stderr: string }> {
-    const bin = this.prismaBin();
-    if (!bin) {
-      return Promise.resolve({ code: 127, stdout: '', stderr: 'prisma CLI missing' });
-    }
+  private runPrisma(
+    cli: PrismaCli,
+    args: string[],
+  ): Promise<{ code: number; stdout: string; stderr: string }> {
     return new Promise((resolve) => {
-      const child = spawn(bin, args, {
+      const child = spawn(cli.command, [...cli.args, ...args], {
         env: process.env,
         cwd: process.cwd(),
       });

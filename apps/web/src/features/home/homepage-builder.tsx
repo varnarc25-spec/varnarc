@@ -6,7 +6,6 @@ import { articleCardPropsFromListItem } from '@/services/content';
 import { ReviewCard } from '@/components/business/review-card';
 import { CalculatorCard } from '@/components/business/calculator-card';
 import { BusinessCard } from '@/components/business/business-card';
-import { NewsletterForm } from '@/features/newsletter/newsletter-form';
 import {
   ClassicHomeLayoutView,
   isClassicHomeLayout,
@@ -236,7 +235,12 @@ export function HomepageBuilder({ data }: { data: HomeData }) {
                     Get calculators, guides, and product updates in your inbox.
                   </p>
                 </div>
-                <NewsletterForm variant="inline" source="homepage" className="w-full max-w-md" />
+                <Link
+                  href="/newsletter"
+                  className="inline-flex min-h-11 items-center rounded-lg bg-[var(--varnarc-brand)] px-4 text-sm font-semibold text-white"
+                >
+                  Open newsletter signup
+                </Link>
               </div>
             </section>
           );

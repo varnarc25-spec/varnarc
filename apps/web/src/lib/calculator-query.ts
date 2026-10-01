@@ -217,8 +217,25 @@ export function buildCalculatorHref(
   return qs ? `/calculators/${slug}?${qs}` : `/calculators/${slug}`;
 }
 
+/** Auto calculator landings that must not compete with `/calculators/{slug}`. */
+export const AUTOMOBILE_CALCULATOR_CANONICAL: Record<string, string> = {
+  'car-insurance': '/automobile/calculators/car-insurance',
+  fuel: '/automobile/calculators/fuel',
+  mileage: '/automobile/calculators/mileage',
+  depreciation: '/automobile/calculators/depreciation',
+  'maintenance-cost': '/automobile/calculators/maintenance-cost',
+  'resale-value': '/automobile/calculators/resale-value',
+  tco: '/automobile/calculators/tco',
+  'road-tax': '/automobile/calculators/road-tax',
+  'on-road-price': '/automobile/calculators/on-road-price',
+  'charging-cost': '/automobile/calculators/charging-cost',
+  range: '/automobile/calculators/range',
+  'ev-vs-petrol': '/automobile/calculators/ev-vs-petrol',
+};
+
 export function calculatorCanonicalPath(calculatorSlug: string): string {
-  return `/calculators/${calculatorSlug.replace(/^\/+|\/+$/g, '')}`;
+  const slug = calculatorSlug.replace(/^\/+|\/+$/g, '');
+  return AUTOMOBILE_CALCULATOR_CANONICAL[slug] ?? `/calculators/${slug}`;
 }
 
 export function hasCalculatorQueryParams(

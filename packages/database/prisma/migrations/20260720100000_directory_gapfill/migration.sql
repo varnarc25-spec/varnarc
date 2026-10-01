@@ -1,3 +1,0 @@
-ALTER TABLE "businesses" ADD COLUMN IF NOT EXISTS "pricing" TEXT;
-ALTER TABLE "businesses" ADD COLUMN IF NOT EXISTS "certifications" JSONB;
-ALTER TABLE "businesses" ADD COLUMN IF NOT EXISTS "faqs" JSONB;

@@ -35,7 +35,12 @@ export default async function AutomobileManufacturersPage() {
             >
               <h2 className="text-base font-extrabold text-[#0b1f3a]">{mfr.name}</h2>
               {mfr.country ? (
-                <p className="mt-1 text-xs font-medium uppercase tracking-wide text-slate-500">{mfr.country}</p>
+                <p className="mt-1 text-xs font-medium uppercase tracking-wide text-slate-500">
+                  {mfr.country}
+                </p>
+              ) : null}
+              {mfr.availableInIndia ? (
+                <p className="mt-2 text-xs font-semibold text-emerald-700">Available in India</p>
               ) : null}
               {mfr.description ? (
                 <p className="mt-2 line-clamp-2 text-sm text-slate-600">{mfr.description}</p>
@@ -43,13 +48,18 @@ export default async function AutomobileManufacturersPage() {
               {mfr._count?.vehicles != null ? (
                 <p className="mt-3 text-sm text-[#ea580c]">{mfr._count.vehicles} vehicles →</p>
               ) : (
-                <span className="mt-3 inline-block text-sm font-medium text-[#ea580c]">View lineup →</span>
+                <span className="mt-3 inline-block text-sm font-medium text-[#ea580c]">
+                  View lineup →
+                </span>
               )}
             </Link>
           ))}
         </div>
       ) : (
-        <EmptyState title="No manufacturers yet" message="Published manufacturers will appear here." />
+        <EmptyState
+          title="No manufacturers yet"
+          message="Published manufacturers will appear here."
+        />
       )}
     </ContentLayout>
   );

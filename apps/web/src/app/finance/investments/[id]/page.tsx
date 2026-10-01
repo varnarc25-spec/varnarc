@@ -6,6 +6,7 @@ import { FinanceReviewsSection } from '@/components/finance/finance-reviews';
 import { RelatedArticles } from '@/components/finance/related-articles';
 import { fetchFinanceInvestment } from '@/services/finance';
 import { buildSeoMetadata } from '@/lib/seo-metadata';
+import { breadcrumbJsonLd } from '@/lib/seo-json-ld';
 import { ApiError } from '@/services/api-client';
 import { notFound } from 'next/navigation';
 
@@ -45,15 +46,12 @@ export default async function FinanceInvestmentDetailPage({ params }: Props) {
   const jsonLd = {
     '@context': 'https://schema.org',
     '@graph': [
-      {
-        '@type': 'BreadcrumbList',
-        itemListElement: [
-          { '@type': 'ListItem', position: 1, name: 'Home', item: '/' },
-          { '@type': 'ListItem', position: 2, name: 'Finance', item: '/finance' },
-          { '@type': 'ListItem', position: 3, name: 'Investments', item: '/finance/investments' },
-          { '@type': 'ListItem', position: 4, name: product.name },
-        ],
-      },
+      breadcrumbJsonLd([
+        { name: 'Home', url: '/' },
+        { name: 'Finance', url: '/finance' },
+        { name: 'Investments', url: '/finance/investments' },
+        { name: product.name, url: `/finance/investments/${id}` },
+      ]),
       {
         '@type': 'FinancialProduct',
         name: product.name,
@@ -74,17 +72,27 @@ export default async function FinanceInvestmentDetailPage({ params }: Props) {
         { label: product.name },
       ]}
     >
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <AdBanner slot="content-top" />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Stat label="Provider" value={product.providerName} />
-        <Stat label="Expected return" value={product.expectedReturn != null ? `${product.expectedReturn}%` : '—'} />
+        <Stat
+          label="Expected return"
+          value={product.expectedReturn != null ? `${product.expectedReturn}%` : '—'}
+        />
         <Stat label="Risk level" value={product.riskLevel || '—'} />
         <Stat label="Lock-in" value={product.lockInPeriod || '—'} />
       </div>
 
-      {product.affiliateUrl ? <div className="mt-8"><AffiliateCta url={product.affiliateUrl} label="Start investing" /></div> : null}
+      {product.affiliateUrl ? (
+        <div className="mt-8">
+          <AffiliateCta url={product.affiliateUrl} label="Start investing" />
+        </div>
+      ) : null}
 
       <FinanceReviewsSection entity="investments" id={id} />
 

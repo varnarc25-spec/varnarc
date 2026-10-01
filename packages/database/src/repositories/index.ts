@@ -78,6 +78,7 @@ import {
   AutomobileVehicleRepository,
   AutomobileMaintenanceRepository,
 } from './automobile/automobile.repository';
+import { CarCatalogRepository } from './automobile/car-catalog.repository';
 import {
   ProductRepository,
   ReviewRepository,
@@ -172,6 +173,7 @@ export * from './construction/construction.repository';
 export * from './construction/seo-audit.repository';
 export * from './construction/search-opportunity.repository';
 export * from './automobile/automobile.repository';
+export * from './automobile/car-catalog.repository';
 export * from './comparison/comparison.repository';
 export * from './reviews/reviews.repository';
 export * from './directory/directory.repository';
@@ -262,6 +264,7 @@ export function createRepositories(db: PrismaClient) {
     automobileManufacturers: new AutomobileManufacturerRepository(db),
     automobileVehicles: new AutomobileVehicleRepository(db),
     automobileMaintenance: new AutomobileMaintenanceRepository(db),
+    carCatalog: new CarCatalogRepository(db),
     products: new ProductRepository(db),
     reviews: new ReviewRepository(db),
     userReviews: new UserReviewRepository(db),

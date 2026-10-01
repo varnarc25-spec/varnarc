@@ -23,6 +23,8 @@ import { parseArticleSponsor } from '@/lib/article-sponsor';
 import { getPublicSiteUrlSync } from '@/lib/public-site-url';
 import { isNextControlFlowError } from '@/lib/next-control-flow';
 import { estimateReadingMinutes, parseFaqItemsFromHtml } from '@varnarc/validation';
+import { articleListingDescription } from '@/lib/finance-product-seo';
+import { calculatorGuideCopy, isTemplatedCalculatorGuide } from '@/lib/editorial-copy';
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -40,7 +42,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       data.seo?.ogImage ||
       null;
     const seoTitle = data.seo?.title || data.title;
-    const seoDescription = data.seo?.description || data.excerpt;
+    const fallback = calculatorGuideCopy(slug, seoTitle);
+    const excerptSource = data.seo?.description || data.excerpt;
+    const seoDescription = isTemplatedCalculatorGuide(excerptSource)
+      ? fallback.excerpt
+      : articleListingDescription(seoTitle, excerptSource);
     return buildSeoMetadata({
       entityType: 'article',
       entityId: data.id,
@@ -67,6 +73,9 @@ export default async function ArticleDetailPage({ params }: Props) {
   const me = session?.user ? await apiServerFetch<{ id: string }>('/users/me') : null;
   try {
     const { data } = await fetchArticleBySlug(slug);
+    const guide = calculatorGuideCopy(slug, data.title);
+    const excerpt = isTemplatedCalculatorGuide(data.excerpt) ? guide.excerpt : data.excerpt;
+    const content = isTemplatedCalculatorGuide(data.content) ? guide.content : data.content;
     const sponsor = parseArticleSponsor(data.metadata);
     const commentsPayload = await apiPublicFetch<{
       items: ArticleComment[];
@@ -84,12 +93,12 @@ export default async function ArticleDetailPage({ params }: Props) {
         : []),
       { name: data.title, url },
     ];
-    const faqItems = parseFaqItemsFromHtml(data.content || '');
+    const faqItems = parseFaqItemsFromHtml(content || '');
     const schema = [
       breadcrumbJsonLd(crumbs),
       articleJsonLd({
         title: data.title,
-        description: data.excerpt,
+        description: excerpt,
         url,
         datePublished: data.publishedAt,
         dateModified: data.updatedAt || data.publishedAt,
@@ -105,8 +114,7 @@ export default async function ArticleDetailPage({ params }: Props) {
       }),
       ...(faqItems.length >= 2 ? [faqJsonLd(faqItems)] : []),
     ];
-    const reading =
-      data.readingTimeMinutes || estimateReadingMinutes(data.content || data.excerpt || '');
+    const reading = data.readingTimeMinutes || estimateReadingMinutes(content || excerpt || '');
     return (
       <>
         <RecordContentView
@@ -117,7 +125,7 @@ export default async function ArticleDetailPage({ params }: Props) {
         <JsonLd data={schema} />
         <ArticleLayout
           title={data.title}
-          excerpt={data.excerpt}
+          excerpt={excerpt}
           articleStyle={data.articleStyle || 'default'}
           customCssClass={data.customCssClass}
           badges={sponsor.sponsored ? <SponsoredLabel /> : null}
@@ -213,8 +221,8 @@ export default async function ArticleDetailPage({ params }: Props) {
               </div>
             );
           })()}
-          <ArticleAiSummarizer title={data.title} content={data.content || data.excerpt || ''} />
-          <ArticleBody content={data.content || data.excerpt || ''} />
+          <ArticleAiSummarizer title={data.title} content={content || excerpt || ''} />
+          <ArticleBody content={content || excerpt || ''} />
           {data.related?.length ? (
             <section className="mt-12 border-t border-[var(--varnarc-border)] pt-8">
               <h2 className="mb-4 text-xl font-semibold">Related articles</h2>

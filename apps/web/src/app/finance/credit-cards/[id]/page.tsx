@@ -11,6 +11,8 @@ import { FinanceReviewsSection } from '@/components/finance/finance-reviews';
 import { RelatedArticles } from '@/components/finance/related-articles';
 import { fetchFinanceCreditCard } from '@/services/finance';
 import { buildSeoMetadata } from '@/lib/seo-metadata';
+import { financeProductDescription } from '@/lib/finance-product-seo';
+import { breadcrumbJsonLd } from '@/lib/seo-json-ld';
 import { ApiError } from '@/services/api-client';
 import { notFound } from 'next/navigation';
 
@@ -25,7 +27,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       entityId: data.id,
       path: `/finance/credit-cards/${id}`,
       title: data.seoTitle || data.name,
-      description: data.seoDescription || data.description,
+      description: financeProductDescription({
+        name: data.name,
+        kind: 'credit-card',
+        bankName: data.bank?.name,
+        seoDescription: data.seoDescription,
+        description: data.description,
+      }),
     });
   } catch {
     return { title: 'Credit Card', alternates: { canonical: `/finance/credit-cards/${id}` } };
@@ -45,28 +53,32 @@ export default async function FinanceCreditCardDetailPage({ params }: Props) {
   }
 
   const title = card.seoTitle || card.name;
-  const description = card.seoDescription || card.description;
+  const description = financeProductDescription({
+    name: card.name,
+    kind: 'credit-card',
+    bankName: card.bank?.name,
+    seoDescription: card.seoDescription,
+    description: card.description,
+  });
 
   const jsonLd = {
     '@context': 'https://schema.org',
     '@graph': [
-      {
-        '@type': 'BreadcrumbList',
-        itemListElement: [
-          { '@type': 'ListItem', position: 1, name: 'Home', item: '/' },
-          { '@type': 'ListItem', position: 2, name: 'Finance', item: '/finance' },
-          { '@type': 'ListItem', position: 3, name: 'Credit cards', item: '/finance/credit-cards' },
-          { '@type': 'ListItem', position: 4, name: card.name },
-        ],
-      },
+      breadcrumbJsonLd([
+        { name: 'Home', url: '/' },
+        { name: 'Finance', url: '/finance' },
+        { name: 'Credit cards', url: '/finance/credit-cards' },
+        { name: card.name, url: `/finance/credit-cards/${id}` },
+      ]),
       {
         '@type': 'Product',
         name: card.name,
         description: description || undefined,
         brand: card.bank?.name ? { '@type': 'Brand', name: card.bank.name } : undefined,
-        offers: card.annualFee != null
-          ? { '@type': 'Offer', price: Number(card.annualFee), priceCurrency: 'INR' }
-          : undefined,
+        offers:
+          card.annualFee != null
+            ? { '@type': 'Offer', price: Number(card.annualFee), priceCurrency: 'INR' }
+            : undefined,
       },
     ],
   };
@@ -82,7 +94,10 @@ export default async function FinanceCreditCardDetailPage({ params }: Props) {
         { label: card.name },
       ]}
     >
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <AdBanner slot="content-top" />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -92,15 +107,29 @@ export default async function FinanceCreditCardDetailPage({ params }: Props) {
         <Stat label="Lounge access" value={card.loungeAccess ? 'Yes' : 'No'} />
       </div>
 
-      {card.description ? <FinanceDetailSection title="Overview">{card.description}</FinanceDetailSection> : null}
-      {card.rewards ? <FinanceDetailSection title="Rewards">{card.rewards}</FinanceDetailSection> : null}
-      {card.cashback ? <FinanceDetailSection title="Cashback">{card.cashback}</FinanceDetailSection> : null}
+      {card.description ? (
+        <FinanceDetailSection title="Overview">{card.description}</FinanceDetailSection>
+      ) : (
+        <FinanceDetailSection title="Overview">{description}</FinanceDetailSection>
+      )}
+      {card.rewards ? (
+        <FinanceDetailSection title="Rewards">{card.rewards}</FinanceDetailSection>
+      ) : null}
+      {card.cashback ? (
+        <FinanceDetailSection title="Cashback">{card.cashback}</FinanceDetailSection>
+      ) : null}
       <FinanceProsCons pros={card.pros} cons={card.cons} />
-      {card.affiliateUrl ? <div className="mt-8"><AffiliateCta url={card.affiliateUrl} label="Apply for card" /></div> : null}
+      {card.affiliateUrl ? (
+        <div className="mt-8">
+          <AffiliateCta url={card.affiliateUrl} label="Apply for card" />
+        </div>
+      ) : null}
 
       <FinanceReviewsSection entity="credit-cards" id={id} />
 
-      <RelatedCalculators links={[{ href: '/calculators/income-tax', label: 'Income Tax Calculator' }]} />
+      <RelatedCalculators
+        links={[{ href: '/calculators/income-tax', label: 'Income Tax Calculator' }]}
+      />
       <RelatedArticles />
     </PageShell>
   );

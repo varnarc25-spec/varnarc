@@ -1,2 +1,0 @@
-ALTER TABLE "menu_items"
-  ADD COLUMN IF NOT EXISTS "is_active" BOOLEAN NOT NULL DEFAULT true;

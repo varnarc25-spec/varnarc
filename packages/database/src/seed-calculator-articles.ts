@@ -39,28 +39,32 @@ const CALCULATOR_ARTICLE_MAP: Record<
   flooring: { categorySlug: 'home-construction' },
 };
 
+function articleExcerpt(calculatorName: string, categorySlug: string, loanType?: string): string {
+  const topic = loanType
+    ? `${LOAN_TYPE_LABELS[loanType] ?? loanType} loan`
+    : categorySlug.replace(/-/g, ' ');
+  return `${calculatorName} for ${topic}: which inputs move EMI or totals, how to compare tenure vs rate, and what to confirm with a lender in India.`;
+}
+
 function articleBody(calculatorName: string, categoryLabel: string, loanType?: string): string {
   const loanLine = loanType
-    ? `This guide focuses on **${LOAN_TYPE_LABELS[loanType] ?? loanType} loans** — rates, tenure, and repayment tips specific to that product.`
-    : '';
-  return `## Overview
+    ? `This guide is for **${LOAN_TYPE_LABELS[loanType] ?? loanType} loans**: LTV/FOIR, typical tenure bands, and fees that sit outside EMI.`
+    : `This guide is for the **${calculatorName}** in the ${categoryLabel.replace(/-/g, ' ')} cluster.`;
+  return `## ${calculatorName}
 
-Use the **${calculatorName}** on Varnarc to model numbers before you commit. ${loanLine}
+${loanLine}
 
-## What you will learn
+## Inputs that move the result
 
-- Which inputs matter most for accurate results
-- How to compare scenarios (tenure, rate, amount)
-- Common mistakes borrowers make in India
-- When to verify figures with your bank or advisor
+Amount (or quantity), rate or unit price, and tenure or mix ratio. Change one knob at a time. Fees, GST, wastage, and insurance are often **outside** the core formula.
 
-## Using the calculator
+## India-specific checks
 
-Enter your values step by step, then review EMI, total interest, and repayment summary. Adjust tenure or rate to see how small changes affect your monthly budget.
+Confirm the number against a sanction letter, structural drawing, DISCOM rule, or dealer quote. Banner rates and “from” prices are not the same as what you sign.
 
 ## Bottom line
 
-Treat calculator output as a planning estimate. Confirm final numbers with official lender quotes and read the fine print on fees and insurance.`;
+Save the scenario, then verify with an official document. The calculator is a plan, not a contract.`;
 }
 
 export async function seedCalculatorArticles(prisma: PrismaClient, authorId: string) {
@@ -90,7 +94,7 @@ export async function seedCalculatorArticles(prisma: PrismaClient, authorId: str
       const slug = `guide-${calc.slug}${slugSuffix}`;
       const loanLabel = loanType ? `${LOAN_TYPE_LABELS[loanType] ?? loanType} ` : '';
       const title = `${loanLabel}${calc.name}: Complete Guide`;
-      const excerpt = `Learn how to use the ${calc.name}${loanType ? ` for ${loanLabel.trim().toLowerCase()} loans` : ''} and what the results mean for your finances.`;
+      const excerpt = articleExcerpt(calc.name, mapping.categorySlug, loanType);
       const content = articleBody(calc.name, mapping.categorySlug, loanType);
       const readingTime = Math.max(3, Math.ceil(content.split(/\s+/).length / 200));
       const metadata: Record<string, unknown> = {

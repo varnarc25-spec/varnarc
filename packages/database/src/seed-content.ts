@@ -917,13 +917,16 @@ export async function seedContent(prisma: PrismaClient) {
       create: { name: review.title, slug: `${review.slug}-product`, category: review.category },
     });
 
+    const summary = `${review.title}: compare specifications, warranty, and service in India — not a canned roundup.`;
+    const body = `## ${review.title}\n\nUse this as a buying shortlist for Indian heat, service networks, and metro pricing. Scores are editorial, not a lab test of every SKU.\n\n## Verify before you pay\n\nWarranty in writing, spare-part availability, and whether “from” prices exclude installation.\n\n## Verdict\n\nShortlist two options, then confirm a written quote.`;
+    const verdict = `Use ${review.title} to shortlist, then confirm warranty and a written price.`;
     const row = await prisma.review.upsert({
       where: { slug: review.slug },
       update: {
         title: review.title,
-        summary: `Editorial roundup and buying advice for ${review.title.toLowerCase()}.`,
-        body: `## Overview\n\n${review.title} — our editorial team tested and compared popular options available in India.\n\n## What we looked for\n\nBuild quality, value, warranty, and real-world usability for Indian conditions.\n\n## Verdict\n\nSee scores and pros/cons below before you buy.`,
-        verdict: 'Solid options exist across budgets — match features to your actual use case.',
+        summary,
+        body,
+        verdict,
         recommendation: 'editors_choice',
         reviewType: 'editorial',
         entityType: 'product',
@@ -937,9 +940,9 @@ export async function seedContent(prisma: PrismaClient) {
       create: {
         title: review.title,
         slug: review.slug,
-        summary: `Editorial roundup and buying advice for ${review.title.toLowerCase()}.`,
-        body: `## Overview\n\n${review.title} — our editorial team tested and compared popular options available in India.\n\n## What we looked for\n\nBuild quality, value, warranty, and real-world usability for Indian conditions.\n\n## Verdict\n\nSee scores and pros/cons below before you buy.`,
-        verdict: 'Solid options exist across budgets — match features to your actual use case.',
+        summary,
+        body,
+        verdict,
         recommendation: 'editors_choice',
         reviewType: 'editorial',
         entityType: 'product',
@@ -964,14 +967,17 @@ export async function seedContent(prisma: PrismaClient) {
     });
     await prisma.reviewPro.createMany({
       data: [
-        { reviewId: row.id, text: 'Good availability in major cities' },
-        { reviewId: row.id, text: 'Competitive pricing for the segment' },
+        { reviewId: row.id, text: `Service network exists in major cities for ${review.title}` },
+        { reviewId: row.id, text: 'Clearer spec/warranty checklist than a generic roundup' },
       ],
     });
     await prisma.reviewCon.createMany({
       data: [
-        { reviewId: row.id, text: 'Premium variants can be expensive' },
-        { reviewId: row.id, text: 'Check warranty terms before purchase' },
+        { reviewId: row.id, text: 'Advertised from-prices often exclude install or add-ons' },
+        {
+          reviewId: row.id,
+          text: `Warranty terms for ${review.slug.replace(/-/g, ' ')} still need a written copy`,
+        },
       ],
     });
   }

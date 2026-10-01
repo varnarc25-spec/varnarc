@@ -33,10 +33,54 @@ function stripUndefined<T extends Record<string, unknown>>(obj: T): T {
 
 /** Absolute URL helper for builders that receive a site origin + path. */
 export function jsonLdAbsoluteUrl(siteUrl: string, pathOrUrl: string): string {
-  if (pathOrUrl.startsWith('http://') || pathOrUrl.startsWith('https://')) return pathOrUrl;
-  const base = siteUrl.replace(/\/+$/, '');
-  const path = pathOrUrl.startsWith('/') ? pathOrUrl : `/${pathOrUrl}`;
+  const trimmed = pathOrUrl.trim();
+  if (/^https?:\/\//i.test(trimmed)) return trimmed;
+  const base = siteUrl.replace(/\/+$/, '') || 'https://varnarc.com';
+  if (!trimmed || trimmed === '/') return `${base}/`;
+  const path = trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
   return `${base}${path}`;
+}
+
+export function isAbsoluteHttpUrl(value: string): boolean {
+  try {
+    const parsed = new URL(value);
+    return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+  } catch {
+    return false;
+  }
+}
+
+export const DEFAULT_JSON_LD_SITE_URL = 'https://varnarc.com';
+
+export function breadcrumbJsonLd(
+  items: JsonLdBreadcrumbItem[],
+  siteUrl: string = DEFAULT_JSON_LD_SITE_URL,
+): JsonLdObject {
+  const origin = siteUrl.replace(/\/+$/, '') || DEFAULT_JSON_LD_SITE_URL;
+  const itemListElement = items.flatMap((item, index) => {
+    const raw = item.url?.trim() ?? '';
+    const position = index + 1;
+    if (!raw) {
+      return [{ '@type': 'ListItem', position, name: item.name }];
+    }
+    const abs = jsonLdAbsoluteUrl(origin, raw);
+    if (!isAbsoluteHttpUrl(abs)) {
+      return [{ '@type': 'ListItem', position, name: item.name }];
+    }
+    return [
+      {
+        '@type': 'ListItem',
+        position,
+        name: item.name,
+        item: abs,
+      },
+    ];
+  });
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement,
+  };
 }
 
 /** Keep FAQs that have non-empty question + answer (visible content gate). */
@@ -58,19 +102,6 @@ export function buildAggregateRatingJsonLd(
     '@type': 'AggregateRating',
     ratingValue: input.ratingValue,
     reviewCount: input.reviewCount,
-  };
-}
-
-export function breadcrumbJsonLd(items: JsonLdBreadcrumbItem[]): JsonLdObject {
-  return {
-    '@context': 'https://schema.org',
-    '@type': 'BreadcrumbList',
-    itemListElement: items.map((item, index) => ({
-      '@type': 'ListItem',
-      position: index + 1,
-      name: item.name,
-      item: item.url,
-    })),
   };
 }
 

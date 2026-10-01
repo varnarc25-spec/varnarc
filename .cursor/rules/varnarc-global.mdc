@@ -25,6 +25,7 @@ Read `AI_RULES.md` and `cursor/README.md` before implementing.
 - Business logic in services; Prisma only in repositories — never in controllers
 - Update docs + tests when behavior changes
 - Run `pnpm lint`, `pnpm typecheck`, `pnpm test` before finishing
+- Schema and `prisma migrate deploy` always target **live VPS Postgres**, not a local-only database. Use `scripts/db-migrate-live.sh` or `scripts/vps/migrate.sh`. Never `migrate:dev` on production.
 
 ## Workflow
 

@@ -88,6 +88,18 @@ describe('dedicated loan category pages', () => {
     expect(seo.title).toBe('Custom Home Title');
     expect(seo.description).toBe('Custom home description');
     expect(resolveCategorySeo('car-loan').title).toContain('Car Loans');
+    expect(
+      resolveCategorySeo('loan-against-property', {
+        name: 'Loan Against Property',
+        metaTitle: 'Compare Loan Against Propertys',
+      }).title,
+    ).toBe(LOAN_CATEGORY_PAGE_DEFAULTS['loan-against-property'].metaTitle);
+    expect(
+      resolveCategorySeo('personal-loan', {
+        name: 'Personal Loan',
+        metaTitle: 'Compare Personal Loans',
+      }).title,
+    ).toBe(LOAN_CATEGORY_PAGE_DEFAULTS['personal-loan'].metaTitle);
   });
 
   it('allows CMS calculator slug overrides with known calculators only', () => {

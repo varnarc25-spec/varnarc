@@ -14,8 +14,14 @@ import {
   type AiToolDetail,
   type AiToolListItem,
 } from '@/components/ai-tools/types';
-import { breadcrumbJsonLd, faqJsonLd, productJsonLd, softwareApplicationJsonLd } from '@/components/seo/json-ld';
+import {
+  breadcrumbJsonLd,
+  faqJsonLd,
+  productJsonLd,
+  softwareApplicationJsonLd,
+} from '@/components/seo/json-ld';
 import { buildSeoMetadata } from '@/lib/seo-metadata';
+import { aiCategoryCopy } from '@/lib/editorial-copy';
 import { AiFollowCategoryButton } from '@/components/ai-tools/ai-follow-category-button';
 import { UserReviewWidget } from '@/components/reviews/user-review-widget';
 import { apiPublicFetch, ApiError } from '@/services/api-client';
@@ -55,13 +61,18 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     });
   } catch {
     try {
-      const { data: category } = await apiPublicFetch<AiCategory>(`/ai-tools/categories/slug/${slug}`, {
-        next: { revalidate: 60 },
-      });
+      const { data: category } = await apiPublicFetch<AiCategory>(
+        `/ai-tools/categories/slug/${slug}`,
+        {
+          next: { revalidate: 60 },
+        },
+      );
+      const copy = aiCategoryCopy(category.slug, category.name);
       return {
-        title: `${category.name} AI Tools`,
-        description: category.description || `Browse ${category.name} AI tools.`,
+        title: copy.title,
+        description: category.description?.trim() || copy.description,
         alternates: { canonical: `/ai-tools/${category.slug}` },
+        robots: { index: true, follow: true },
       };
     } catch {
       return { title: 'AI Tool' };
@@ -84,14 +95,18 @@ export default async function AiToolDetailPage({ params }: Props) {
       body: JSON.stringify({ eventType: 'VIEW' }),
     }).catch(() => undefined);
 
-    const relatedResult = await apiPublicFetch<AiRelatedResponse>(`/ai-tools/slug/${slug}/related`, {
-      next: { revalidate: 60 },
-    }).catch(() => ({ data: {} as AiRelatedResponse }));
+    const relatedResult = await apiPublicFetch<AiRelatedResponse>(
+      `/ai-tools/slug/${slug}/related`,
+      {
+        next: { revalidate: 60 },
+      },
+    ).catch(() => ({ data: {} as AiRelatedResponse }));
 
     const related = relatedResult.data ?? {};
     const faqs = parseFaqs(data.faqs);
     const ratingSummary = related.ratingSummary;
-    const avgRating = ratingSummary?.averageRating != null ? Number(ratingSummary.averageRating) : null;
+    const avgRating =
+      ratingSummary?.averageRating != null ? Number(ratingSummary.averageRating) : null;
     const totalRatings = ratingSummary?.totalRatings ?? 0;
     const platforms = Array.isArray(data.platforms) ? data.platforms : [];
 
@@ -144,11 +159,23 @@ export default async function AiToolDetailPage({ params }: Props) {
           entityId={data.id}
           metadata={{ slug: data.slug, title: data.name }}
         />
-        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }} />
-        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(productLd) }} />
-        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }} />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(productLd) }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }}
+        />
         {faqs.length ? (
-          <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd(faqs)) }} />
+          <script
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd(faqs)) }}
+          />
         ) : null}
 
         <Breadcrumbs
@@ -191,11 +218,17 @@ export default async function AiToolDetailPage({ params }: Props) {
         ) : null}
 
         {data.shortDescription || data.description ? (
-          <p className="mt-4 text-[var(--varnarc-subtle)]">{data.shortDescription || data.description}</p>
+          <p className="mt-4 text-[var(--varnarc-subtle)]">
+            {data.shortDescription || data.description}
+          </p>
         ) : null}
 
         <div className="mt-6 flex flex-wrap items-center gap-3">
-          <AiAffiliateCta toolId={data.id} affiliateUrl={data.affiliateUrl} website={data.website} />
+          <AiAffiliateCta
+            toolId={data.id}
+            affiliateUrl={data.affiliateUrl}
+            website={data.website}
+          />
           {data.documentation ? (
             <a
               href={data.documentation}
@@ -206,7 +239,10 @@ export default async function AiToolDetailPage({ params }: Props) {
               Documentation
             </a>
           ) : null}
-          <Link href="/ai-tools/bookmarks" className="text-sm text-[var(--varnarc-brand)] hover:underline">
+          <Link
+            href="/ai-tools/bookmarks"
+            className="text-sm text-[var(--varnarc-brand)] hover:underline"
+          >
             My bookmarks
           </Link>
         </div>
@@ -224,7 +260,9 @@ export default async function AiToolDetailPage({ params }: Props) {
             {data.description && data.shortDescription ? (
               <section>
                 <h2 className="font-semibold">About</h2>
-                <p className="mt-2 text-sm text-[var(--varnarc-subtle)] whitespace-pre-wrap">{data.description}</p>
+                <p className="mt-2 text-sm text-[var(--varnarc-subtle)] whitespace-pre-wrap">
+                  {data.description}
+                </p>
               </section>
             ) : null}
 
@@ -260,7 +298,9 @@ export default async function AiToolDetailPage({ params }: Props) {
                       <td className="px-3 py-2">{formatPricingModel(data.pricingModel) || '—'}</td>
                     </tr>
                     <tr className="border-b border-[var(--varnarc-border)]">
-                      <th className="px-3 py-2 font-medium text-[var(--varnarc-subtle)]">Monthly</th>
+                      <th className="px-3 py-2 font-medium text-[var(--varnarc-subtle)]">
+                        Monthly
+                      </th>
                       <td className="px-3 py-2">{data.monthlyPrice || '—'}</td>
                     </tr>
                     <tr className="border-b border-[var(--varnarc-border)]">
@@ -268,11 +308,15 @@ export default async function AiToolDetailPage({ params }: Props) {
                       <td className="px-3 py-2">{data.annualPrice || '—'}</td>
                     </tr>
                     <tr className="border-b border-[var(--varnarc-border)]">
-                      <th className="px-3 py-2 font-medium text-[var(--varnarc-subtle)]">Free plan</th>
+                      <th className="px-3 py-2 font-medium text-[var(--varnarc-subtle)]">
+                        Free plan
+                      </th>
                       <td className="px-3 py-2">{data.freePlan ? 'Yes' : 'No'}</td>
                     </tr>
                     <tr>
-                      <th className="px-3 py-2 font-medium text-[var(--varnarc-subtle)]">Free trial</th>
+                      <th className="px-3 py-2 font-medium text-[var(--varnarc-subtle)]">
+                        Free trial
+                      </th>
                       <td className="px-3 py-2">{data.freeTrial ? 'Yes' : 'No'}</td>
                     </tr>
                   </tbody>
@@ -303,7 +347,10 @@ export default async function AiToolDetailPage({ params }: Props) {
                 <ul className="mt-3 space-y-2 text-sm">
                   {related.comparisons!.map((c) => (
                     <li key={c.id}>
-                      <Link href={`/compare/${c.slug}`} className="text-[var(--varnarc-brand)] hover:underline">
+                      <Link
+                        href={`/compare/${c.slug}`}
+                        className="text-[var(--varnarc-brand)] hover:underline"
+                      >
                         {c.title}
                       </Link>
                     </li>
@@ -347,7 +394,10 @@ export default async function AiToolDetailPage({ params }: Props) {
                 <ul className="mt-3 space-y-2 text-sm">
                   {related.editorialReviews!.map((r) => (
                     <li key={r.id}>
-                      <Link href={`/reviews/${r.slug}`} className="text-[var(--varnarc-brand)] hover:underline">
+                      <Link
+                        href={`/reviews/${r.slug}`}
+                        className="text-[var(--varnarc-brand)] hover:underline"
+                      >
                         {r.title}
                       </Link>
                     </li>
@@ -376,14 +426,21 @@ export default async function AiToolDetailPage({ params }: Props) {
               {data.company ? (
                 <p>
                   Company:{' '}
-                  <Link href={`/directory/${data.company.slug}`} className="text-[var(--varnarc-brand)] hover:underline">
+                  <Link
+                    href={`/directory/${data.company.slug}`}
+                    className="text-[var(--varnarc-brand)] hover:underline"
+                  >
                     {data.company.name}
                   </Link>
                 </p>
               ) : null}
             </div>
             <AiBookmarkButton toolId={data.id} />
-            <AiAffiliateCta toolId={data.id} affiliateUrl={data.affiliateUrl} website={data.website} />
+            <AiAffiliateCta
+              toolId={data.id}
+              affiliateUrl={data.affiliateUrl}
+              website={data.website}
+            />
           </aside>
         </div>
       </main>
@@ -393,9 +450,12 @@ export default async function AiToolDetailPage({ params }: Props) {
   }
 
   try {
-    const { data: category } = await apiPublicFetch<AiCategory>(`/ai-tools/categories/slug/${slug}`, {
-      next: { revalidate: 60 },
-    });
+    const { data: category } = await apiPublicFetch<AiCategory>(
+      `/ai-tools/categories/slug/${slug}`,
+      {
+        next: { revalidate: 60 },
+      },
+    );
 
     const { data: listings } = await apiPublicFetch<AiToolListItem[]>(
       `/ai-tools?category=${encodeURIComponent(slug)}&limit=24`,
@@ -408,21 +468,29 @@ export default async function AiToolDetailPage({ params }: Props) {
     try {
       const token = await getApiAccessToken();
       if (token) {
-        const followsRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000/api/v1'}/ai-tools/me/follows`, {
-          headers: { Authorization: `Bearer ${token}` },
-          cache: 'no-store',
-        });
+        const followsRes = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000/api/v1'}/ai-tools/me/follows`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+            cache: 'no-store',
+          },
+        );
         if (followsRes.ok) {
           const json = (await followsRes.json()) as {
             data?: Array<{ categoryId?: string; category?: { id?: string } }>;
           };
           const rows = Array.isArray(json.data) ? json.data : [];
-          initialFollowing = rows.some((r) => r.categoryId === category.id || r.category?.id === category.id);
+          initialFollowing = rows.some(
+            (r) => r.categoryId === category.id || r.category?.id === category.id,
+          );
         }
       }
     } catch {
       initialFollowing = false;
     }
+
+    const copy = aiCategoryCopy(category.slug, category.name);
+    const intro = category.description?.trim() || copy.intro;
 
     return (
       <main className="site-container py-12">
@@ -433,10 +501,8 @@ export default async function AiToolDetailPage({ params }: Props) {
             { label: category.name },
           ]}
         />
-        <h1 className="mt-4 text-3xl font-semibold">{category.name}</h1>
-        {category.description ? (
-          <p className="mt-3 text-[var(--varnarc-subtle)]">{category.description}</p>
-        ) : null}
+        <h1 className="mt-4 text-3xl font-semibold">{copy.title}</h1>
+        <p className="mt-3 max-w-3xl text-[var(--varnarc-subtle)]">{intro}</p>
         <div className="mt-4">
           <AiFollowCategoryButton categoryId={category.id} initialFollowing={initialFollowing} />
         </div>

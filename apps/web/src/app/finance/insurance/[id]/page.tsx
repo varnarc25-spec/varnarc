@@ -10,6 +10,7 @@ import { FinanceReviewsSection } from '@/components/finance/finance-reviews';
 import { RelatedArticles } from '@/components/finance/related-articles';
 import { fetchFinanceInsuranceProduct } from '@/services/finance';
 import { buildSeoMetadata } from '@/lib/seo-metadata';
+import { breadcrumbJsonLd } from '@/lib/seo-json-ld';
 import { ApiError } from '@/services/api-client';
 import { notFound } from 'next/navigation';
 
@@ -49,15 +50,12 @@ export default async function FinanceInsuranceDetailPage({ params }: Props) {
   const jsonLd = {
     '@context': 'https://schema.org',
     '@graph': [
-      {
-        '@type': 'BreadcrumbList',
-        itemListElement: [
-          { '@type': 'ListItem', position: 1, name: 'Home', item: '/' },
-          { '@type': 'ListItem', position: 2, name: 'Finance', item: '/finance' },
-          { '@type': 'ListItem', position: 3, name: 'Insurance', item: '/finance/insurance' },
-          { '@type': 'ListItem', position: 4, name: product.name },
-        ],
-      },
+      breadcrumbJsonLd([
+        { name: 'Home', url: '/' },
+        { name: 'Finance', url: '/finance' },
+        { name: 'Insurance', url: '/finance/insurance' },
+        { name: product.name, url: `/finance/insurance/${id}` },
+      ]),
       {
         '@type': 'FinancialProduct',
         name: product.name,
@@ -78,7 +76,10 @@ export default async function FinanceInsuranceDetailPage({ params }: Props) {
         { label: product.name },
       ]}
     >
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <AdBanner slot="content-top" />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -87,13 +88,23 @@ export default async function FinanceInsuranceDetailPage({ params }: Props) {
         <Stat label="Category" value={product.category?.name || '—'} />
       </div>
 
-      {product.coverage ? <FinanceDetailSection title="Coverage">{product.coverage}</FinanceDetailSection> : null}
-      {product.benefits ? <FinanceDetailSection title="Benefits">{product.benefits}</FinanceDetailSection> : null}
-      {product.affiliateUrl ? <div className="mt-8"><AffiliateCta url={product.affiliateUrl} label="Get a quote" /></div> : null}
+      {product.coverage ? (
+        <FinanceDetailSection title="Coverage">{product.coverage}</FinanceDetailSection>
+      ) : null}
+      {product.benefits ? (
+        <FinanceDetailSection title="Benefits">{product.benefits}</FinanceDetailSection>
+      ) : null}
+      {product.affiliateUrl ? (
+        <div className="mt-8">
+          <AffiliateCta url={product.affiliateUrl} label="Get a quote" />
+        </div>
+      ) : null}
 
       <FinanceReviewsSection entity="insurance" id={id} />
 
-      <RelatedCalculators links={[{ href: '/calculators/income-tax', label: 'Income Tax Calculator' }]} />
+      <RelatedCalculators
+        links={[{ href: '/calculators/income-tax', label: 'Income Tax Calculator' }]}
+      />
       <RelatedArticles />
     </PageShell>
   );

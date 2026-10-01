@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { NewsletterForm } from '@/features/newsletter/newsletter-form';
 import { SocialIcon, getSocialBrandColor } from '@/components/social-icon';
 import { quickTools } from '@/features/home/static-data';
+import { footerQuickLinks } from '@/lib/public-menu-links';
 
 const defaultQuickLinks = [
   { href: '/about', label: 'About Us' },
@@ -16,16 +17,17 @@ const defaultQuickLinks = [
 ];
 
 const helpfulLinks = [
-  { href: '/articles', label: 'Blog' },
-  { href: '/compare/products', label: 'Comparisons' },
+  { href: '/articles', label: 'Articles' },
+  { href: '/compare', label: 'Comparisons' },
   { href: '/reviews', label: 'Reviews' },
   { href: '/directory', label: 'Directory' },
 ];
 
 const resources = [
-  { href: '/articles', label: 'Guides' },
   { href: '/calculators', label: 'Calculators' },
-  { href: '/contact', label: 'Support' },
+  { href: '/finance', label: 'Finance' },
+  { href: '/construction', label: 'Construction' },
+  { href: '/automobile', label: 'Automobile' },
 ];
 
 export function SiteFooter({
@@ -48,7 +50,7 @@ export function SiteFooter({
   showAds?: boolean;
 }) {
   const popular = quickTools.slice(0, 5);
-  const quickLinks = cmsLinks ?? defaultQuickLinks;
+  const quickLinks = footerQuickLinks(cmsLinks, defaultQuickLinks);
   const brand = siteName?.trim() || 'Varnarc';
   const brandTagline =
     tagline?.trim() || 'Smart tools and expert guides to help you plan better and spend smarter.';

@@ -31,8 +31,27 @@ describe('seo-json-ld builders', () => {
     expect(node['@type']).toBe('BreadcrumbList');
     const items = node.itemListElement as Array<Record<string, unknown>>;
     expect(items).toHaveLength(2);
-    expect(items[0]).toMatchObject({ '@type': 'ListItem', position: 1, name: 'Home' });
+    expect(items[0]).toMatchObject({
+      '@type': 'ListItem',
+      position: 1,
+      name: 'Home',
+      item: `${SITE}/`,
+    });
     expect(JSON.parse(JSON.stringify(node))).toEqual(node);
+  });
+
+  it('absolutizes relative breadcrumb item URLs (Search Console id field)', () => {
+    const node = breadcrumbJsonLd(
+      [
+        { name: 'Home', url: '/' },
+        { name: 'Finance', url: '/finance' },
+      ],
+      SITE,
+    );
+    const items = node.itemListElement as Array<Record<string, unknown>>;
+    expect(items[0]?.item).toBe(`${SITE}/`);
+    expect(items[1]?.item).toBe(`${SITE}/finance`);
+    expect(String(items[0]?.item)).toMatch(/^https:\/\//);
   });
 
   it('builds WebPage and WebSite with required fields', () => {

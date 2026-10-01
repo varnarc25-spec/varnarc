@@ -11,6 +11,7 @@ import { JsonLd, breadcrumbJsonLd, reviewJsonLd } from '@/components/seo/json-ld
 import { buildSeoMetadata } from '@/lib/seo-metadata';
 import { apiPublicFetch, ApiError } from '@/services/api-client';
 import { getPublicSiteUrlSync } from '@/lib/public-site-url';
+import { isTemplatedReviewCopy, reviewEditorialCopy } from '@/lib/editorial-copy';
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -35,13 +36,19 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       seoDescription?: string | null;
       body?: string | null;
     }>(`/reviews/slug/${slug}`, { cache: 'no-store' });
-    return buildSeoMetadata({
+    const meta = await buildSeoMetadata({
       entityType: 'review',
       entityId: data.id,
       path: `/reviews/${slug}`,
       title: data.seoTitle || data.title,
-      description: data.seoDescription || data.summary || data.body?.slice(0, 160),
+      description:
+        data.seoDescription?.trim() && !isTemplatedReviewCopy(data.seoDescription)
+          ? data.seoDescription
+          : isTemplatedReviewCopy(data.summary)
+            ? reviewEditorialCopy(slug, data.title).summary
+            : data.summary || data.body?.slice(0, 160),
     });
+    return { ...meta, robots: { index: true, follow: true } };
   } catch {
     return { title: 'Review' };
   }
@@ -70,6 +77,21 @@ export default async function ReviewDetailPage({ params }: Props) {
       sections?: Array<{ title: string; body?: string | null }>;
       metadata?: unknown;
     }>(`/reviews/slug/${slug}`, { cache: 'no-store' });
+
+    const editorial = reviewEditorialCopy(slug, data.title);
+    const summary = isTemplatedReviewCopy(data.summary) ? editorial.summary : data.summary;
+    const body = isTemplatedReviewCopy(data.body) ? editorial.body : data.body;
+    const verdict = isTemplatedReviewCopy(data.verdict) ? editorial.verdict : data.verdict;
+    const pros =
+      data.pros?.length &&
+      !data.pros.every((p) => /Good availability in major cities|Competitive pricing/.test(p.text))
+        ? data.pros
+        : editorial.pros.map((text) => ({ text }));
+    const cons =
+      data.cons?.length &&
+      !data.cons.every((c) => /Premium variants can be expensive|Check warranty terms/.test(c.text))
+        ? data.cons
+        : editorial.cons.map((text) => ({ text }));
 
     const url = `${siteUrl}/reviews/${slug}`;
     const score = data.overallScore != null ? Number(data.overallScore) : null;
@@ -124,7 +146,7 @@ export default async function ReviewDetailPage({ params }: Props) {
         <PageShell
           title={data.title}
           description={
-            data.summary ||
+            summary ||
             (score != null ? `Varnarc Editorial Rating: ${score.toFixed(1)} / 5` : undefined)
           }
           breadcrumbs={[
@@ -188,7 +210,7 @@ export default async function ReviewDetailPage({ params }: Props) {
             </div>
           ) : null}
 
-          {data.body ? <MarkdownContent content={data.body} /> : null}
+          {body ? <MarkdownContent content={body} /> : null}
 
           {data.sections?.map((section) => (
             <section key={section.title} className="mt-8">
@@ -205,27 +227,27 @@ export default async function ReviewDetailPage({ params }: Props) {
             <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
               <h2 className="font-semibold text-green-700">Pros</h2>
               <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-slate-700">
-                {(data.pros ?? []).map((p, i) => (
+                {(pros ?? []).map((p, i) => (
                   <li key={`${p.text}-${i}`}>{p.text}</li>
                 ))}
-                {!data.pros?.length ? <li>No pros listed.</li> : null}
+                {!pros?.length ? <li>No pros listed.</li> : null}
               </ul>
             </div>
             <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
               <h2 className="font-semibold text-red-700">Cons</h2>
               <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-slate-700">
-                {(data.cons ?? []).map((c, i) => (
+                {(cons ?? []).map((c, i) => (
                   <li key={`${c.text}-${i}`}>{c.text}</li>
                 ))}
-                {!data.cons?.length ? <li>No cons listed.</li> : null}
+                {!cons?.length ? <li>No cons listed.</li> : null}
               </ul>
             </div>
           </div>
 
-          {data.verdict ? (
+          {verdict ? (
             <div className="mt-8 rounded-xl border border-slate-200 bg-white p-5">
               <h2 className="font-semibold text-slate-900">Verdict</h2>
-              <p className="mt-2 text-slate-700">{data.verdict}</p>
+              <p className="mt-2 text-slate-700">{verdict}</p>
             </div>
           ) : null}
 

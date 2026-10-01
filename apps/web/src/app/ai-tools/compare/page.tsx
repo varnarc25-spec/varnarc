@@ -4,11 +4,15 @@ import { ContentLayout } from '@/components/layout/content-layout';
 import { AiCompareWidget } from '@/components/ai-tools/ai-compare-widget';
 import { type AiCompareResponse, type AiToolDetail } from '@/components/ai-tools/types';
 import { apiPublicFetch } from '@/services/api-client';
+import { aiCategoryCopy } from '@/lib/editorial-copy';
+
+const compareCopy = aiCategoryCopy('compare', 'Compare');
 
 export const metadata: Metadata = {
-  title: 'Compare AI Tools',
-  description: 'Compare AI tools side by side — pricing, features, and integrations.',
+  title: compareCopy.title,
+  description: compareCopy.description,
   alternates: { canonical: '/ai-tools/compare' },
+  robots: { index: true, follow: true },
 };
 
 export const revalidate = 60;
@@ -35,8 +39,8 @@ export default async function AiToolsComparePage({ searchParams }: Props) {
 
   return (
     <ContentLayout
-      title="Compare AI Tools"
-      description="Pick two or more tools and compare pricing, features, and integrations."
+      title={compareCopy.title}
+      description={compareCopy.intro}
       breadcrumbs={[
         { label: 'Home', href: '/' },
         { label: 'AI Tools', href: '/ai-tools' },

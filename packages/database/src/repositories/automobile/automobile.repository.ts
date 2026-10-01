@@ -21,8 +21,11 @@ type ListParams = CursorPageParams & {
   minGroundClearance?: number;
   minEngineCc?: number;
   maxEngineCc?: number;
+  modelYear?: number;
   modelYearFrom?: number;
+  modelYearTo?: number;
   launchMode?: 'current' | 'upcoming' | 'launches';
+  availableInIndia?: boolean;
   sort?: 'featured' | 'price_asc' | 'price_desc' | 'mileage' | 'newest';
   page?: number;
 };
@@ -80,7 +83,12 @@ export function automobileVehicleWhere(params: ListParams): Prisma.AutomobileVeh
   if (params.minGroundClearance != null) {
     and.push({ groundClearance: { gte: params.minGroundClearance } });
   }
-  if (params.modelYearFrom != null) and.push({ modelYear: { gte: params.modelYearFrom } });
+  if (params.modelYear != null) {
+    and.push({ modelYear: params.modelYear });
+  } else {
+    if (params.modelYearFrom != null) and.push({ modelYear: { gte: params.modelYearFrom } });
+    if (params.modelYearTo != null) and.push({ modelYear: { lte: params.modelYearTo } });
+  }
   if (params.launchMode === 'upcoming') {
     and.push({
       OR: [{ modelYear: { gt: now } }, { launchStatus: { in: ['EXPECTED', 'RUMOURED'] } }],
@@ -92,6 +100,7 @@ export function automobileVehicleWhere(params: ListParams): Prisma.AutomobileVeh
     });
   }
   if (params.featured != null) and.push({ featured: params.featured });
+  if (params.availableInIndia != null) and.push({ availableInIndia: params.availableInIndia });
   if (params.search) {
     and.push({
       OR: [
@@ -103,6 +112,29 @@ export function automobileVehicleWhere(params: ListParams): Prisma.AutomobileVeh
     });
   }
   return { deletedAt: null, ...(and.length ? { AND: and } : {}) };
+}
+
+function vehicleListOrder(
+  sort: ListParams['sort'],
+): Prisma.AutomobileVehicleOrderByWithRelationInput[] {
+  switch (sort) {
+    case 'price_asc':
+      return [{ exShowroomPrice: 'asc' }, { name: 'asc' }];
+    case 'price_desc':
+      return [{ exShowroomPrice: 'desc' }, { name: 'asc' }];
+    case 'mileage':
+      return [{ mileage: 'desc' }, { name: 'asc' }];
+    case 'newest':
+      return [{ modelYear: { sort: 'desc', nulls: 'last' } }, { name: 'asc' }];
+    case 'featured':
+      return [
+        { featured: 'desc' },
+        { modelYear: { sort: 'desc', nulls: 'last' } },
+        { name: 'asc' },
+      ];
+    default:
+      return [{ updatedAt: 'desc' }, { id: 'desc' }];
+  }
 }
 
 export class AutomobileManufacturerRepository extends BaseRepository {
@@ -122,12 +154,20 @@ export class AutomobileManufacturerRepository extends BaseRepository {
       where: { slug, deletedAt: null },
       include: {
         vehicles: {
-          where: { deletedAt: null, status: 'PUBLISHED' },
+          where: { deletedAt: null, status: 'PUBLISHED', availableInIndia: true },
           take: 24,
           orderBy: { updatedAt: 'desc' },
         },
         _count: { select: { vehicles: true } },
       },
+    });
+  }
+
+  listAll() {
+    return this.db.automobileManufacturer.findMany({
+      where: { deletedAt: null },
+      orderBy: { name: 'asc' },
+      include: { _count: { select: { vehicles: true } } },
     });
   }
 
@@ -143,6 +183,7 @@ export class AutomobileManufacturerRepository extends BaseRepository {
                 { name: { contains: params.search, mode: 'insensitive' } },
                 { slug: { contains: params.search, mode: 'insensitive' } },
                 { country: { contains: params.search, mode: 'insensitive' } },
+                { tagline: { contains: params.search, mode: 'insensitive' } },
               ],
             }
           : {}),
@@ -173,6 +214,7 @@ export class AutomobileVehicleRepository extends BaseRepository {
     manufacturer: true,
     maintenanceSchedules: { where: { deletedAt: null }, orderBy: { sortOrder: 'asc' as const } },
     images: { where: { deletedAt: null }, orderBy: { displayOrder: 'asc' as const } },
+    prices: { where: { isCurrent: true }, orderBy: { countryCode: 'asc' as const } },
     reviewLinks: {
       where: { review: { deletedAt: null, status: 'PUBLISHED' } },
       include: {
@@ -259,6 +301,46 @@ export class AutomobileVehicleRepository extends BaseRepository {
       ...params,
       where: automobileVehicleWhere(params),
       include: { manufacturer: true },
+    });
+  }
+
+  async listPaged(params: ListParams = {}) {
+    const where = automobileVehicleWhere(params);
+    const page = params.page && params.page > 0 ? params.page : 1;
+    const pageSize = Math.min(params.limit ?? 25, 100);
+    const [total, items] = await Promise.all([
+      this.db.automobileVehicle.count({ where }),
+      this.db.automobileVehicle.findMany({
+        where,
+        include: {
+          manufacturer: true,
+          prices: { where: { isCurrent: true } },
+        },
+        orderBy: vehicleListOrder(params.sort),
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+      }),
+    ]);
+    return { items, total, page, pageSize };
+  }
+
+  listForExport(params: ListParams = {}) {
+    return this.db.automobileVehicle.findMany({
+      where: automobileVehicleWhere(params),
+      include: {
+        manufacturer: { select: { name: true, slug: true } },
+        prices: { where: { isCurrent: true } },
+      },
+      orderBy: vehicleListOrder(params.sort),
+    });
+  }
+
+  listManufacturerFilterOptions() {
+    return this.db.automobileManufacturer.findMany({
+      where: { deletedAt: null },
+      select: { id: true, name: true },
+      orderBy: { name: 'asc' },
+      take: 2000,
     });
   }
 
@@ -377,6 +459,111 @@ export class AutomobileVehicleRepository extends BaseRepository {
     return this.db.automobileVehicle.findMany({
       where: { id: { in: ids }, deletedAt: null, status: 'PUBLISHED' },
       include: { manufacturer: true },
+    });
+  }
+
+  listIndiaSyncBatch(cursor: string | undefined, take: number) {
+    return this.db.automobileVehicle.findMany({
+      where: { deletedAt: null, ...(cursor ? { id: { gt: cursor } } : {}) },
+      orderBy: { id: 'asc' },
+      take,
+      select: {
+        id: true,
+        name: true,
+        model: true,
+        variant: true,
+        manufacturer: { select: { name: true } },
+      },
+    });
+  }
+
+  resetIndiaAvailability() {
+    return this.db.automobileVehicle.updateMany({
+      where: { deletedAt: null, availableInIndia: true },
+      data: { availableInIndia: false },
+    });
+  }
+
+  markIndiaAvailability(ids: string[]) {
+    if (!ids.length) return Promise.resolve({ count: 0 });
+    return this.db.automobileVehicle.updateMany({
+      where: { id: { in: ids }, deletedAt: null },
+      data: { availableInIndia: true },
+    });
+  }
+
+  listPrices(vehicleId: string) {
+    return this.db.automobileVehiclePrice.findMany({
+      where: { vehicleId },
+      orderBy: [{ isCurrent: 'desc' }, { countryCode: 'asc' }, { effectiveFrom: 'desc' }],
+    });
+  }
+
+  async recordPrice(
+    vehicleId: string,
+    data: {
+      countryCode: string;
+      currencyCode: string;
+      market?: string | null;
+      priceType: string;
+      amount?: number | null;
+      priceMin?: number | null;
+      priceMax?: number | null;
+      city?: string | null;
+      state?: string | null;
+      available: boolean;
+      sourceName?: string | null;
+      sourceType?: string | null;
+      sourceUrl?: string | null;
+      verified: boolean;
+      verifiedAt?: Date | null;
+    },
+  ) {
+    const current = await this.db.automobileVehiclePrice.findFirst({
+      where: {
+        vehicleId,
+        countryCode: data.countryCode,
+        priceType: data.priceType,
+        isCurrent: true,
+      },
+    });
+    const amountOf = (value: unknown) => (value == null ? null : Number(value));
+    const same =
+      current &&
+      amountOf(current.amount) === amountOf(data.amount) &&
+      current.available === data.available &&
+      current.currencyCode === data.currencyCode &&
+      (current.sourceUrl ?? null) === (data.sourceUrl ?? null) &&
+      current.verified === data.verified;
+    if (same && current) return current;
+    const now = new Date();
+    if (current) {
+      await this.db.automobileVehiclePrice.update({
+        where: { id: current.id },
+        data: { isCurrent: false, effectiveTo: now },
+      });
+    }
+    return this.db.automobileVehiclePrice.create({
+      data: {
+        vehicleId,
+        countryCode: data.countryCode,
+        currencyCode: data.currencyCode,
+        market: data.market ?? null,
+        priceType: data.priceType,
+        amount: data.amount ?? null,
+        priceMin: data.priceMin ?? null,
+        priceMax: data.priceMax ?? null,
+        city: data.city ?? null,
+        state: data.state ?? null,
+        available: data.available,
+        sourceName: data.sourceName ?? null,
+        sourceType: data.sourceType ?? null,
+        sourceUrl: data.sourceUrl || null,
+        verified: data.verified,
+        verifiedAt: data.verifiedAt ?? null,
+        effectiveFrom: now,
+        isCurrent: true,
+      },
     });
   }
 }

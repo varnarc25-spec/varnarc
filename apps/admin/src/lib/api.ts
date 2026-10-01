@@ -12,7 +12,12 @@ export async function getApiAccessToken(): Promise<string | null> {
 export async function apiServerFetch<T>(
   path: string,
   init: RequestInit = {},
-): Promise<{ data: T | null; error: string | null; status: number }> {
+): Promise<{
+  data: T | null;
+  error: string | null;
+  status: number;
+  meta?: Record<string, unknown>;
+}> {
   const token = await getApiAccessToken();
   const apiUrl = getApiBaseUrl();
 
@@ -40,6 +45,7 @@ export async function apiServerFetch<T>(
 
   const json = (await res.json().catch(() => ({}))) as {
     data?: T;
+    meta?: Record<string, unknown>;
     error?: { message?: string };
   };
 
@@ -51,7 +57,7 @@ export async function apiServerFetch<T>(
     };
   }
 
-  return { data: (json.data as T) ?? null, error: null, status: res.status };
+  return { data: (json.data as T) ?? null, error: null, status: res.status, meta: json.meta };
 }
 
 export async function fetchPublicCategoryTree<

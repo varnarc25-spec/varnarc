@@ -14,11 +14,20 @@ import { productEmiLink, processingFeeDisplay } from '@/lib/loan-catalog';
 import { getRateFreshness } from '@/lib/loan-rate-freshness';
 import { isLoanHubCategorySlug } from '@/lib/loan-hub-categories';
 import { loanCategoryCanonicalPath } from '@/lib/loan-path';
+import { financeProductDescription } from '@/lib/finance-product-seo';
+import { breadcrumbJsonLd } from '@/lib/seo-json-ld';
 import Link from 'next/link';
 
 export function LoanDetailView({ loan, id }: { loan: FinanceLoan; id: string }) {
   const title = loan.seoTitle || loan.name;
-  const description = loan.seoDescription || loan.description;
+  const description = financeProductDescription({
+    name: loan.name,
+    kind: 'loan',
+    bankName: loan.bank?.name,
+    seoDescription: loan.seoDescription,
+    description: loan.description,
+    shortDescription: loan.shortDescription,
+  });
   const freshness = getRateFreshness(loan.rateLastVerifiedAt);
   const fee = processingFeeDisplay(loan);
   const emi = productEmiLink(loan);
@@ -31,15 +40,12 @@ export function LoanDetailView({ loan, id }: { loan: FinanceLoan; id: string }) 
   const jsonLd = {
     '@context': 'https://schema.org',
     '@graph': [
-      {
-        '@type': 'BreadcrumbList',
-        itemListElement: [
-          { '@type': 'ListItem', position: 1, name: 'Home', item: '/' },
-          { '@type': 'ListItem', position: 2, name: 'Finance', item: '/finance' },
-          { '@type': 'ListItem', position: 3, name: 'Loans', item: '/finance/loans' },
-          { '@type': 'ListItem', position: 4, name: loan.name },
-        ],
-      },
+      breadcrumbJsonLd([
+        { name: 'Home', url: '/' },
+        { name: 'Finance', url: '/finance' },
+        { name: 'Loans', url: '/finance/loans' },
+        { name: loan.name, url: `/finance/loans/${id}` },
+      ]),
       {
         '@type': 'FinancialProduct',
         name: loan.name,
@@ -107,9 +113,7 @@ export function LoanDetailView({ loan, id }: { loan: FinanceLoan; id: string }) 
         </p>
       ) : null}
 
-      {loan.description ? (
-        <FinanceDetailSection title="Overview">{loan.description}</FinanceDetailSection>
-      ) : null}
+      <FinanceDetailSection title="Overview">{description}</FinanceDetailSection>
       {loan.eligibility ? (
         <FinanceDetailSection title="Eligibility">{loan.eligibility}</FinanceDetailSection>
       ) : null}
@@ -152,7 +156,14 @@ export async function loanDetailMetadata(id: string): Promise<Metadata> {
       entityId: data.id,
       path: `/finance/loans/${id}`,
       title: data.seoTitle || data.name,
-      description: data.seoDescription || data.description,
+      description: financeProductDescription({
+        name: data.name,
+        kind: 'loan',
+        bankName: data.bank?.name,
+        seoDescription: data.seoDescription,
+        description: data.description,
+        shortDescription: data.shortDescription,
+      }),
     });
   } catch {
     return { title: 'Loan', alternates: { canonical: `/finance/loans/${id}` } };

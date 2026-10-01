@@ -21,7 +21,15 @@ import {
 import { automobileHubBreadcrumbs, buildAutomobileMetadata } from '@/lib/automobile/seo';
 import { ApiError } from '@/services/api-client';
 import { notFound } from 'next/navigation';
-import { AUTOMOBILE_ONROAD_CITIES, formatAutomobileMileage } from '@varnarc/validation';
+import {
+  AUTOMOBILE_ONROAD_CITIES,
+  INDIA_PRICE_DISCLAIMER,
+  INTERNATIONAL_PRICE_DISCLAIMER,
+  formatAutomobileMileage,
+  formatIndianVehiclePrice,
+  formatInternationalVehiclePrice,
+} from '@varnarc/validation';
+import { isWeakIndiaAutomobile } from '@/lib/editorial-copy';
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -29,6 +37,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   try {
     const { data } = await fetchAutomobileVehicleBySlug(slug);
+    const weakIndia = isWeakIndiaAutomobile({
+      slug,
+      name: data.name,
+      manufacturerSlug: data.manufacturer?.slug,
+      manufacturerName: data.manufacturer?.name,
+    });
     return buildAutomobileMetadata({
       entityType: 'automobile_vehicle',
       entityId: data.id,
@@ -37,8 +51,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       description:
         data.seoDescription ||
         data.description ||
-        `Specs, indicative price and ownership tools for ${data.name}.`,
+        (weakIndia
+          ? `${data.name} is listed from the global catalog. It may not be sold widely in India — treat specs as reference only.`
+          : `Specs, indicative price and ownership tools for ${data.name}.`),
       image: data.imageUrl,
+      forceNoIndex: weakIndia,
     });
   } catch {
     return { title: 'Vehicle', alternates: { canonical: `/automobile/vehicles/${slug}` } };
@@ -101,6 +118,22 @@ export default async function AutomobileVehicleDetailPage({ params }: Props) {
     { label: 'Warranty', value: vehicle.warranty },
   ].filter((row) => row.value != null && row.value !== '');
 
+  const indiaPrice =
+    vehicle.pricingView?.currentPrice?.currency === 'INR' &&
+    vehicle.pricingView.currentPrice.verified
+      ? vehicle.pricingView.currentPrice.amount
+      : null;
+  const ukPrice = vehicle.pricingView?.otherMarkets?.find((price) => price.market === 'GB');
+  const shownIndiaPrice = indiaPrice ?? (ukPrice ? null : vehicle.exShowroomPrice);
+  const availability = vehicle.pricingView?.indiaAvailability ?? vehicle.indiaAvailability ?? null;
+
+  const weakIndia = isWeakIndiaAutomobile({
+    slug,
+    name: vehicle.name,
+    manufacturerSlug: vehicle.manufacturer?.slug,
+    manufacturerName: vehicle.manufacturer?.name,
+  });
+
   return (
     <PageShell
       title={title}
@@ -123,13 +156,29 @@ export default async function AutomobileVehicleDetailPage({ params }: Props) {
           path,
           image: vehicle.imageUrl,
           brand: vehicle.manufacturer?.name,
-          price: vehicle.exShowroomPrice,
+          price:
+            shownIndiaPrice != null && (indiaPrice != null || !ukPrice) ? shownIndiaPrice : null,
           priceCurrency: 'INR',
           aggregateRating,
         }}
       />
 
       <VehicleGallery images={vehicle.images} fallbackUrl={vehicle.imageUrl} alt={vehicle.name} />
+
+      {weakIndia ? (
+        <p className="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
+          This listing is from the global catalog and may not be sold widely in India. Specs and
+          prices are reference-only. Browse{' '}
+          <Link href="/automobile/cars/under-10-lakh" className="font-medium underline">
+            cars under ₹10 lakh
+          </Link>{' '}
+          or{' '}
+          <Link href="/automobile/hatchback" className="font-medium underline">
+            hatchbacks
+          </Link>{' '}
+          for India-market models.
+        </p>
+      ) : null}
 
       <nav className="mb-6 flex flex-wrap gap-2 text-sm" aria-label="On this page">
         {[
@@ -168,19 +217,44 @@ export default async function AutomobileVehicleDetailPage({ params }: Props) {
       </div>
 
       <div className="mb-8 grid gap-4 sm:grid-cols-2" id="price">
-        {vehicle.exShowroomPrice != null ? (
+        {shownIndiaPrice != null && (indiaPrice != null || !ukPrice) ? (
           <div className="rounded-xl border border-slate-200 bg-white p-4">
             <div className="text-xs uppercase tracking-wide text-slate-500">Ex-showroom</div>
             <div className="mt-1 text-2xl font-extrabold text-[#0b1f3a]">
-              {formatAutomobileInr(vehicle.exShowroomPrice) ?? `₹${vehicle.exShowroomPrice}`}
+              {formatIndianVehiclePrice(shownIndiaPrice) ?? formatAutomobileInr(shownIndiaPrice)}
+            </div>
+            <p className="mt-3 text-xs leading-5 text-slate-500">{INDIA_PRICE_DISCLAIMER}</p>
+          </div>
+        ) : (
+          <div className="rounded-xl border border-slate-200 bg-white p-4">
+            <div className="text-xs uppercase tracking-wide text-slate-500">India</div>
+            <div className="mt-1 text-lg font-semibold text-[#0b1f3a]">
+              {availability === 'MODEL_ONLY'
+                ? 'This model is sold in India, but this exact variant is not.'
+                : availability === 'NOT_AVAILABLE'
+                  ? 'Not officially available in India'
+                  : 'India price not verified'}
             </div>
           </div>
+        )}
+        {ukPrice?.amount != null ? (
+          <div className="rounded-xl border border-slate-200 bg-white p-4">
+            <div className="text-xs uppercase tracking-wide text-slate-500">
+              International pricing
+            </div>
+            <div className="mt-1 text-2xl font-extrabold text-[#0b1f3a]">
+              UK price: {formatInternationalVehiclePrice(ukPrice.amount, ukPrice.currency)}
+            </div>
+            <p className="mt-3 text-xs leading-5 text-slate-500">
+              {INTERNATIONAL_PRICE_DISCLAIMER}
+            </p>
+          </div>
         ) : null}
-        {vehicle.estimatedOnRoadPrice != null ? (
+        {vehicle.estimatedOnRoadPrice != null && indiaPrice != null ? (
           <div className="rounded-xl border border-slate-200 bg-white p-4">
             <div className="text-xs uppercase tracking-wide text-slate-500">Est. on-road</div>
             <div className="mt-1 text-2xl font-extrabold text-[#0b1f3a]">
-              {formatAutomobileInr(vehicle.estimatedOnRoadPrice) ??
+              {formatIndianVehiclePrice(vehicle.estimatedOnRoadPrice) ??
                 `₹${vehicle.estimatedOnRoadPrice}`}
             </div>
           </div>

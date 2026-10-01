@@ -52,6 +52,24 @@ RUN set -e; \
     DEST_NODE_MODULES="$(dirname "$(dirname "$CLIENT_PKG")")"; \
     cp -r "$SRC_ROOT" "$DEST_NODE_MODULES/"; \
     test -f "$DEST_NODE_MODULES/.prisma/client/index.js" || (echo "ERROR: Prisma client not copied into deploy bundle" && exit 1)
+# pnpm deploy --prod omits the Prisma CLI. Admin Settings → Database migrate needs it.
+RUN set -e; \
+    copy_pkg() { \
+      _name="$1"; \
+      _src="$(find /app/node_modules/.pnpm -path "*/node_modules/${_name}/package.json" | head -n1)"; \
+      if [ -n "$_src" ]; then \
+        mkdir -p "/deploy/node_modules/${_name}"; \
+        cp -a "$(dirname "$_src")/." "/deploy/node_modules/${_name}/"; \
+      fi; \
+    }; \
+    copy_pkg prisma; \
+    copy_pkg @prisma/engines; \
+    copy_pkg @prisma/engines-version; \
+    mkdir -p /deploy/node_modules/.bin; \
+    if [ -f /deploy/node_modules/prisma/build/index.js ]; then \
+      printf '%s\n' '#!/bin/sh' 'exec node "$(dirname "$0")/../prisma/build/index.js" "$@"' > /deploy/node_modules/.bin/prisma; \
+      chmod +x /deploy/node_modules/.bin/prisma; \
+    fi
 
 FROM node:20-alpine AS runner
 RUN apk add --no-cache openssl

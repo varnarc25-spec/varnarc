@@ -5,6 +5,7 @@ import {
   AutomobileVehicleReviewLinker,
   AutomobileVersionHistory,
 } from '@/components/automobile-forms';
+import { AutomobileMarketPricing } from '@/components/automobile-market-pricing';
 import { apiServerFetch } from '@/lib/api';
 
 type VehicleDetail = {
@@ -25,6 +26,7 @@ type VehicleDetail = {
   description?: string | null;
   featured?: boolean;
   sponsored?: boolean;
+  availableInIndia?: boolean;
   manufacturerId?: string | null;
   manufacturer?: { id: string; name: string } | null;
   reviewLinks?: Array<{ reviewId: string }>;
@@ -73,6 +75,7 @@ export default async function AutomobileVehicleEditPage({
             <Badge>{vehicle.status}</Badge>
             {vehicle.featured ? <Badge>Featured</Badge> : null}
             {vehicle.sponsored ? <Badge>Sponsored</Badge> : null}
+            {vehicle.availableInIndia ? <Badge>India</Badge> : <Badge>Not India</Badge>}
           </div>
           <AutomobileVehicleEditForm
             id={vehicle.id}
@@ -98,8 +101,10 @@ export default async function AutomobileVehicleEditPage({
               description: vehicle.description,
               featured: vehicle.featured,
               sponsored: vehicle.sponsored,
+              availableInIndia: vehicle.availableInIndia,
             }}
           />
+          <AutomobileMarketPricing vehicleId={vehicle.id} />
           <AutomobileVehicleReviewLinker
             vehicleId={vehicle.id}
             initialReviewIds={(vehicle.reviewLinks ?? []).map((link) => link.reviewId)}

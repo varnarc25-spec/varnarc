@@ -2,18 +2,22 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { ContentLayout } from '@/components/layout/content-layout';
 import { AiUtilitiesPanel } from '@/components/ai-tools/ai-utilities-panel';
+import { aiCategoryCopy } from '@/lib/editorial-copy';
+
+const utilitiesCopy = aiCategoryCopy('utilities', 'Utilities');
 
 export const metadata: Metadata = {
-  title: 'AI Utilities',
-  description: 'Run free deterministic AI utilities — prompts, SEO helpers, formatters, and more.',
+  title: utilitiesCopy.title,
+  description: utilitiesCopy.description,
   alternates: { canonical: '/ai-tools/utilities' },
+  robots: { index: true, follow: true },
 };
 
 export default function AiToolsUtilitiesPage() {
   return (
     <ContentLayout
-      title="AI Utilities"
-      description="Lightweight helpers for prompts, summaries, SEO copy, JSON, and markdown."
+      title={utilitiesCopy.title}
+      description={utilitiesCopy.intro}
       breadcrumbs={[
         { label: 'Home', href: '/' },
         { label: 'AI Tools', href: '/ai-tools' },

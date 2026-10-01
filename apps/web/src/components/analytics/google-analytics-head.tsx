@@ -5,8 +5,13 @@
 export function GoogleAnalyticsHead({ gaId }: { gaId: string }) {
   return (
     <>
-      <script async src={`https://www.googletagmanager.com/gtag/js?id=${gaId}`} />
       <script
+        async
+        src={`https://www.googletagmanager.com/gtag/js?id=${gaId}`}
+        suppressHydrationWarning
+      />
+      <script
+        suppressHydrationWarning
         dangerouslySetInnerHTML={{
           __html: `
 window.dataLayer = window.dataLayer || [];

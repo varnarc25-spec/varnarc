@@ -8,18 +8,21 @@ function isPublicPath(pathname: string) {
   return PUBLIC_PREFIXES.some((p) => pathname === p || pathname.startsWith(`${p}/`));
 }
 
+function nextWithPathname(request: NextRequest, pathname: string) {
+  const requestHeaders = new Headers(request.headers);
+  // Must be on the *request* so RootLayout's headers() can see /login and skip /auth/me.
+  requestHeaders.set('x-middleware-pathname', pathname);
+  const res = NextResponse.next({ request: { headers: requestHeaders } });
+  res.headers.set('x-middleware-pathname', pathname);
+  return res;
+}
+
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const token = request.cookies.get(ADMIN_SESSION_COOKIE)?.value;
 
-  if (pathname === '/login' && token) {
-    return NextResponse.redirect(new URL('/', request.url));
-  }
-
   if (isPublicPath(pathname)) {
-    const res = NextResponse.next();
-    res.headers.set('x-middleware-pathname', pathname);
-    return res;
+    return nextWithPathname(request, pathname);
   }
 
   if (!token) {
@@ -29,9 +32,7 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(login);
   }
 
-  const res = NextResponse.next();
-  res.headers.set('x-middleware-pathname', pathname);
-  return res;
+  return nextWithPathname(request, pathname);
 }
 
 export const config = {

@@ -19,7 +19,13 @@ export type AutomobileManufacturer = {
   website?: string | null;
   logoUrl?: string | null;
   country?: string | null;
+  foundedYear?: number | null;
+  tagline?: string | null;
   featured?: boolean;
+  availableInIndia?: boolean;
+  indiaAvailabilityStatus?: string | null;
+  indiaWebsite?: string | null;
+  indiaVerificationNote?: string | null;
   seoTitle?: string | null;
   seoDescription?: string | null;
   vehicles?: AutomobileVehicle[];
@@ -49,6 +55,25 @@ export type AutomobileVehicle = {
   bootSpace?: number | string | null;
   specifications?: Record<string, unknown> | null;
   exShowroomPrice?: number | string | null;
+  indiaAvailability?: 'EXACT_VARIANT' | 'MODEL_ONLY' | 'NOT_AVAILABLE' | 'UNVERIFIED' | null;
+  pricingView?: {
+    vehicleId: string;
+    primaryMarket: string;
+    indiaAvailability: string;
+    currentPrice: {
+      currency: string;
+      amount: number | null;
+      priceType: string;
+      verified: boolean;
+    } | null;
+    otherMarkets: Array<{
+      market: string;
+      currency: string;
+      amount: number | null;
+      priceType: string;
+      verified: boolean;
+    }>;
+  } | null;
   estimatedOnRoadPrice?: number | string | null;
   warranty?: string | null;
   description?: string | null;

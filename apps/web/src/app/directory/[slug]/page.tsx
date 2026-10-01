@@ -6,7 +6,12 @@ import { DirectoryContactWidget } from '@/components/directory/directory-contact
 import { DirectoryGallery } from '@/components/directory/directory-gallery';
 import { ListingLeadForm } from '@/components/directory/directory-widgets';
 import { DirectoryListingCard } from '@/components/directory/directory-listing-card';
-import { faqJsonLd, localBusinessJsonLd, organizationJsonLd } from '@/components/seo/json-ld';
+import {
+  faqJsonLd,
+  localBusinessJsonLd,
+  organizationJsonLd,
+  breadcrumbJsonLd,
+} from '@/components/seo/json-ld';
 import { buildSeoMetadata } from '@/lib/seo-metadata';
 import { UserReviewWidget } from '@/components/reviews/user-review-widget';
 import { RecordContentView } from '@/components/record-content-view';
@@ -47,7 +52,12 @@ type Listing = {
   }>;
   services?: Array<{ name: string; description?: string | null }>;
   products?: Array<{ name: string; price?: string | null; description?: string | null }>;
-  hours?: Array<{ day: number; openTime?: string | null; closeTime?: string | null; isClosed?: boolean }>;
+  hours?: Array<{
+    day: number;
+    openTime?: string | null;
+    closeTime?: string | null;
+    isClosed?: boolean;
+  }>;
   categories?: Array<{ category: { name: string; slug: string } }>;
   media?: Array<{ url?: string | null; kind: string; caption?: string | null }>;
   _count?: { reviews: number };
@@ -64,7 +74,12 @@ type RelatedResponse = {
   }>;
   editorialReviews?: Array<{ id: string; title: string; slug: string }>;
   comparisons?: Array<{ id: string; title: string; slug: string }>;
-  relatedBusinesses?: Array<{ id: string; name: string; slug: string; description?: string | null }>;
+  relatedBusinesses?: Array<{
+    id: string;
+    name: string;
+    slug: string;
+    description?: string | null;
+  }>;
   nearby?: Array<{ id: string; name: string; slug: string; description?: string | null }>;
 };
 
@@ -116,16 +131,20 @@ export default async function BusinessDetailPage({ params }: Props) {
       body: JSON.stringify({ eventType: 'VIEW' }),
     }).catch(() => undefined);
 
-    const relatedResult = await apiPublicFetch<RelatedResponse>(`/directory/listings/slug/${slug}/related`, {
-      next: { revalidate: 60 },
-    }).catch(() => ({ data: {} as RelatedResponse }));
+    const relatedResult = await apiPublicFetch<RelatedResponse>(
+      `/directory/listings/slug/${slug}/related`,
+      {
+        next: { revalidate: 60 },
+      },
+    ).catch(() => ({ data: {} as RelatedResponse }));
 
     const related = relatedResult.data ?? {};
     const faqs = parseFaqs(data.faqs);
     const primary = data.locations?.[0];
     const hasGeo = primary?.latitude != null && primary?.longitude != null;
     const ratingSummary = related.ratingSummary;
-    const avgRating = ratingSummary?.averageRating != null ? Number(ratingSummary.averageRating) : null;
+    const avgRating =
+      ratingSummary?.averageRating != null ? Number(ratingSummary.averageRating) : null;
     const totalRatings = ratingSummary?.totalRatings ?? 0;
 
     const structuredData = hasGeo
@@ -159,15 +178,11 @@ export default async function BusinessDetailPage({ params }: Props) {
           logo: data.logoUrl,
         });
 
-    const breadcrumbLd = {
-      '@context': 'https://schema.org',
-      '@type': 'BreadcrumbList',
-      itemListElement: [
-        { '@type': 'ListItem', position: 1, name: 'Home', item: '/' },
-        { '@type': 'ListItem', position: 2, name: 'Directory', item: '/directory' },
-        { '@type': 'ListItem', position: 3, name: data.name },
-      ],
-    };
+    const breadcrumbLd = breadcrumbJsonLd([
+      { name: 'Home', url: '/' },
+      { name: 'Directory', url: '/directory' },
+      { name: data.name, url: `/directory/${data.slug}` },
+    ]);
 
     return (
       <main className="site-container py-12">
@@ -176,10 +191,19 @@ export default async function BusinessDetailPage({ params }: Props) {
           entityId={data.id}
           metadata={{ slug: data.slug, title: data.name }}
         />
-        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }} />
-        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }} />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }}
+        />
         {faqs.length ? (
-          <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd(faqs)) }} />
+          <script
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd(faqs)) }}
+          />
         ) : null}
 
         <Breadcrumbs
@@ -187,7 +211,12 @@ export default async function BusinessDetailPage({ params }: Props) {
             { label: 'Home', href: '/' },
             { label: 'Directory', href: '/directory' },
             ...(data.categories?.[0]
-              ? [{ label: data.categories[0].category.name, href: `/directory/${data.categories[0].category.slug}` }]
+              ? [
+                  {
+                    label: data.categories[0].category.name,
+                    href: `/directory/${data.categories[0].category.slug}`,
+                  },
+                ]
               : []),
             { label: data.name },
           ]}
@@ -217,7 +246,11 @@ export default async function BusinessDetailPage({ params }: Props) {
         ) : null}
 
         <div className="mt-8">
-          <DirectoryGallery logoUrl={data.logoUrl} coverImageUrl={data.coverImageUrl} media={data.media} />
+          <DirectoryGallery
+            logoUrl={data.logoUrl}
+            coverImageUrl={data.coverImageUrl}
+            media={data.media}
+          />
         </div>
 
         <div className="mt-10 grid gap-10 lg:grid-cols-[1fr_320px]">
@@ -239,7 +272,11 @@ export default async function BusinessDetailPage({ params }: Props) {
                       {l.googleMapsUrl ? (
                         <>
                           {' · '}
-                          <a className="text-[var(--varnarc-brand)] hover:underline" href={l.googleMapsUrl} rel="noopener noreferrer">
+                          <a
+                            className="text-[var(--varnarc-brand)] hover:underline"
+                            href={l.googleMapsUrl}
+                            rel="noopener noreferrer"
+                          >
                             Map
                           </a>
                         </>
@@ -275,7 +312,9 @@ export default async function BusinessDetailPage({ params }: Props) {
                   {data.products!.map((p) => (
                     <li key={p.name}>
                       {p.name}
-                      {p.price ? <span className="text-[var(--varnarc-subtle)]"> — {p.price}</span> : null}
+                      {p.price ? (
+                        <span className="text-[var(--varnarc-subtle)]"> — {p.price}</span>
+                      ) : null}
                     </li>
                   ))}
                 </ul>
@@ -316,7 +355,10 @@ export default async function BusinessDetailPage({ params }: Props) {
                 <ul className="mt-3 space-y-2 text-sm">
                   {related.comparisons!.map((c) => (
                     <li key={c.id}>
-                      <Link href={`/compare/${c.slug}`} className="text-[var(--varnarc-brand)] hover:underline">
+                      <Link
+                        href={`/compare/${c.slug}`}
+                        className="text-[var(--varnarc-brand)] hover:underline"
+                      >
                         {c.title}
                       </Link>
                     </li>
@@ -330,7 +372,12 @@ export default async function BusinessDetailPage({ params }: Props) {
                 <h2 className="font-semibold">Related businesses</h2>
                 <div className="mt-3 grid gap-4 sm:grid-cols-2">
                   {related.relatedBusinesses!.map((b) => (
-                    <DirectoryListingCard key={b.id} name={b.name} slug={b.slug} description={b.description} />
+                    <DirectoryListingCard
+                      key={b.id}
+                      name={b.name}
+                      slug={b.slug}
+                      description={b.description}
+                    />
                   ))}
                 </div>
               </section>
@@ -342,7 +389,10 @@ export default async function BusinessDetailPage({ params }: Props) {
                 <ul className="mt-3 space-y-2 text-sm">
                   {related.nearby!.map((n) => (
                     <li key={n.id}>
-                      <Link href={`/directory/${n.slug}`} className="text-[var(--varnarc-brand)] hover:underline">
+                      <Link
+                        href={`/directory/${n.slug}`}
+                        className="text-[var(--varnarc-brand)] hover:underline"
+                      >
                         {n.name}
                       </Link>
                     </li>
@@ -365,7 +415,10 @@ export default async function BusinessDetailPage({ params }: Props) {
                 <ul className="mt-3 space-y-2 text-sm">
                   {related.editorialReviews!.map((r) => (
                     <li key={r.id}>
-                      <Link href={`/reviews/${r.slug}`} className="text-[var(--varnarc-brand)] hover:underline">
+                      <Link
+                        href={`/reviews/${r.slug}`}
+                        className="text-[var(--varnarc-brand)] hover:underline"
+                      >
                         {r.title}
                       </Link>
                     </li>
@@ -421,7 +474,9 @@ export default async function BusinessDetailPage({ params }: Props) {
           ]}
         />
         <h1 className="mt-4 text-3xl font-semibold">{category.name}</h1>
-        {category.description ? <p className="mt-3 text-[var(--varnarc-subtle)]">{category.description}</p> : null}
+        {category.description ? (
+          <p className="mt-3 text-[var(--varnarc-subtle)]">{category.description}</p>
+        ) : null}
 
         {(category.children ?? []).length ? (
           <div className="mt-6 flex flex-wrap gap-2">
@@ -439,7 +494,12 @@ export default async function BusinessDetailPage({ params }: Props) {
 
         <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {(listings ?? []).map((b) => (
-            <DirectoryListingCard key={b.id} name={b.name} slug={b.slug} description={b.description} />
+            <DirectoryListingCard
+              key={b.id}
+              name={b.name}
+              slug={b.slug}
+              description={b.description}
+            />
           ))}
         </div>
       </main>

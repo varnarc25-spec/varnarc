@@ -3,13 +3,14 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import { usePathname } from 'next/navigation';
-import { Menu, User, X } from 'lucide-react';
+import { ChevronDown, Menu, User, X } from 'lucide-react';
 import { ThemeToggle } from '@/components/shared/theme-toggle';
 import { LocaleSwitch } from '@/components/shared/locale-switch';
 import { SearchAutocomplete } from '@/components/search/search-autocomplete';
 import { NotificationBell } from '@/components/notifications/notification-bell';
 import { AuthNavLink } from '@/components/auth-nav-link';
 import { HeaderAccount } from '@/components/header-account';
+import { splitPrimaryNav } from '@/lib/public-menu-links';
 
 function HeaderSearch({ className = '' }: { className?: string }) {
   return (
@@ -47,6 +48,7 @@ export function SiteHeader({
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const items = navProp ?? [];
+  const { primary, more } = splitPrimaryNav(items);
   const brand = siteName?.trim() || 'Varnarc';
   const brandTagline = tagline?.trim() || 'Finance • Home • Auto • Tools';
 
@@ -123,12 +125,12 @@ export function SiteHeader({
       </div>
 
       <div className="hidden bg-[var(--varnarc-brand)] lg:block">
-        <div className="site-container flex h-11 items-center">
+        <div className="site-container">
           <nav
-            className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto text-white"
+            className="flex h-11 min-w-0 items-center gap-0.5 overflow-visible text-white"
             aria-label="Primary"
           >
-            {items.map((item) => {
+            {primary.map((item) => {
               const active = pathname === item.href;
               return (
                 <Link
@@ -142,6 +144,25 @@ export function SiteHeader({
                 </Link>
               );
             })}
+            {more.length ? (
+              <details className="relative shrink-0">
+                <summary className="inline-flex cursor-pointer list-none items-center gap-1 rounded px-2 py-1.5 text-[12.5px] font-medium text-white hover:bg-white/10 [&::-webkit-details-marker]:hidden">
+                  More
+                  <ChevronDown className="h-3.5 w-3.5" aria-hidden />
+                </summary>
+                <div className="absolute left-0 top-full z-50 mt-1 min-w-[12rem] rounded-md border border-[var(--varnarc-border)] bg-[var(--varnarc-surface)] py-1 shadow-lg">
+                  {more.map((item) => (
+                    <Link
+                      key={item.href + item.label}
+                      href={item.href}
+                      className="block px-3 py-2 text-sm text-[var(--varnarc-ink)] hover:bg-[var(--varnarc-muted)]"
+                    >
+                      {item.label}
+                    </Link>
+                  ))}
+                </div>
+              </details>
+            ) : null}
           </nav>
         </div>
       </div>

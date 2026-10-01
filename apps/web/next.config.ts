@@ -218,6 +218,66 @@ const nextConfig: NextConfig = withSecurityHeaders(
           destination: '/construction/excavation-calculator',
           permanent: true,
         },
+        {
+          source: '/calculators/car-insurance',
+          destination: '/automobile/calculators/car-insurance',
+          permanent: true,
+        },
+        {
+          source: '/calculators/fuel',
+          destination: '/automobile/calculators/fuel',
+          permanent: true,
+        },
+        {
+          source: '/calculators/mileage',
+          destination: '/automobile/calculators/mileage',
+          permanent: true,
+        },
+        {
+          source: '/calculators/depreciation',
+          destination: '/automobile/calculators/depreciation',
+          permanent: true,
+        },
+        {
+          source: '/calculators/maintenance-cost',
+          destination: '/automobile/calculators/maintenance-cost',
+          permanent: true,
+        },
+        {
+          source: '/calculators/resale-value',
+          destination: '/automobile/calculators/resale-value',
+          permanent: true,
+        },
+        {
+          source: '/calculators/tco',
+          destination: '/automobile/calculators/tco',
+          permanent: true,
+        },
+        {
+          source: '/calculators/road-tax',
+          destination: '/automobile/calculators/road-tax',
+          permanent: true,
+        },
+        {
+          source: '/calculators/on-road-price',
+          destination: '/automobile/calculators/on-road-price',
+          permanent: true,
+        },
+        {
+          source: '/calculators/charging-cost',
+          destination: '/automobile/calculators/charging-cost',
+          permanent: true,
+        },
+        {
+          source: '/calculators/range',
+          destination: '/automobile/calculators/range',
+          permanent: true,
+        },
+        {
+          source: '/calculators/ev-vs-petrol',
+          destination: '/automobile/calculators/ev-vs-petrol',
+          permanent: true,
+        },
       ];
     },
   }),

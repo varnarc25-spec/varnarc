@@ -134,6 +134,7 @@ describe('parseCalculatorParams / serializeCalculatorParams', () => {
       }),
     ).toBe('/calculators/personal-loan-emi?amount=500000&rate=10.5&tenure=5&tenureUnit=years');
     expect(calculatorCanonicalPath('emi')).toBe('/calculators/emi');
+    expect(calculatorCanonicalPath('car-insurance')).toBe('/automobile/calculators/car-insurance');
     expect(hasCalculatorQueryParams({ amount: '1' })).toBe(true);
     expect(hasCalculatorQueryParams({})).toBe(false);
   });

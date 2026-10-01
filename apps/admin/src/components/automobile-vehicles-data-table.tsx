@@ -7,27 +7,33 @@ import { Button } from '@varnarc/ui';
 import {
   flexRender,
   getCoreRowModel,
-  getFilteredRowModel,
-  getPaginationRowModel,
   getSortedRowModel,
   useReactTable,
   type ColumnDef,
   type SortingState,
 } from '@tanstack/react-table';
 import { AutomobileDuplicateButton, AutomobilePublishButton } from '@/components/automobile-forms';
+import { formatIndianVehiclePrice, formatInternationalVehiclePrice } from '@varnarc/validation';
 
 export type VehicleTableRow = {
   id: string;
   name: string;
   status: string;
   model?: string | null;
+  modelYear?: number | null;
   fuelType?: string | null;
   exShowroomPrice?: number | string | null;
   sourceName?: string | null;
+  availableInIndia?: boolean;
   manufacturer?: { name: string } | null;
+  prices?: Array<{
+    countryCode: string;
+    currencyCode: string;
+    priceType: string;
+    amount?: number | string | null;
+    isCurrent?: boolean;
+  }> | null;
 };
-
-const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
 
 function priceNumber(value: number | string | null | undefined) {
   if (value == null || value === '') return null;
@@ -38,8 +44,6 @@ function priceNumber(value: number | string | null | undefined) {
 export function AutomobileVehiclesDataTable({ rows }: { rows: VehicleTableRow[] }) {
   const router = useRouter();
   const [sorting, setSorting] = useState<SortingState>([{ id: 'name', desc: false }]);
-  const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 10 });
-  const [globalFilter, setGlobalFilter] = useState('');
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -76,6 +80,29 @@ export function AutomobileVehiclesDataTable({ rows }: { rows: VehicleTableRow[] 
     },
     [router],
   );
+
+  const syncIndia = useCallback(async () => {
+    setLoading(true);
+    setMessage(null);
+    try {
+      const res = await fetch('/api/admin/automobile/vehicles/sync-india-availability', {
+        method: 'POST',
+      });
+      const json = (await res.json()) as {
+        data?: { scanned?: number; marked?: number };
+        error?: { message?: string };
+      };
+      if (!res.ok) throw new Error(json.error?.message || 'India catalog sync failed');
+      setMessage(
+        `India catalog: marked ${json.data?.marked ?? 0} of ${json.data?.scanned ?? 0} vehicles.`,
+      );
+      router.refresh();
+    } catch (err) {
+      setMessage(err instanceof Error ? err.message : 'India catalog sync failed');
+    } finally {
+      setLoading(false);
+    }
+  }, [router]);
 
   const columns = useMemo<ColumnDef<VehicleTableRow>[]>(
     () => [
@@ -119,6 +146,14 @@ export function AutomobileVehiclesDataTable({ rows }: { rows: VehicleTableRow[] 
       },
       { accessorKey: 'model', header: 'Model', cell: ({ getValue }) => String(getValue() || '—') },
       {
+        accessorKey: 'modelYear',
+        header: 'Year',
+        cell: ({ getValue }) => {
+          const year = getValue();
+          return year == null || year === '' ? '—' : String(year);
+        },
+      },
+      {
         accessorKey: 'fuelType',
         header: 'Fuel',
         cell: ({ getValue }) => String(getValue() || '—'),
@@ -128,11 +163,34 @@ export function AutomobileVehiclesDataTable({ rows }: { rows: VehicleTableRow[] 
         accessorFn: (row) => priceNumber(row.exShowroomPrice) ?? -1,
         header: 'Price',
         cell: ({ row }) => {
-          const n = priceNumber(row.original.exShowroomPrice);
-          return n == null ? '—' : `₹${n.toLocaleString('en-IN')}`;
+          const prices = row.original.prices ?? [];
+          const india = prices.find(
+            (price) => price.countryCode === 'IN' && price.priceType === 'EX_SHOWROOM',
+          );
+          const uk = prices.find((price) => price.countryCode === 'GB');
+          const ukAmount = priceNumber(uk?.amount);
+          const indiaAmount =
+            priceNumber(india?.amount) ?? priceNumber(row.original.exShowroomPrice);
+          const showIndia = indiaAmount != null && indiaAmount !== ukAmount;
+          return (
+            <div className="leading-5">
+              <div>{showIndia ? formatIndianVehiclePrice(indiaAmount) : '—'}</div>
+              {ukAmount != null ? (
+                <div className="text-xs text-[var(--varnarc-subtle)]">
+                  UK {formatInternationalVehiclePrice(ukAmount, uk?.currencyCode || 'GBP')}
+                </div>
+              ) : null}
+            </div>
+          );
         },
       },
       { accessorKey: 'status', header: 'Status' },
+      {
+        id: 'india',
+        accessorFn: (row) => (row.availableInIndia ? 1 : 0),
+        header: 'India',
+        cell: ({ row }) => (row.original.availableInIndia ? 'Yes' : 'No'),
+      },
       {
         id: 'actions',
         header: 'Actions',
@@ -169,36 +227,26 @@ export function AutomobileVehiclesDataTable({ rows }: { rows: VehicleTableRow[] 
   const table = useReactTable({
     data: rows,
     columns,
-    state: { sorting, pagination, globalFilter },
+    state: { sorting },
     onSortingChange: setSorting,
-    onPaginationChange: setPagination,
-    onGlobalFilterChange: setGlobalFilter,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
   });
-
-  const { pageIndex, pageSize } = table.getState().pagination;
-  const filtered = table.getFilteredRowModel().rows.length;
-  const pageCount = table.getPageCount();
-  const from = filtered ? pageIndex * pageSize + 1 : 0;
-  const to = Math.min((pageIndex + 1) * pageSize, filtered);
 
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap items-center gap-2">
-        <input
-          value={globalFilter}
-          onChange={(e) => {
-            setGlobalFilter(e.target.value);
-            setPagination((p) => ({ ...p, pageIndex: 0 }));
-          }}
-          placeholder="Search this table…"
-          className="h-10 min-w-[16rem] rounded-md border border-[var(--varnarc-border)] bg-[var(--varnarc-surface)] px-3 text-sm"
-        />
         <Button
           type="button"
+          variant="secondary"
+          disabled={loading}
+          onClick={() => void syncIndia()}
+        >
+          {loading ? 'Working…' : 'Mark India catalog'}
+        </Button>
+        <Button
+          type="button"
+          variant="secondary"
           disabled={loading}
           onClick={() => void refreshPrices(undefined, true)}
         >
@@ -215,7 +263,8 @@ export function AutomobileVehiclesDataTable({ rows }: { rows: VehicleTableRow[] 
       </div>
       <p className="text-xs text-[var(--varnarc-subtle)]">
         AI prices are indicative India ex-showroom estimates, not dealer quotations. Verify before
-        public use. Requires OPENAI_API_KEY on the API.
+        public use. Requires OPENAI_API_KEY on the API. “Mark India catalog” flags vehicles whose
+        make/model match the India passenger-car list.
       </p>
       {message ? <p className="text-sm text-[var(--varnarc-subtle)]">{message}</p> : null}
 
@@ -265,47 +314,6 @@ export function AutomobileVehiclesDataTable({ rows }: { rows: VehicleTableRow[] 
           </table>
         </div>
       )}
-
-      <div className="flex flex-wrap items-center justify-between gap-3 text-sm text-[var(--varnarc-subtle)]">
-        <span>
-          Showing {from}–{to} of {filtered}
-        </span>
-        <div className="flex flex-wrap items-center gap-2">
-          <label className="flex items-center gap-2">
-            Rows
-            <select
-              className="h-8 rounded-md border border-[var(--varnarc-border)] bg-[var(--varnarc-surface)] px-2 text-sm"
-              value={pageSize}
-              onChange={(e) => setPagination({ pageIndex: 0, pageSize: Number(e.target.value) })}
-            >
-              {PAGE_SIZE_OPTIONS.map((size) => (
-                <option key={size} value={size}>
-                  {size}
-                </option>
-              ))}
-            </select>
-          </label>
-          <button
-            type="button"
-            className="h-8 rounded-md border border-[var(--varnarc-border)] px-3 disabled:opacity-40"
-            onClick={() => table.previousPage()}
-            disabled={!table.getCanPreviousPage()}
-          >
-            Previous
-          </button>
-          <span>
-            Page {pageIndex + 1} of {Math.max(pageCount, 1)}
-          </span>
-          <button
-            type="button"
-            className="h-8 rounded-md border border-[var(--varnarc-border)] px-3 disabled:opacity-40"
-            onClick={() => table.nextPage()}
-            disabled={!table.getCanNextPage()}
-          >
-            Next
-          </button>
-        </div>
-      </div>
     </div>
   );
 }

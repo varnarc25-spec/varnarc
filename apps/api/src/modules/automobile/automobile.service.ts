@@ -20,12 +20,17 @@ import type {
   UpdateAutomobileMaintenanceInput,
   UpdateAutomobileManufacturerInput,
   UpdateAutomobileVehicleInput,
+  VehiclePriceInput,
+  NormalizedVehiclePrice,
 } from '@varnarc/validation';
+import { vehicleMatchesIndiaCatalog } from '@varnarc/validation';
 import { PRISMA, REPOS } from '../../database/database.module';
 import {
   detectAutomobileCsvEntity,
   MERGE_IMPORT_ORDER,
   parseCsv,
+  manufacturerImportData,
+  parseVehicleDetailsJson,
   slugify,
   type CsvRow,
 } from './automobile-csv.util';
@@ -40,6 +45,10 @@ const DEALER_CATEGORY_SLUGS = [
   'charging-stations',
   'spare-parts',
 ] as const;
+
+function isUuid(value: string) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
+}
 
 function slugifyTitle(title: string) {
   return (
@@ -64,6 +73,11 @@ export class AutomobileService {
 
   private emptyUrl(v?: string | null) {
     return v === '' ? null : v;
+  }
+
+  private verifiedDate(value?: string | null) {
+    if (!value) return null;
+    return new Date(`${value}T00:00:00.000Z`);
   }
 
   private normalizeVariant(v?: string | null) {
@@ -209,6 +223,10 @@ export class AutomobileService {
     return this.repos.automobileManufacturers.list(query);
   }
 
+  listAllManufacturers() {
+    return this.repos.automobileManufacturers.listAll();
+  }
+
   async getManufacturer(id: string) {
     const row = await this.repos.automobileManufacturers.findById(id);
     if (!row) throw this.notFound('Manufacturer not found.');
@@ -236,8 +254,14 @@ export class AutomobileService {
       country: input.country,
       foundedYear: input.foundedYear,
       website: this.emptyUrl(input.website),
+      tagline: input.tagline || null,
       description: input.description,
       featured: input.featured ?? false,
+      availableInIndia: input.availableInIndia ?? false,
+      indiaAvailabilityStatus: input.indiaAvailabilityStatus || null,
+      indiaWebsite: this.emptyUrl(input.indiaWebsite),
+      indiaVerifiedAt: this.verifiedDate(input.indiaVerifiedDate),
+      indiaVerificationNote: input.indiaVerificationNote || null,
       status: input.status ?? 'DRAFT',
       seoTitle: input.seoTitle,
       seoDescription: input.seoDescription,
@@ -273,8 +297,22 @@ export class AutomobileService {
       ...(input.country !== undefined ? { country: input.country } : {}),
       ...(input.foundedYear !== undefined ? { foundedYear: input.foundedYear } : {}),
       ...(input.website !== undefined ? { website: this.emptyUrl(input.website) } : {}),
+      ...(input.tagline !== undefined ? { tagline: input.tagline || null } : {}),
       ...(input.description !== undefined ? { description: input.description } : {}),
       ...(input.featured != null ? { featured: input.featured } : {}),
+      ...(input.availableInIndia != null ? { availableInIndia: input.availableInIndia } : {}),
+      ...(input.indiaAvailabilityStatus !== undefined
+        ? { indiaAvailabilityStatus: input.indiaAvailabilityStatus || null }
+        : {}),
+      ...(input.indiaWebsite !== undefined
+        ? { indiaWebsite: this.emptyUrl(input.indiaWebsite) }
+        : {}),
+      ...(input.indiaVerifiedDate !== undefined
+        ? { indiaVerifiedAt: this.verifiedDate(input.indiaVerifiedDate) }
+        : {}),
+      ...(input.indiaVerificationNote !== undefined
+        ? { indiaVerificationNote: input.indiaVerificationNote || null }
+        : {}),
       ...(input.status != null ? { status: input.status } : {}),
       ...(input.seoTitle !== undefined ? { seoTitle: input.seoTitle } : {}),
       ...(input.seoDescription !== undefined ? { seoDescription: input.seoDescription } : {}),
@@ -291,6 +329,79 @@ export class AutomobileService {
 
   listVehicles(query: AutomobileListQuery) {
     return this.repos.automobileVehicles.list(query);
+  }
+
+  async listVehiclesPaged(query: AutomobileListQuery) {
+    return this.repos.automobileVehicles.listPaged(query);
+  }
+
+  async exportVehiclesJson(query: AutomobileListQuery) {
+    const rows = await this.repos.automobileVehicles.listForExport(query);
+    return rows.map((row) => ({
+      name: row.name,
+      slug: row.slug,
+      model: row.model,
+      variant: row.variant,
+      modelYear: row.modelYear,
+      fuelType: row.fuelType,
+      transmission: row.transmission,
+      bodyType: row.bodyType,
+      category: row.category,
+      engineCapacity: row.engineCapacity,
+      horsepower: row.horsepower == null ? null : Number(row.horsepower),
+      torque: row.torque == null ? null : Number(row.torque),
+      mileage: row.mileage == null ? null : Number(row.mileage),
+      seatingCapacity: row.seatingCapacity,
+      exShowroomPrice: this.exportExShowroomPrice(row),
+      pricing: this.exportPricing(row),
+      indiaAvailability: row.indiaAvailability,
+      status: row.status,
+      availableInIndia: row.availableInIndia,
+      seoTitle: row.seoTitle,
+      seoDescription: row.seoDescription,
+      sourceName: row.sourceName,
+      sourceUrl: row.sourceUrl,
+      manufacturer: row.manufacturer,
+      specifications: row.specifications,
+    }));
+  }
+
+  listManufacturerFilterOptions() {
+    return this.repos.automobileVehicles.listManufacturerFilterOptions();
+  }
+
+  async syncIndiaAvailability(actorId: string) {
+    await this.repos.automobileVehicles.resetIndiaAvailability();
+    let cursor: string | undefined;
+    let scanned = 0;
+    let marked = 0;
+    for (;;) {
+      const batch = await this.repos.automobileVehicles.listIndiaSyncBatch(cursor, 500);
+      if (!batch.length) break;
+      scanned += batch.length;
+      const ids = batch
+        .filter((row) =>
+          vehicleMatchesIndiaCatalog({
+            manufacturerName: row.manufacturer.name,
+            name: row.name,
+            model: row.model,
+            variant: row.variant,
+          }),
+        )
+        .map((row) => row.id);
+      if (ids.length) {
+        await this.repos.automobileVehicles.markIndiaAvailability(ids);
+        marked += ids.length;
+      }
+      cursor = batch[batch.length - 1]?.id;
+      if (batch.length < 500) break;
+    }
+    await this.audit(actorId, 'automobile.vehicle.sync-india', 'automobile_vehicle', actorId, {
+      scanned,
+      marked,
+    });
+    await this.bust();
+    return { scanned, marked };
   }
 
   listVehicleModels(query: AutomobileListQuery) {
@@ -322,13 +433,87 @@ export class AutomobileService {
   async getVehicle(id: string) {
     const row = await this.repos.automobileVehicles.findById(id);
     if (!row) throw this.notFound('Vehicle not found.');
-    return this.enrichVehicle(row as unknown as Record<string, unknown>);
+    const enriched = await this.enrichVehicle(row as unknown as Record<string, unknown>);
+    return { ...enriched, pricingView: this.pricingView(row, 'IN') };
   }
 
-  async getVehicleBySlug(slug: string) {
+  async getVehicleBySlug(slug: string, market = 'IN') {
     const row = await this.repos.automobileVehicles.findBySlug(slug);
-    if (!row || row.status !== 'PUBLISHED') throw this.notFound('Vehicle not found.');
-    return this.enrichVehicle(row as unknown as Record<string, unknown>);
+    if (!row || row.status !== 'PUBLISHED' || !row.availableInIndia) {
+      throw this.notFound('Vehicle not found.');
+    }
+    const enriched = await this.enrichVehicle(row as unknown as Record<string, unknown>);
+    return { ...enriched, pricingView: this.pricingView(row, market) };
+  }
+
+  async getVehiclePricesBySlug(slug: string) {
+    const row = await this.repos.automobileVehicles.findBySlug(slug);
+    if (!row || row.status !== 'PUBLISHED' || !row.availableInIndia) {
+      throw this.notFound('Vehicle not found.');
+    }
+    return this.pricingView(row, 'IN');
+  }
+
+  async listVehiclePrices(id: string) {
+    const row = await this.repos.automobileVehicles.findById(id);
+    if (!row) throw this.notFound('Vehicle not found.');
+    return this.repos.automobileVehicles.listPrices(id);
+  }
+
+  async recordVehiclePrice(id: string, input: VehiclePriceInput, actorId: string) {
+    const row = await this.repos.automobileVehicles.findById(id);
+    if (!row) throw this.notFound('Vehicle not found.');
+    if (input.countryCode === 'IN' && input.amount != null) {
+      const uk = row.prices?.find(
+        (price) => price.countryCode === 'GB' && price.isCurrent && price.amount != null,
+      );
+      if (uk && Number(uk.amount) === input.amount) {
+        throw new BadRequestException({
+          success: false,
+          error: {
+            code: 'BAD_REQUEST',
+            message: 'That amount matches the stored UK GBP price and cannot be saved as INR.',
+          },
+        });
+      }
+    }
+    const saved = await this.repos.automobileVehicles.recordPrice(id, {
+      countryCode: input.countryCode,
+      currencyCode: input.currencyCode.toUpperCase(),
+      market:
+        input.countryCode === 'IN' ? 'India' : input.countryCode === 'GB' ? 'United Kingdom' : null,
+      priceType: input.priceType,
+      amount: input.amount,
+      priceMin: input.priceMin,
+      priceMax: input.priceMax,
+      city: input.city,
+      state: input.state,
+      available: input.available,
+      sourceName: input.sourceName,
+      sourceType: input.sourceType,
+      sourceUrl: input.sourceUrl || null,
+      verified: input.verified,
+      verifiedAt: input.verifiedDate ? new Date(`${input.verifiedDate}T00:00:00.000Z`) : null,
+    });
+    if (
+      input.countryCode === 'IN' &&
+      input.priceType === 'EX_SHOWROOM' &&
+      input.currencyCode.toUpperCase() === 'INR'
+    ) {
+      await this.repos.automobileVehicles.update(id, {
+        exShowroomPrice: input.amount,
+        ...(input.verified
+          ? {
+              availableInIndia: input.available,
+              indiaAvailability: input.available ? 'EXACT_VARIANT' : row.indiaAvailability,
+            }
+          : {}),
+        updatedBy: actorId,
+      });
+    }
+    await this.audit(actorId, 'automobile.vehicle.price', 'automobile_vehicle', id, saved);
+    await this.bust();
+    return saved;
   }
 
   async createVehicle(input: CreateAutomobileVehicleInput, actorId: string) {
@@ -376,6 +561,14 @@ export class AutomobileService {
       expertRating: input.expertRating,
       featured: input.featured ?? false,
       sponsored: input.sponsored ?? false,
+      availableInIndia:
+        input.availableInIndia ??
+        vehicleMatchesIndiaCatalog({
+          manufacturerName: mfr.name,
+          name: input.name,
+          model: input.model,
+          variant,
+        }),
       status: input.status ?? 'DRAFT',
       seoTitle: input.seoTitle,
       seoDescription: input.seoDescription,
@@ -384,6 +577,9 @@ export class AutomobileService {
       updatedBy: actorId,
     });
     await this.applyVehicleExtras(row.id, input);
+    if (input.exShowroomPrice != null) {
+      await this.recordIndiaShowroomPrice(row.id, input.exShowroomPrice, actorId);
+    }
     const full = await this.repos.automobileVehicles.findById(row.id);
     await this.audit(
       actorId,
@@ -439,6 +635,10 @@ export class AutomobileService {
       ...(input.bootSpace !== undefined ? { bootSpace: input.bootSpace } : {}),
       ...(input.safetyRating !== undefined ? { safetyRating: input.safetyRating } : {}),
       ...(input.exShowroomPrice !== undefined ? { exShowroomPrice: input.exShowroomPrice } : {}),
+      ...(input.indiaAvailability !== undefined
+        ? { indiaAvailability: input.indiaAvailability }
+        : {}),
+      ...(input.primaryMarket != null ? { primaryMarket: input.primaryMarket } : {}),
       ...(input.estimatedOnRoadPrice !== undefined
         ? { estimatedOnRoadPrice: input.estimatedOnRoadPrice }
         : {}),
@@ -459,6 +659,7 @@ export class AutomobileService {
       ...(input.expertRating !== undefined ? { expertRating: input.expertRating } : {}),
       ...(input.featured != null ? { featured: input.featured } : {}),
       ...(input.sponsored != null ? { sponsored: input.sponsored } : {}),
+      ...(input.availableInIndia != null ? { availableInIndia: input.availableInIndia } : {}),
       ...(input.status != null
         ? {
             status: input.status,
@@ -472,6 +673,9 @@ export class AutomobileService {
       ...(input.seoDescription !== undefined ? { seoDescription: input.seoDescription } : {}),
       updatedBy: actorId,
     });
+    if (input.exShowroomPrice != null) {
+      await this.recordIndiaShowroomPrice(id, input.exShowroomPrice, actorId);
+    }
     await this.applyVehicleExtras(id, input);
     const full = await this.repos.automobileVehicles.findById(id);
     await this.audit(
@@ -1122,9 +1326,24 @@ export class AutomobileService {
     if (entity === 'manufacturers') {
       const rows = await this.db.automobileManufacturer.findMany({ where: { deletedAt: null } });
       return [
-        'name,slug,country,website,status,featured',
+        'name,slug,country,website,status,featured,availableInIndia,indiaAvailabilityStatus,indiaWebsite,indiaVerifiedDate,indiaVerificationNote,tagline',
         ...rows.map((r) =>
-          [r.name, r.slug, r.country, r.website, r.status, r.featured].map(esc).join(','),
+          [
+            r.name,
+            r.slug,
+            r.country,
+            r.website,
+            r.status,
+            r.featured,
+            r.availableInIndia,
+            r.indiaAvailabilityStatus,
+            r.indiaWebsite,
+            r.indiaVerifiedAt ? r.indiaVerifiedAt.toISOString().slice(0, 10) : '',
+            r.indiaVerificationNote,
+            r.tagline,
+          ]
+            .map(esc)
+            .join(','),
         ),
       ].join('\n');
     }
@@ -1238,12 +1457,37 @@ export class AutomobileService {
     return result;
   }
 
+  async existingVehicleSlugs(slugs: string[]) {
+    const unique = [...new Set(slugs)];
+    const rows = await this.db.automobileVehicle.findMany({
+      where: { slug: { in: unique }, deletedAt: null },
+      select: { slug: true },
+    });
+    return rows.map((row) => row.slug);
+  }
+
   async importCsv(entity: string, csvText: string, actorId: string) {
     const rows = parseCsv(csvText);
     if (!rows.length) {
       throw new BadRequestException({
         success: false,
         error: { code: 'VALIDATION_ERROR', message: 'Empty CSV.' },
+      });
+    }
+    const result = await this.importParsedRows(entity, rows, actorId);
+    await this.bust();
+    return result;
+  }
+
+  async importJson(entity: string, jsonText: string, actorId: string) {
+    const rows = parseVehicleDetailsJson(jsonText);
+    if (!rows.length) {
+      throw new BadRequestException({
+        success: false,
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: 'Empty JSON. Expected { data: [...] } or an array.',
+        },
       });
     }
     const result = await this.importParsedRows(entity, rows, actorId);
@@ -1261,8 +1505,12 @@ export class AutomobileService {
         else skipped += 1;
       }
     } else if (entity === 'vehicles') {
+      const manufacturers = await this.db.automobileManufacturer.findMany({
+        where: { deletedAt: null },
+        select: { id: true, slug: true, name: true },
+      });
       for (const row of rows) {
-        const ok = await this.upsertVehicleRow(row, actorId);
+        const ok = await this.upsertVehicleRow(row, actorId, manufacturers);
         if (ok) imported += 1;
         else skipped += 1;
       }
@@ -1294,30 +1542,44 @@ export class AutomobileService {
   }
 
   private async upsertManufacturerRow(row: CsvRow, actorId: string) {
-    const name = row.name || row.make;
-    if (!name) return false;
-    const slug = row.slug || slugify(name);
+    const data = manufacturerImportData(row);
+    if (!data) return false;
+    const { slug, ...fields } = data;
     await this.db.automobileManufacturer.upsert({
       where: { slug },
       update: {
-        name,
-        country: row.country || null,
-        website: row.website || null,
-        status: (row.status as 'DRAFT' | 'PUBLISHED') || 'PUBLISHED',
+        ...fields,
         updatedBy: actorId,
         deletedAt: null,
       },
       create: {
-        name,
+        ...fields,
         slug,
-        country: row.country || null,
-        website: row.website || null,
-        status: (row.status as 'DRAFT' | 'PUBLISHED') || 'PUBLISHED',
         createdBy: actorId,
         updatedBy: actorId,
       },
     });
     return true;
+  }
+
+  private matchCachedManufacturer(
+    manufacturers: Array<{ id: string; slug: string; name: string }>,
+    manufacturerSlug: string,
+    vehicleSlug: string,
+  ) {
+    if (isUuid(manufacturerSlug)) {
+      const byId = manufacturers.find((item) => item.id === manufacturerSlug);
+      if (byId) return byId;
+    }
+    const direct = manufacturers.find((item) => item.slug === manufacturerSlug);
+    if (direct) return direct;
+    let best: (typeof manufacturers)[number] | undefined;
+    for (const item of manufacturers) {
+      if (vehicleSlug === item.slug || vehicleSlug.startsWith(`${item.slug}-`)) {
+        if (!best || item.slug.length > best.slug.length) best = item;
+      }
+    }
+    return best ?? null;
   }
 
   private async ensureManufacturer(name: string, actorId: string) {
@@ -1335,18 +1597,39 @@ export class AutomobileService {
     });
   }
 
-  private async upsertVehicleRow(row: CsvRow, actorId: string) {
+  private async upsertVehicleRow(
+    row: CsvRow,
+    actorId: string,
+    manufacturers: Array<{ id: string; slug: string; name: string }>,
+  ) {
     const name = row.name;
     const model = row.model;
-    const manufacturerSlug = row.manufacturerSlug || row.manufacturerId;
+    const manufacturerName = row.manufacturer || row.make;
+    const manufacturerSlug = row.manufacturerSlug || row.manufacturerId || manufacturerName;
     if (!name || !model || !manufacturerSlug) return false;
-    const manufacturer = await this.db.automobileManufacturer.findFirst({
-      where: { deletedAt: null, OR: [{ slug: manufacturerSlug }, { id: manufacturerSlug }] },
-    });
-    if (!manufacturer) return false;
     const variant = row.variant || '';
+    const provisionalSlug = row.slug || slugify(`${manufacturerSlug}-${model}-${variant}`);
+    let manufacturer = this.matchCachedManufacturer(
+      manufacturers,
+      manufacturerSlug,
+      provisionalSlug,
+    );
+    if (!manufacturer && manufacturerName) {
+      const created = await this.ensureManufacturer(manufacturerName, actorId);
+      manufacturer = { id: created.id, slug: created.slug, name: created.name };
+      manufacturers.push(manufacturer);
+    }
+    if (!manufacturer) return false;
     const slug = row.slug || slugify(`${manufacturer.slug}-${model}-${variant}`);
-    await this.saveVehicle({
+    let specifications: unknown;
+    if (row.specificationsJson) {
+      try {
+        specifications = JSON.parse(row.specificationsJson) as unknown;
+      } catch {
+        specifications = undefined;
+      }
+    }
+    const vehicleId = await this.saveVehicle({
       slug,
       manufacturerId: manufacturer.id,
       model,
@@ -1354,20 +1637,42 @@ export class AutomobileService {
       data: {
         name,
         fuelType: row.fuelType || null,
+        transmission: row.transmission || null,
         bodyType: row.bodyType || null,
+        category: row.category || null,
         modelYear: row.modelYear ? Number(row.modelYear) : null,
         engineCapacity: row.engineCapacity || null,
         horsepower: row.horsepower ? Number(row.horsepower) : null,
         torque: row.torque ? Number(row.torque) : null,
         mileage: row.mileage ? Number(row.mileage) : null,
         seatingCapacity: row.seatingCapacity ? Number(row.seatingCapacity) : null,
+        bootSpace: row.bootSpace ? Number(row.bootSpace) : null,
+        groundClearance: row.groundClearance ? Number(row.groundClearance) : null,
         exShowroomPrice: row.exShowroomPrice ? Number(row.exShowroomPrice) : null,
-        status: (row.status as 'DRAFT' | 'PUBLISHED') || 'PUBLISHED',
+        indiaAvailability: row.indiaAvailability || null,
+        primaryMarket: 'IN',
+        safetyRating: row.safetyRating ? Number(row.safetyRating) : null,
+        warranty: row.warranty || null,
+        description: row.description || null,
+        seoTitle: row.seoTitle || null,
+        seoDescription: row.seoDescription || null,
+        sourceName: row.sourceName || null,
+        sourceUrl: row.sourceUrl || null,
+        specifications: specifications ?? undefined,
+        ...(row.status === 'PUBLISHED' || row.status === 'DRAFT' ? { status: row.status } : {}),
         updatedBy: actorId,
         deletedAt: null,
       },
       createBy: actorId,
+      manufacturerName: manufacturer.name,
+      availableInIndia:
+        row.availableInIndia === 'true'
+          ? true
+          : row.availableInIndia === 'false'
+            ? false
+            : undefined,
     });
+    if (row.marketPricingJson) await this.applyImportedPrices(vehicleId, row.marketPricingJson);
     return true;
   }
 
@@ -1404,6 +1709,7 @@ export class AutomobileService {
         deletedAt: null,
       },
       createBy: actorId,
+      manufacturerName: manufacturer.name,
     });
     return true;
   }
@@ -1411,22 +1717,33 @@ export class AutomobileService {
   private async saveVehicle(input: {
     slug: string;
     manufacturerId: string;
+    manufacturerName: string;
     model: string;
     variant: string;
     data: Record<string, unknown>;
     createBy: string;
+    availableInIndia?: boolean;
   }) {
-    const existing =
-      (await this.db.automobileVehicle.findUnique({ where: { slug: input.slug } })) ??
-      (await this.db.automobileVehicle.findUnique({
-        where: {
-          manufacturerId_model_variant: {
+    const existing = await this.db.automobileVehicle.findFirst({
+      where: {
+        OR: [
+          { slug: input.slug },
+          {
             manufacturerId: input.manufacturerId,
             model: input.model,
             variant: input.variant,
           },
-        },
-      }));
+        ],
+      },
+    });
+    const availableInIndia =
+      input.availableInIndia ??
+      vehicleMatchesIndiaCatalog({
+        manufacturerName: input.manufacturerName,
+        name: String(input.data.name ?? input.model),
+        model: input.model,
+        variant: input.variant,
+      });
     if (existing) {
       await this.db.automobileVehicle.update({
         where: { id: existing.id },
@@ -1435,11 +1752,12 @@ export class AutomobileService {
           manufacturerId: input.manufacturerId,
           model: input.model,
           variant: input.variant,
+          availableInIndia,
         },
       });
-      return;
+      return existing.id;
     }
-    await this.db.automobileVehicle.create({
+    const created = await this.db.automobileVehicle.create({
       data: {
         ...input.data,
         name: String(input.data.name ?? input.model),
@@ -1447,9 +1765,11 @@ export class AutomobileService {
         manufacturerId: input.manufacturerId,
         model: input.model,
         variant: input.variant,
+        availableInIndia,
         createdBy: input.createBy,
       } as never,
     });
+    return created.id;
   }
 
   private async upsertImageRow(row: CsvRow) {
@@ -1502,5 +1822,191 @@ export class AutomobileService {
       create: { vehicleId: vehicle.id, reviewId: review.id },
     });
     return true;
+  }
+
+  private async recordIndiaShowroomPrice(vehicleId: string, amount: number, actorId: string) {
+    const prices = await this.repos.automobileVehicles.listPrices(vehicleId);
+    const uk = prices.find(
+      (price) => price.countryCode === 'GB' && price.isCurrent && price.amount != null,
+    );
+    if (uk && Number(uk.amount) === amount) {
+      throw new BadRequestException({
+        success: false,
+        error: {
+          code: 'BAD_REQUEST',
+          message: 'That amount matches the stored UK GBP price and cannot be saved as INR.',
+        },
+      });
+    }
+    await this.repos.automobileVehicles.recordPrice(vehicleId, {
+      countryCode: 'IN',
+      currencyCode: 'INR',
+      market: 'India',
+      priceType: 'EX_SHOWROOM',
+      amount,
+      available: true,
+      verified: false,
+      sourceType: null,
+    });
+    await this.audit(actorId, 'automobile.vehicle.price', 'automobile_vehicle', vehicleId, {
+      amount,
+    });
+  }
+
+  private async applyImportedPrices(vehicleId: string, json: string) {
+    let prices: NormalizedVehiclePrice[];
+    try {
+      prices = JSON.parse(json) as NormalizedVehiclePrice[];
+    } catch {
+      return;
+    }
+    for (const price of prices) {
+      await this.repos.automobileVehicles.recordPrice(vehicleId, {
+        countryCode: price.countryCode,
+        currencyCode: price.currencyCode,
+        market: price.market,
+        priceType: price.priceType,
+        amount: price.amount,
+        priceMin: price.priceMin,
+        priceMax: price.priceMax,
+        city: price.city,
+        state: price.state,
+        available: price.available,
+        sourceName: price.sourceName,
+        sourceType: price.sourceType,
+        sourceUrl: price.sourceUrl,
+        verified: price.verified,
+        verifiedAt: price.verifiedDate ? new Date(`${price.verifiedDate}T00:00:00.000Z`) : null,
+      });
+    }
+  }
+
+  private pricingView(
+    row: {
+      id: string;
+      primaryMarket?: string | null;
+      indiaAvailability?: string | null;
+      prices?: Array<{
+        countryCode: string;
+        currencyCode: string;
+        priceType: string;
+        amount: { toString(): string } | number | null;
+        available: boolean;
+        verified: boolean;
+        isCurrent?: boolean;
+        sourceName?: string | null;
+        sourceType?: string | null;
+        sourceUrl?: string | null;
+        verifiedAt?: Date | null;
+      }>;
+    },
+    market: string,
+  ) {
+    const prices = (row.prices ?? []).filter((price) => price.isCurrent !== false);
+    const amountOf = (price: { amount: { toString(): string } | number | null }) =>
+      price.amount == null ? null : Number(price.amount);
+    const india = prices.find(
+      (price) => price.countryCode === 'IN' && price.priceType === 'EX_SHOWROOM',
+    );
+    const wanted = market.toUpperCase();
+    const selected =
+      wanted === 'IN'
+        ? india && india.currencyCode === 'INR' && india.verified
+          ? india
+          : null
+        : prices.find((price) => price.countryCode === wanted);
+    return {
+      vehicleId: row.id,
+      primaryMarket: row.primaryMarket || 'IN',
+      indiaAvailability: row.indiaAvailability || 'UNVERIFIED',
+      currentPrice:
+        selected && amountOf(selected) != null
+          ? {
+              currency: selected.currencyCode,
+              amount: amountOf(selected),
+              priceType: selected.priceType,
+              verified: selected.verified,
+            }
+          : null,
+      otherMarkets: prices
+        .filter((price) => price.countryCode !== 'IN' && amountOf(price) != null)
+        .map((price) => ({
+          market: price.countryCode,
+          currency: price.currencyCode,
+          amount: amountOf(price),
+          priceType: price.priceType,
+          verified: price.verified,
+          sourceName: price.sourceName ?? null,
+          sourceType: price.sourceType ?? null,
+          sourceUrl: price.sourceUrl ?? null,
+        })),
+    };
+  }
+
+  private exportExShowroomPrice(row: {
+    exShowroomPrice: { toString(): string } | number | null;
+    prices?: Array<{
+      countryCode: string;
+      currencyCode: string;
+      priceType: string;
+      amount: { toString(): string } | number | null;
+    }>;
+  }) {
+    const india = row.prices?.find(
+      (price) =>
+        price.countryCode === 'IN' &&
+        price.priceType === 'EX_SHOWROOM' &&
+        price.currencyCode === 'INR',
+    );
+    if (india) return india.amount == null ? null : Number(india.amount);
+    const uk = row.prices?.find((price) => price.countryCode === 'GB' && price.amount != null);
+    if (uk) return null;
+    return row.exShowroomPrice == null ? null : Number(row.exShowroomPrice);
+  }
+
+  private exportPricing(row: {
+    prices?: Array<{
+      countryCode: string;
+      currencyCode: string;
+      priceType: string;
+      amount: { toString(): string } | number | null;
+      available: boolean;
+      verified: boolean;
+      sourceName?: string | null;
+      sourceType?: string | null;
+      sourceUrl?: string | null;
+    }>;
+  }) {
+    const prices = row.prices ?? [];
+    const india = prices.find((price) => price.countryCode === 'IN');
+    const uk = prices.find((price) => price.countryCode === 'GB');
+    if (!india && !uk) return undefined;
+    const amount = (price?: { amount: { toString(): string } | number | null }) =>
+      price?.amount == null ? null : Number(price.amount);
+    return {
+      primaryMarket: 'IN',
+      india: {
+        available: india?.available ?? false,
+        currency: 'INR',
+        exShowroomPrice: india?.currencyCode === 'INR' ? amount(india) : null,
+        priceType: 'EX_SHOWROOM',
+        verified: india?.verified ?? false,
+        sourceName: india?.sourceName ?? null,
+        sourceType: india?.sourceType ?? null,
+        sourceUrl: india?.sourceUrl ?? null,
+      },
+      uk: uk
+        ? {
+            available: uk.available,
+            currency: 'GBP',
+            otrPrice: amount(uk),
+            priceType: uk.priceType,
+            verified: uk.verified,
+            sourceName: uk.sourceName ?? null,
+            sourceType: uk.sourceType ?? null,
+            sourceUrl: uk.sourceUrl ?? null,
+          }
+        : undefined,
+    };
   }
 }

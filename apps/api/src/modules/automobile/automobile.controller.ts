@@ -23,6 +23,7 @@ import {
   automobileAffiliateLeadSchema,
   automobileCompareQuerySchema,
   automobileListQuerySchema,
+  automobileExistingSlugsSchema,
   automobileRefreshPricesSchema,
   createAutomobileComparisonSchema,
   createAutomobileMaintenanceSchema,
@@ -35,6 +36,7 @@ import {
   type AutomobileAffiliateLeadInput,
   type AutomobileCompareQuery,
   type AutomobileListQuery,
+  type AutomobileExistingSlugsInput,
   type AutomobileRefreshPricesInput,
   type CreateAutomobileComparisonInput,
   type CreateAutomobileMaintenanceInput,
@@ -43,13 +45,15 @@ import {
   type UpdateAutomobileMaintenanceInput,
   type UpdateAutomobileManufacturerInput,
   type UpdateAutomobileVehicleInput,
+  vehiclePriceInputSchema,
+  type VehiclePriceInput,
 } from '@varnarc/validation';
 import type { CurrentUser } from '@varnarc/types';
 import { RequirePermissions } from '../../auth/decorators/permissions.decorator';
 import { Public } from '../../auth/decorators/public.decorator';
 import { CurrentUserDecorator } from '../../auth/decorators/current-user.decorator';
 import { ZodValidationPipe } from '../../common/zod-validation.pipe';
-import { ok, okCursor } from '../../common/utils/response';
+import { ok, okCursor, okPage } from '../../common/utils/response';
 import { AutomobileService } from './automobile.service';
 import { AutomobilePriceAiService } from './automobile-price-ai.service';
 
@@ -94,6 +98,20 @@ export class AutomobileController {
     @Query(new ZodValidationPipe(automobileListQuerySchema)) query: AutomobileListQuery,
   ) {
     return okCursor(await this.service.listManufacturers(query));
+  }
+
+  @Get('admin/manufacturers/all')
+  @RequirePermissions(PERMISSIONS.AUTOMOBILE_VIEW)
+  @ApiOperation({ summary: 'All manufacturers for the admin table' })
+  async adminManufacturersAll() {
+    return ok(await this.service.listAllManufacturers());
+  }
+
+  @Get('admin/manufacturers/options')
+  @RequirePermissions(PERMISSIONS.AUTOMOBILE_VIEW)
+  @ApiOperation({ summary: 'Manufacturer id/name options for admin filters' })
+  async adminManufacturerOptions() {
+    return ok(await this.service.listManufacturerFilterOptions());
   }
 
   @Public()
@@ -147,7 +165,11 @@ export class AutomobileController {
     @Query(new ZodValidationPipe(automobileListQuerySchema)) query: AutomobileListQuery,
   ) {
     return okCursor(
-      await this.service.listVehicles({ ...query, status: query.status ?? 'PUBLISHED' }),
+      await this.service.listVehicles({
+        ...query,
+        status: query.status ?? 'PUBLISHED',
+        availableInIndia: true,
+      }),
     );
   }
 
@@ -158,7 +180,11 @@ export class AutomobileController {
     @Query(new ZodValidationPipe(automobileListQuerySchema)) query: AutomobileListQuery,
   ) {
     return ok(
-      await this.service.listVehicleModels({ ...query, status: query.status ?? 'PUBLISHED' }),
+      await this.service.listVehicleModels({
+        ...query,
+        status: query.status ?? 'PUBLISHED',
+        availableInIndia: true,
+      }),
     );
   }
 
@@ -167,7 +193,36 @@ export class AutomobileController {
   async adminVehicles(
     @Query(new ZodValidationPipe(automobileListQuerySchema)) query: AutomobileListQuery,
   ) {
-    return okCursor(await this.service.listVehicles(query));
+    const result = await this.service.listVehiclesPaged(query);
+    return okPage(result.items, {
+      total: result.total,
+      page: result.page,
+      pageSize: result.pageSize,
+      hasMore: result.page * result.pageSize < result.total,
+    });
+  }
+
+  @Post('admin/vehicles/existing-slugs')
+  @RequirePermissions(PERMISSIONS.AUTOMOBILE_VIEW)
+  @ApiOperation({ summary: 'Return which vehicle slugs are already stored' })
+  async existingVehicleSlugs(
+    @Body(new ZodValidationPipe(automobileExistingSlugsSchema)) body: AutomobileExistingSlugsInput,
+  ) {
+    return ok(await this.service.existingVehicleSlugs(body.slugs));
+  }
+
+  @Get('admin/vehicles/export.json')
+  @RequirePermissions(PERMISSIONS.AUTOMOBILE_VIEW)
+  @Header('Content-Type', 'application/json; charset=utf-8')
+  @Header('Content-Disposition', 'attachment; filename="vehicles.json"')
+  @ApiOperation({ summary: 'Export filtered vehicles as JSON' })
+  async exportVehiclesJson(
+    @Query(new ZodValidationPipe(automobileListQuerySchema)) query: AutomobileListQuery,
+  ) {
+    const data = await this.service.exportVehiclesJson(query);
+    return new StreamableFile(
+      Buffer.from(JSON.stringify({ success: true, data }, null, 2), 'utf8'),
+    );
   }
 
   @Post('admin/vehicles/refresh-prices')
@@ -180,11 +235,43 @@ export class AutomobileController {
     return ok(await this.priceAi.refreshPrices(body, user.id));
   }
 
+  @Post('admin/vehicles/sync-india-availability')
+  @RequirePermissions(PERMISSIONS.AUTOMOBILE_EDIT)
+  @ApiOperation({ summary: 'Flag vehicles that match the India make/model catalog' })
+  async syncIndiaAvailability(@CurrentUserDecorator() user: CurrentUser) {
+    return ok(await this.service.syncIndiaAvailability(user.id));
+  }
+
+  @Public()
+  @Get('vehicles/slug/:slug/prices')
+  @ApiOperation({ summary: 'Current and other-market prices for a vehicle' })
+  async vehiclePricesBySlug(@Param('slug') slug: string) {
+    return ok(await this.service.getVehiclePricesBySlug(slug));
+  }
+
   @Public()
   @Get('vehicles/slug/:slug')
   @ApiOperation({ summary: 'Get vehicle by slug' })
-  async vehicleBySlug(@Param('slug') slug: string) {
-    return ok(await this.service.getVehicleBySlug(slug));
+  async vehicleBySlug(@Param('slug') slug: string, @Query('market') market?: string) {
+    return ok(await this.service.getVehicleBySlug(slug, market || 'IN'));
+  }
+
+  @Get('admin/vehicles/:id/prices')
+  @RequirePermissions(PERMISSIONS.AUTOMOBILE_VIEW)
+  @ApiOperation({ summary: 'Vehicle price history' })
+  async adminVehiclePrices(@Param('id', ParseUUIDPipe) id: string) {
+    return ok(await this.service.listVehiclePrices(id));
+  }
+
+  @Post('admin/vehicles/:id/prices')
+  @RequirePermissions(PERMISSIONS.AUTOMOBILE_EDIT)
+  @ApiOperation({ summary: 'Record a market price without overwriting history' })
+  async adminRecordVehiclePrice(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUserDecorator() user: CurrentUser,
+    @Body(new ZodValidationPipe(vehiclePriceInputSchema)) body: VehiclePriceInput,
+  ) {
+    return ok(await this.service.recordVehiclePrice(id, body, user.id));
   }
 
   @Public()
@@ -468,7 +555,14 @@ export class AutomobileController {
     @UploadedFile() file: Express.Multer.File,
   ) {
     if (!file?.buffer) return ok({ imported: 0 });
-    return ok(await this.service.importCsv(entity, file.buffer.toString('utf8'), user.id));
+    const text = file.buffer.toString('utf8');
+    const filename = (file.originalname || '').toLowerCase();
+    const trimmed = text.trim();
+    const isJson = filename.endsWith('.json') || trimmed.startsWith('{') || trimmed.startsWith('[');
+    if (isJson) {
+      return ok(await this.service.importJson(entity, text, user.id));
+    }
+    return ok(await this.service.importCsv(entity, text, user.id));
   }
 
   @Post('admin/import-merge')

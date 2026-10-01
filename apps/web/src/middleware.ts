@@ -79,7 +79,8 @@ export async function middleware(request: NextRequest) {
       nextUrlHost: request.nextUrl.host,
     });
 
-    if (!authReady) {
+    // Local .env may omit AUTH0_*; credentials often come from API runtime settings.
+    if (!authReady && !isAuthRoute) {
       return NextResponse.next();
     }
 

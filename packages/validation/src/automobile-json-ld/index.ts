@@ -160,6 +160,8 @@ export function buildAutomobileJsonLdGraph(input: BuildAutomobileJsonLdGraphInpu
         ? Number(input.product.price)
         : null;
     const hasPrice = price != null && Number.isFinite(price) && price > 0;
+    const priceCurrency = (input.product.priceCurrency ?? 'INR').toUpperCase();
+    const hasInrPrice = hasPrice && priceCurrency === 'INR';
     const rating = input.product.aggregateRating;
     const hasRating =
       rating != null &&
@@ -174,10 +176,10 @@ export function buildAutomobileJsonLdGraph(input: BuildAutomobileJsonLdGraphInpu
         url: abs(input.product.path),
         image: input.product.image,
         brand: input.product.brand,
-        offers: hasPrice
+        offers: hasInrPrice
           ? {
               price,
-              priceCurrency: input.product.priceCurrency ?? 'INR',
+              priceCurrency: 'INR',
               url: abs(input.product.path),
             }
           : undefined,
