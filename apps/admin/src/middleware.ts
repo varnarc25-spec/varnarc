@@ -26,10 +26,17 @@ export function middleware(request: NextRequest) {
   }
 
   if (!token) {
+    if (pathname.startsWith('/api/')) {
+      return NextResponse.json(
+        { error: { message: 'Not authenticated. Sign in again, then retry.' } },
+        { status: 401 },
+      );
+    }
     const login = new URL('/login', request.url);
     const path = pathname + request.nextUrl.search;
     if (path && path !== '/') login.searchParams.set('returnTo', path);
-    return NextResponse.redirect(login);
+    // 303 so a form POST is not replayed onto /login as a Server Action.
+    return NextResponse.redirect(login, 303);
   }
 
   return nextWithPathname(request, pathname);

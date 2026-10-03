@@ -146,6 +146,10 @@ export const PERMISSIONS = {
   PREMIUM_MANAGE: 'premium.manage',
   MENU_MANAGE: 'menu.manage',
   REPORTS_EXPORT: 'reports.export',
+  HR_VIEW: 'hr.view',
+  HR_CREATE: 'hr.create',
+  HR_EDIT: 'hr.edit',
+  HR_DELETE: 'hr.delete',
 } as const;
 
 export type Permission = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];
@@ -312,6 +316,7 @@ export function hasPermission(
     if (p === PERMISSIONS.MEDIA_VIEW && hasMediaRead) return true;
     if (p === PERMISSIONS.MEDIA_READ && hasMediaView) return true;
     if (p === PERMISSIONS.MEDIA_EDIT && hasMediaUpload) return true;
+    if (p.startsWith('hr.') && granted.includes(PERMISSIONS.USER_UPDATE)) return true;
     return false;
   });
 }
