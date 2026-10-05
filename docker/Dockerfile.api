@@ -70,6 +70,9 @@ RUN set -e; \
       printf '%s\n' '#!/bin/sh' 'exec node "$(dirname "$0")/../prisma/build/index.js" "$@"' > /deploy/node_modules/.bin/prisma; \
       chmod +x /deploy/node_modules/.bin/prisma; \
     fi
+# dist/main.js requires express from the app root. pnpm deploy only links
+# direct dependencies there, so express must stay in apps/api/package.json.
+RUN cd /deploy && node -e "require('express')"
 
 FROM node:20-alpine AS runner
 RUN apk add --no-cache openssl

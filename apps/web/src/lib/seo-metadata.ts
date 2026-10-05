@@ -16,6 +16,19 @@ export type SeoOverride = {
   language?: string | null;
 };
 
+const HERO_IMAGE_WIDTH_MIN = 80;
+const HERO_IMAGE_WIDTH_MAX = 800;
+
+/** Pixel width saved on a site page. Values outside 80–800 are ignored. */
+export function readHeroImageWidth(metadata: unknown): number | null {
+  if (!metadata || typeof metadata !== 'object' || Array.isArray(metadata)) return null;
+  const value = (metadata as { heroImageWidth?: unknown }).heroImageWidth;
+  if (typeof value !== 'number' || !Number.isFinite(value)) return null;
+  const width = Math.round(value);
+  if (width < HERO_IMAGE_WIDTH_MIN || width > HERO_IMAGE_WIDTH_MAX) return null;
+  return width;
+}
+
 export type SeoMetadataInput = {
   entityType: string;
   entityId?: string;
@@ -41,21 +54,36 @@ export async function fetchSeoOverride(
   }
 }
 
-/** SEO saved in Admin → Pages for a built-in site route. */
-export async function fetchSitePageSeo(path: string): Promise<SeoOverride | null> {
+type SitePageRecord = {
+  seo?: SeoOverride | null;
+  metadata?: unknown;
+};
+
+async function fetchSitePageRecord(path: string): Promise<SitePageRecord | null> {
   const pathname = path.startsWith('/') ? path : `/${path}`;
   const clean = pathname.split('?')[0]?.replace(/\/$/, '') || '/';
   const normalized = clean === '' ? '/' : clean;
   if (!isSitePagePath(normalized)) return null;
   try {
-    const { data } = await apiPublicFetch<{ seo?: SeoOverride | null }>(
+    const { data } = await apiPublicFetch<SitePageRecord>(
       `/pages/slug/${sitePageSlugFromPath(normalized)}`,
       { next: { revalidate: 120 } },
     );
-    return data?.seo ?? null;
+    return data ?? null;
   } catch {
     return null;
   }
+}
+
+/** SEO saved in Admin → Pages for a built-in site route. */
+export async function fetchSitePageSeo(path: string): Promise<SeoOverride | null> {
+  const page = await fetchSitePageRecord(path);
+  return page?.seo ?? null;
+}
+
+export async function fetchSiteHeroImageWidth(path: string): Promise<number | null> {
+  const page = await fetchSitePageRecord(path);
+  return readHeroImageWidth(page?.metadata);
 }
 
 function prefer(primary?: string | null, fallback?: string | null) {

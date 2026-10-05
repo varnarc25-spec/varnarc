@@ -52,6 +52,10 @@ jobs:
             docker compose $COMPOSE_FILES --env-file .env.production build admin
             # shellcheck disable=SC2086
             docker compose $COMPOSE_FILES --env-file .env.production up -d
+            # Recreated web/api containers get new IPs. Nginx resolves upstreams
+            # at start, so reload or it keeps proxying to the old addresses (502).
+            # shellcheck disable=SC2086
+            docker compose $COMPOSE_FILES --env-file .env.production exec -T nginx nginx -s reload
             if [ -x scripts/vps/migrate.sh ]; then
               bash scripts/vps/migrate.sh
             fi

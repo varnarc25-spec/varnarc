@@ -15,6 +15,7 @@ export function trackAutomobileEvent(
     | 'resale_vehicle_selected'
     | 'resale_calculator_completed'
     | 'resale_result_viewed'
+    | 'resale_pdf_downloaded'
     | 'resale_comparison_clicked'
     | 'related_calculator_clicked',
   metadata?: Record<string, unknown>,

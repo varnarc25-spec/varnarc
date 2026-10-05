@@ -70,6 +70,13 @@ export class GcsStorageService {
     ) {
       message =
         'Google Cloud credentials are not available on this API. On Cloud Run, attach a runtime service account (no JSON key). Locally, run gcloud auth application-default login.';
+    } else if (
+      lower.includes('invalid_grant') ||
+      lower.includes('invalid_rapt') ||
+      lower.includes('reauth')
+    ) {
+      message =
+        'Google Cloud login on this machine has expired. Run `gcloud auth application-default login`, then upload again. Cloud Run uses its runtime service account and does not need this login.';
     } else if (raw.code === 404 || lower.includes('notfound') || lower.includes('not found')) {
       message = `GCS bucket "${bucket}" was not found. Check the bucket name and GCP project ID in Admin → Settings → Cloud Storage.`;
     } else if (

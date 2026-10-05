@@ -16,6 +16,7 @@ import { SimilarVehicleComparison } from './similar-vehicle-comparison';
 import { ValuationRangeCard } from './valuation-range-card';
 import { ValueAdjustmentBreakdown } from './value-adjustment-breakdown';
 import { VehicleValueTimeline } from './vehicle-value-timeline';
+import { ResalePdfButton } from './resale-pdf-button';
 import type { ResaleFormState } from './form';
 
 const OWNER_LABEL: Record<number, string> = {
@@ -140,6 +141,7 @@ export function ResaleResult({ result, form, onReset, onCopy, copied }: Props) {
         >
           Check ownership cost
         </Link>
+        <ResalePdfButton result={result} form={form} />
         <button
           type="button"
           onClick={onCopy}

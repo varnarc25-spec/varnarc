@@ -11,7 +11,7 @@ type PageDetail = {
   content: string | null;
   status: string;
   publishedAt: string | null;
-  metadata?: { kind?: string; path?: string } | null;
+  metadata?: { kind?: string; path?: string; heroImageWidth?: number } | null;
   seo: {
     title: string | null;
     description: string | null;
@@ -82,6 +82,7 @@ export default async function PageDetailPage({ params }: { params: Promise<{ id:
         ogImage={page.seo?.ogImage ?? null}
         sitePath={sitePath}
         publishedAt={page.publishedAt ?? null}
+        metadata={page.metadata}
       />
 
       <PageVersionHistory

@@ -39,6 +39,24 @@ function looksLikeHtml(content: string) {
   return /^\s*</.test(content) || /<(?:p|h[1-6]|ul|ol|blockquote|div|img|iframe)\b/i.test(content);
 }
 
+const RESALE_HERO_PATH = '/automobile/calculators/resale-value';
+const HERO_WIDTH_MIN = 80;
+const HERO_WIDTH_MAX = 800;
+
+function heroWidthFromMetadata(metadata: Record<string, unknown> | null | undefined) {
+  const value = metadata?.heroImageWidth;
+  return typeof value === 'number' && Number.isFinite(value) ? String(Math.round(value)) : '';
+}
+
+function parseHeroImageWidth(value: string): number | null | 'invalid' {
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  const width = Number(trimmed);
+  if (!Number.isInteger(width) || width < HERO_WIDTH_MIN || width > HERO_WIDTH_MAX)
+    return 'invalid';
+  return width;
+}
+
 export function PageEditActions({
   pageId,
   title,
@@ -51,6 +69,7 @@ export function PageEditActions({
   ogImage = null,
   sitePath = null,
   publishedAt = null,
+  metadata = null,
 }: {
   pageId: string;
   title: string;
@@ -63,6 +82,7 @@ export function PageEditActions({
   ogImage?: string | null;
   sitePath?: string | null;
   publishedAt?: string | null;
+  metadata?: Record<string, unknown> | null;
 }) {
   const router = useRouter();
   const [form, setForm] = useState({
@@ -73,6 +93,7 @@ export function PageEditActions({
     seoDescription: seoDescription || '',
     seoKeywords: seoKeywords || '',
     ogImage: ogImage || '',
+    heroImageWidth: heroWidthFromMetadata(metadata),
     scheduleAt: toLocalInputValue(publishedAt),
   });
   const [message, setMessage] = useState<string | null>(null);
@@ -85,10 +106,26 @@ export function PageEditActions({
 
   const buildPayload = useCallback(() => {
     const f = formRef.current;
+    const heroImageWidth =
+      sitePath === RESALE_HERO_PATH ? parseHeroImageWidth(f.heroImageWidth) : null;
+    if (heroImageWidth === 'invalid') {
+      throw new Error(
+        `Hero image width must be a whole number from ${HERO_WIDTH_MIN} to ${HERO_WIDTH_MAX}.`,
+      );
+    }
+    const pageMetadata =
+      sitePath === RESALE_HERO_PATH
+        ? {
+            ...(metadata ?? {}),
+            ...(heroImageWidth == null ? {} : { heroImageWidth }),
+          }
+        : undefined;
+    if (pageMetadata && heroImageWidth == null) delete pageMetadata.heroImageWidth;
     return {
       pageId,
       title: f.title,
       ...(sitePath ? {} : { slug: f.slug, content: f.content }),
+      ...(pageMetadata ? { metadata: pageMetadata } : {}),
       seo: {
         title: f.seoTitle || null,
         description: f.seoDescription || null,
@@ -96,7 +133,7 @@ export function PageEditActions({
         ogImage: f.ogImage || null,
       },
     };
-  }, [pageId, sitePath]);
+  }, [metadata, pageId, sitePath]);
 
   const save = useCallback(
     async (opts?: { silent?: boolean }) => {
@@ -139,7 +176,16 @@ export function PageEditActions({
       void save({ silent: true });
     }, 2500);
     return () => clearTimeout(t);
-  }, [form.title, form.slug, form.content, form.seoTitle, form.seoDescription, save]);
+  }, [
+    form.title,
+    form.slug,
+    form.content,
+    form.seoTitle,
+    form.seoDescription,
+    form.ogImage,
+    form.heroImageWidth,
+    save,
+  ]);
 
   async function action(path: string) {
     setLoading(true);
@@ -310,6 +356,26 @@ export function PageEditActions({
         value={{ mediaId: null, url: form.ogImage || null, alt: '' }}
         onChange={(next) => setForm((f) => ({ ...f, ogImage: next.url || '' }))}
       />
+      {sitePath === RESALE_HERO_PATH ? (
+        <label className="block max-w-xs text-sm">
+          <span className="mb-1 block text-[var(--varnarc-subtle)]">Hero image width (px)</span>
+          <input
+            type="number"
+            min={HERO_WIDTH_MIN}
+            max={HERO_WIDTH_MAX}
+            step={1}
+            inputMode="numeric"
+            className="h-10 w-full rounded-md border border-[var(--varnarc-border)] px-3"
+            value={form.heroImageWidth}
+            placeholder="320"
+            onChange={(e) => setForm((f) => ({ ...f, heroImageWidth: e.target.value }))}
+          />
+          <span className="mt-1 block text-xs text-[var(--varnarc-subtle)]">
+            Width of the uploaded image in the hero. Use {HERO_WIDTH_MIN}–{HERO_WIDTH_MAX}. Leave
+            blank for the default size.
+          </span>
+        </label>
+      ) : null}
 
       <AiSeoAssistant
         initialTitle={form.title}

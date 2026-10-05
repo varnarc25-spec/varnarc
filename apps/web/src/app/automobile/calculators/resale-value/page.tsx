@@ -6,7 +6,7 @@ import { RelatedCalculators } from '@/components/automobile/resale/related-calcu
 import { ResaleCalculator } from '@/components/automobile/resale/resale-calculator';
 import { RESALE_FAQS, ResaleValueGuide } from '@/components/automobile/resale/resale-guide';
 import { buildAutomobilePageMetadata } from '@/lib/automobile/seo';
-import { fetchSitePageSeo } from '@/lib/seo-metadata';
+import { fetchSiteHeroImageWidth, fetchSitePageSeo } from '@/lib/seo-metadata';
 import { brandTitleOnce } from '@/lib/seo-defaults';
 
 const TITLE = 'Car Resale Value Calculator India 2026 | Used Car Value – Varnarc';
@@ -72,7 +72,10 @@ function HeroMark() {
 export default async function CarResaleValuePage({ searchParams }: Props) {
   const sp = await searchParams;
   void sp;
-  const siteSeo = await fetchSitePageSeo(PATH);
+  const [siteSeo, heroImageWidth] = await Promise.all([
+    fetchSitePageSeo(PATH),
+    fetchSiteHeroImageWidth(PATH),
+  ]);
   const heroImage = siteSeo?.ogImage?.trim() || null;
   return (
     <>
@@ -137,7 +140,12 @@ export default async function CarResaleValuePage({ searchParams }: Props) {
                   <img
                     src={heroImage}
                     alt="Car resale value"
-                    className="h-36 w-full max-w-xs rounded-2xl object-contain"
+                    className={
+                      heroImageWidth
+                        ? 'h-auto max-w-full rounded-2xl object-contain'
+                        : 'h-36 w-full max-w-xs rounded-2xl object-contain'
+                    }
+                    style={heroImageWidth ? { width: `${heroImageWidth}px` } : undefined}
                   />
                 ) : (
                   <HeroMark />
