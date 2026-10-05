@@ -31,11 +31,12 @@ export class CarCatalogService {
     return this.repos.carCatalog;
   }
 
-  listBrands(search?: string, admin = false) {
+  listBrands(search?: string, admin = false, withVehicles = false) {
     return this.catalog.listBrands({
       search,
       status: admin ? undefined : 'PUBLISHED',
       limit: 200,
+      withVehicles,
     });
   }
 

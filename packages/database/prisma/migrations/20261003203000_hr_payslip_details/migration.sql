@@ -1,0 +1,17 @@
+ALTER TABLE "hr_employees" ADD COLUMN IF NOT EXISTS "date_of_birth" DATE;
+ALTER TABLE "hr_employees" ADD COLUMN IF NOT EXISTS "pan" TEXT;
+ALTER TABLE "hr_employees" ADD COLUMN IF NOT EXISTS "bank_account_no" TEXT;
+ALTER TABLE "hr_employees" ADD COLUMN IF NOT EXISTS "ifsc_code" TEXT;
+ALTER TABLE "hr_employees" ADD COLUMN IF NOT EXISTS "tax_regime" TEXT NOT NULL DEFAULT 'NEW';
+
+ALTER TABLE "hr_salaries" ADD COLUMN IF NOT EXISTS "special_allowance" DECIMAL(12,2) NOT NULL DEFAULT 0;
+ALTER TABLE "hr_salaries" ADD COLUMN IF NOT EXISTS "leave_travel_allowance" DECIMAL(12,2) NOT NULL DEFAULT 0;
+ALTER TABLE "hr_salaries" ADD COLUMN IF NOT EXISTS "professional_tax" DECIMAL(12,2) NOT NULL DEFAULT 0;
+
+ALTER TABLE "hr_payroll_runs" ADD COLUMN IF NOT EXISTS "company_name" TEXT NOT NULL DEFAULT '';
+ALTER TABLE "hr_payroll_runs" ADD COLUMN IF NOT EXISTS "generated_by" TEXT NOT NULL DEFAULT 'Payroll';
+
+ALTER TABLE "hr_payslips" ADD COLUMN IF NOT EXISTS "special_allowance" DECIMAL(12,2) NOT NULL DEFAULT 0;
+ALTER TABLE "hr_payslips" ADD COLUMN IF NOT EXISTS "leave_travel_allowance" DECIMAL(12,2) NOT NULL DEFAULT 0;
+ALTER TABLE "hr_payslips" ADD COLUMN IF NOT EXISTS "professional_tax" DECIMAL(12,2) NOT NULL DEFAULT 0;
+ALTER TABLE "hr_payslips" ADD COLUMN IF NOT EXISTS "gross_pay" DECIMAL(12,2) NOT NULL DEFAULT 0;

@@ -98,28 +98,11 @@ export function GeneralSettingsForm({ initial }: { initial: GeneralSettings }) {
           />
         </label>
         <label className="block text-sm">
-          Company name
-          <input
-            className="mt-1 block h-10 w-full rounded-md border border-[var(--varnarc-border)] px-3"
-            value={form.companyName ?? ''}
-            onChange={(e) => update('companyName', e.target.value || null)}
-          />
-        </label>
-        <label className="block text-sm">
           Timezone
           <input
             className="mt-1 block h-10 w-full rounded-md border border-[var(--varnarc-border)] px-3"
             value={form.timezone ?? 'UTC'}
             onChange={(e) => update('timezone', e.target.value)}
-          />
-        </label>
-        <label className="block text-sm md:col-span-2">
-          Company address
-          <textarea
-            className="mt-1 w-full rounded-md border border-[var(--varnarc-border)] p-3 text-sm"
-            rows={2}
-            value={form.companyAddress ?? ''}
-            onChange={(e) => update('companyAddress', e.target.value || null)}
           />
         </label>
         <label className="block text-sm">
@@ -131,7 +114,12 @@ export function GeneralSettingsForm({ initial }: { initial: GeneralSettings }) {
           />
         </label>
       </div>
-      <Button type="button" onClick={() => void save().catch((e) => setMessage(e instanceof Error ? e.message : 'Save failed'))}>
+      <Button
+        type="button"
+        onClick={() =>
+          void save().catch((e) => setMessage(e instanceof Error ? e.message : 'Save failed'))
+        }
+      >
         Save general settings
       </Button>
       {message ? <p className="text-sm text-[var(--varnarc-subtle)]">{message}</p> : null}

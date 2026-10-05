@@ -6,6 +6,7 @@ const groups = [
     links: [
       { href: '/settings', label: 'Overview' },
       { href: '/settings/general', label: 'Site settings' },
+      { href: '/settings/company', label: 'Company profile' },
       { href: '/themes', label: 'Themes & branding' },
     ],
   },

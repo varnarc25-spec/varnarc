@@ -81,6 +81,8 @@ import {
 import { CarCatalogRepository } from './automobile/car-catalog.repository';
 import { ResaleValuationRepository } from './automobile/resale-valuation.repository';
 import { HrRepository } from './hr/hr.repository';
+import { CrmRepository } from './crm/crm.repository';
+import { LaptopRentalRepository } from './hr/laptop-rental.repository';
 import {
   ProductRepository,
   ReviewRepository,
@@ -270,6 +272,8 @@ export function createRepositories(db: PrismaClient) {
     carCatalog: new CarCatalogRepository(db),
     resaleValuation: new ResaleValuationRepository(db),
     hr: new HrRepository(db),
+    crm: new CrmRepository(db),
+    laptopRentals: new LaptopRentalRepository(db),
     products: new ProductRepository(db),
     reviews: new ReviewRepository(db),
     userReviews: new UserReviewRepository(db),

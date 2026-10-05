@@ -1,5 +1,20 @@
 import { z } from 'zod';
 
+export const STANDARD_HR_DEPARTMENTS = [
+  { name: 'Administration', code: 'ADMIN' },
+  { name: 'Customer Support', code: 'CS' },
+  { name: 'Engineering', code: 'ENG' },
+  { name: 'Finance', code: 'FIN' },
+  { name: 'Human Resources', code: 'HR' },
+  { name: 'Information Technology', code: 'IT' },
+  { name: 'Legal', code: 'LEGAL' },
+  { name: 'Marketing', code: 'MKT' },
+  { name: 'Operations', code: 'OPS' },
+  { name: 'Procurement', code: 'PROC' },
+  { name: 'Product', code: 'PROD' },
+  { name: 'Sales', code: 'SALES' },
+] as const;
+
 export const hrEmployeeStatusSchema = z.enum(['ACTIVE', 'ON_LEAVE', 'EXITED']);
 export const hrLeaveTypeSchema = z.enum(['ANNUAL', 'SICK', 'UNPAID']);
 export const hrLeaveStatusSchema = z.enum(['PENDING', 'APPROVED', 'REJECTED']);
@@ -9,6 +24,8 @@ const dateOnly = z
   .regex(/^\d{4}-\d{2}-\d{2}$/)
   .optional()
   .nullable();
+
+const money = z.coerce.number().min(0).max(100_000_000);
 
 export const createHrDepartmentSchema = z.object({
   name: z.string().trim().min(1).max(120),
@@ -26,7 +43,48 @@ export const createHrEmployeeSchema = z.object({
   departmentId: z.string().uuid().optional().nullable(),
   status: hrEmployeeStatusSchema.default('ACTIVE'),
   joinedOn: dateOnly,
+  dateOfBirth: dateOnly,
+  pan: z
+    .union([
+      z
+        .string()
+        .trim()
+        .regex(/^[A-Za-z]{5}[0-9]{4}[A-Za-z]$/),
+      z.literal(''),
+    ])
+    .optional()
+    .nullable(),
+  bankAccountNo: z
+    .union([
+      z
+        .string()
+        .trim()
+        .regex(/^[0-9]{6,20}$/),
+      z.literal(''),
+    ])
+    .optional()
+    .nullable(),
+  ifscCode: z
+    .union([
+      z
+        .string()
+        .trim()
+        .regex(/^[A-Za-z]{4}0[A-Za-z0-9]{6}$/),
+      z.literal(''),
+    ])
+    .optional()
+    .nullable(),
+  taxRegime: z.enum(['NEW', 'OLD']).default('NEW'),
   notes: z.string().trim().max(2000).optional().nullable(),
+  basic: z.union([z.literal(''), z.null(), money]).optional(),
+  hra: z.union([z.literal(''), z.null(), money]).optional(),
+  specialAllowance: z.union([z.literal(''), z.null(), money]).optional(),
+  leaveTravelAllowance: z.union([z.literal(''), z.null(), money]).optional(),
+  professionalTax: z.union([z.literal(''), z.null(), money]).optional(),
+  providentFund: z.union([z.literal(''), z.null(), money]).optional(),
+  hikePercentage: z.union([z.literal(''), z.null(), z.coerce.number().min(0).max(500)]).optional(),
+  hikeEffectiveOn: dateOnly,
+  hikeNotes: z.string().trim().max(500).optional().nullable(),
 });
 
 export const updateHrEmployeeSchema = createHrEmployeeSchema.partial();
@@ -56,7 +114,6 @@ export type UpdateHrLeaveInput = z.infer<typeof updateHrLeaveSchema>;
 
 const optionalUuid = z.string().uuid().optional().nullable();
 const optionalText = (max: number) => z.string().trim().max(max).optional().nullable();
-const money = z.coerce.number().min(0).max(100_000_000);
 
 export const createHrOrganizationSchema = z.object({
   name: z.string().trim().min(1).max(160),
@@ -189,12 +246,19 @@ export const upsertHrSalarySchema = z.object({
   employeeId: z.string().uuid(),
   basic: money,
   hra: money.default(0),
-  allowances: money.default(0),
-  deductions: money.default(0),
+  specialAllowance: money.default(0),
+  leaveTravelAllowance: money.default(0),
+  professionalTax: money.default(0),
+  providentFund: money.default(0),
 });
 
 export const generateHrPayrollSchema = z.object({
   period: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/),
+  generatedBy: z.string().trim().max(120).optional().nullable(),
+});
+
+export const emailHrPayslipSchema = z.object({
+  pdfBase64: z.string().trim().min(32).max(2_800_000),
 });
 
 export type CreateHrOrganizationInput = z.infer<typeof createHrOrganizationSchema>;
@@ -220,3 +284,4 @@ export type CreateHrClientInput = z.infer<typeof createHrClientSchema>;
 export type AssignHrClientInput = z.infer<typeof assignHrClientSchema>;
 export type UpsertHrSalaryInput = z.infer<typeof upsertHrSalarySchema>;
 export type GenerateHrPayrollInput = z.infer<typeof generateHrPayrollSchema>;
+export type EmailHrPayslipInput = z.infer<typeof emailHrPayslipSchema>;

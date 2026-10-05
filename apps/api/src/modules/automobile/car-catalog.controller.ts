@@ -44,8 +44,9 @@ export class CarCatalogController {
   @Public()
   @Get('brands')
   @ApiOperation({ summary: 'List car brands' })
-  async brands(@Query('search') search?: string) {
-    return ok(await this.catalog.listBrands(search));
+  async brands(@Query('search') search?: string, @Query('withVehicles') withVehicles?: string) {
+    const onlyWithVehicles = withVehicles === '1' || withVehicles === 'true';
+    return ok(await this.catalog.listBrands(search, false, onlyWithVehicles));
   }
 
   @Public()

@@ -57,6 +57,10 @@ export const updateContactMessageStatusSchema = z.object({
   status: z.enum(['NEW', 'SENT', 'FAILED', 'SPAM', 'ARCHIVED']),
 });
 
+export const sendContactTestEmailSchema = z.object({
+  to: z.string().trim().email().max(254),
+});
+
 export type ContactDestination = 'general' | 'editorial' | 'business' | 'support' | 'privacy';
 
 export function contactDestinationForTopic(topic: string): ContactDestination {
@@ -88,3 +92,4 @@ export type ContactSettingsPublic = z.infer<typeof contactSettingsPublicSchema>;
 export type CreateContactMessageInput = z.infer<typeof createContactMessageSchema>;
 export type ContactMessageListQuery = z.infer<typeof contactMessageListQuerySchema>;
 export type UpdateContactMessageStatusInput = z.infer<typeof updateContactMessageStatusSchema>;
+export type SendContactTestEmailInput = z.infer<typeof sendContactTestEmailSchema>;

@@ -25,6 +25,11 @@ export default async function SettingsHubPage() {
       description: 'Site name, contact info, locale, and branding URLs.',
     },
     {
+      href: '/settings/company',
+      title: 'Company profile',
+      description: 'Legal name, address, tax IDs, and the name printed on payslips.',
+    },
+    {
       href: '/settings/contact',
       title: 'Contact email',
       description: 'Contact form delivery addresses and Resend configuration.',

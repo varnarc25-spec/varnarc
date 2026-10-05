@@ -1,7 +1,40 @@
-import type { PrismaClient } from '@prisma/client';
+import type { Prisma, PrismaClient } from '@prisma/client';
+import { STANDARD_HR_DEPARTMENTS, type LaptopRentalStatus } from '@varnarc/validation';
 
 const employeeInclude = {
   department: { select: { id: true, name: true, code: true } },
+  salary: {
+    select: {
+      basic: true,
+      hra: true,
+      specialAllowance: true,
+      leaveTravelAllowance: true,
+      professionalTax: true,
+      providentFund: true,
+    },
+  },
+  salaryHikes: {
+    orderBy: { effectiveOn: 'desc' as const },
+    take: 20,
+    select: {
+      id: true,
+      effectiveOn: true,
+      percentage: true,
+      previousBasic: true,
+      previousHra: true,
+      previousSpecialAllowance: true,
+      previousLeaveTravelAllowance: true,
+      previousProfessionalTax: true,
+      previousProvidentFund: true,
+      basic: true,
+      hra: true,
+      specialAllowance: true,
+      leaveTravelAllowance: true,
+      professionalTax: true,
+      providentFund: true,
+      notes: true,
+    },
+  },
 } as const;
 
 const leaveInclude = {
@@ -20,7 +53,14 @@ export class HrRepository {
     ]);
   }
 
-  listDepartments() {
+  async listDepartments() {
+    await this.db.hrDepartment.createMany({
+      data: STANDARD_HR_DEPARTMENTS.map((department) => ({
+        name: department.name,
+        code: department.code,
+      })),
+      skipDuplicates: true,
+    });
     return this.db.hrDepartment.findMany({
       where: { deletedAt: null },
       orderBy: { name: 'asc' },
@@ -53,6 +93,11 @@ export class HrRepository {
     departmentId: string | null;
     status: string;
     joinedOn: Date | null;
+    dateOfBirth: Date | null;
+    pan: string | null;
+    bankAccountNo: string | null;
+    ifscCode: string | null;
+    taxRegime: string;
     notes: string | null;
   }) {
     return this.db.hrEmployee.create({ data, include: employeeInclude });
@@ -68,6 +113,11 @@ export class HrRepository {
       departmentId?: string | null;
       status?: string;
       joinedOn?: Date | null;
+      dateOfBirth?: Date | null;
+      pan?: string | null;
+      bankAccountNo?: string | null;
+      ifscCode?: string | null;
+      taxRegime?: string;
       notes?: string | null;
     },
   ) {
@@ -446,6 +496,16 @@ export class HrRepository {
     return this.db.hrClient.create({ data });
   }
 
+  findClient(id: string) {
+    return this.db.hrClient.findFirst({ where: { id, deletedAt: null } });
+  }
+
+  findClientByName(name: string) {
+    return this.db.hrClient.findFirst({
+      where: { deletedAt: null, name: { equals: name, mode: 'insensitive' } },
+    });
+  }
+
   listAssignments() {
     return this.db.hrClientAssignment.findMany({
       orderBy: { startDate: 'desc' },
@@ -476,20 +536,47 @@ export class HrRepository {
     employeeId: string;
     basic: number;
     hra: number;
-    allowances: number;
-    deductions: number;
+    specialAllowance: number;
+    leaveTravelAllowance: number;
+    professionalTax: number;
+    providentFund: number;
   }) {
     const amounts = {
       basic: data.basic,
       hra: data.hra,
-      allowances: data.allowances,
-      deductions: data.deductions,
+      specialAllowance: data.specialAllowance,
+      leaveTravelAllowance: data.leaveTravelAllowance,
+      professionalTax: data.professionalTax,
+      providentFund: data.providentFund,
+      allowances: roundMoney(data.specialAllowance + data.leaveTravelAllowance),
+      deductions: roundMoney(data.professionalTax + data.providentFund),
     };
     return this.db.hrSalary.upsert({
       where: { employeeId: data.employeeId },
       update: amounts,
       create: { employeeId: data.employeeId, ...amounts },
     });
+  }
+
+  createSalaryHike(data: {
+    employeeId: string;
+    effectiveOn: Date;
+    percentage: number;
+    previousBasic: number;
+    previousHra: number;
+    previousSpecialAllowance: number;
+    previousLeaveTravelAllowance: number;
+    previousProfessionalTax: number;
+    previousProvidentFund: number;
+    basic: number;
+    hra: number;
+    specialAllowance: number;
+    leaveTravelAllowance: number;
+    professionalTax: number;
+    providentFund: number;
+    notes: string | null;
+  }) {
+    return this.db.hrSalaryHike.create({ data });
   }
 
   listPayrollRuns() {
@@ -510,47 +597,263 @@ export class HrRepository {
     });
   }
 
+  payslipYearToDate(employeeId: string, period: string) {
+    const [yearText, monthText] = period.split('-');
+    const year = Number(yearText);
+    const month = Number(monthText);
+    const startYear = month >= 4 ? year : year - 1;
+    const start = `${startYear}-04`;
+    return this.db.hrPayslip.findMany({
+      where: {
+        employeeId,
+        payrollRun: { period: { gte: start, lte: period } },
+      },
+      select: { grossPay: true, deductions: true, providentFund: true },
+    });
+  }
+
   getPayslip(id: string) {
     return this.db.hrPayslip.findUnique({
       where: { id },
       include: {
         employee: {
-          select: { fullName: true, employeeCode: true, jobTitle: true, email: true },
+          select: {
+            fullName: true,
+            employeeCode: true,
+            jobTitle: true,
+            email: true,
+            dateOfBirth: true,
+            pan: true,
+            bankAccountNo: true,
+            ifscCode: true,
+            taxRegime: true,
+            joinedOn: true,
+            department: { select: { name: true } },
+          },
         },
-        payrollRun: { select: { period: true, status: true } },
+        payrollRun: {
+          select: {
+            period: true,
+            status: true,
+            companyName: true,
+            companyAddress: true,
+            generatedBy: true,
+          },
+        },
       },
     });
   }
 
-  async generatePayslips(period: string) {
+  async generatePayslips(
+    period: string,
+    header: { companyName: string; companyAddress: string; generatedBy: string },
+  ) {
     const salaries = await this.db.hrSalary.findMany({
       where: { employee: { deletedAt: null, status: 'ACTIVE' } },
     });
     const run = await this.db.hrPayrollRun.upsert({
       where: { period },
-      update: { status: 'PROCESSED' },
-      create: { period, status: 'PROCESSED' },
+      update: {
+        status: 'PROCESSED',
+        companyName: header.companyName,
+        companyAddress: header.companyAddress,
+        generatedBy: header.generatedBy,
+      },
+      create: {
+        period,
+        status: 'PROCESSED',
+        companyName: header.companyName,
+        companyAddress: header.companyAddress,
+        generatedBy: header.generatedBy,
+      },
     });
+    const payslips: Array<
+      Prisma.HrPayslipGetPayload<{
+        include: {
+          employee: { select: { fullName: true; email: true; employeeCode: true } };
+        };
+      }>
+    > = [];
     for (const salary of salaries) {
       const basic = Number(salary.basic);
       const hra = Number(salary.hra);
-      const allowances = Number(salary.allowances);
-      const deductions = Number(salary.deductions);
-      const netPay = Math.round((basic + hra + allowances - deductions) * 100) / 100;
-      await this.db.hrPayslip.upsert({
-        where: { payrollRunId_employeeId: { payrollRunId: run.id, employeeId: salary.employeeId } },
-        update: { basic, hra, allowances, deductions, netPay },
-        create: {
-          payrollRunId: run.id,
-          employeeId: salary.employeeId,
-          basic,
-          hra,
-          allowances,
-          deductions,
-          netPay,
-        },
-      });
+      const specialAllowance = Number(salary.specialAllowance);
+      const leaveTravelAllowance = Number(salary.leaveTravelAllowance);
+      const professionalTax = Number(salary.professionalTax);
+      const providentFund = Number(salary.providentFund);
+      const grossPay = roundMoney(basic + hra + specialAllowance + leaveTravelAllowance);
+      const deductions = roundMoney(professionalTax + providentFund);
+      const netPay = roundMoney(grossPay - deductions);
+      const line = {
+        basic,
+        hra,
+        specialAllowance,
+        leaveTravelAllowance,
+        professionalTax,
+        providentFund,
+        grossPay,
+        allowances: roundMoney(specialAllowance + leaveTravelAllowance),
+        deductions,
+        netPay,
+      };
+      payslips.push(
+        await this.db.hrPayslip.upsert({
+          where: {
+            payrollRunId_employeeId: { payrollRunId: run.id, employeeId: salary.employeeId },
+          },
+          update: line,
+          create: { payrollRunId: run.id, employeeId: salary.employeeId, ...line },
+          include: {
+            employee: { select: { fullName: true, email: true, employeeCode: true } },
+          },
+        }),
+      );
     }
-    return { runId: run.id, period, count: salaries.length };
+    return { runId: run.id, period, count: salaries.length, payslips };
   }
+
+  listLaptopRentals() {
+    return this.db.laptopRentalProposal.findMany({
+      where: { deletedAt: null },
+      orderBy: [{ proposalDate: 'desc' }, { createdAt: 'desc' }],
+      include: laptopRentalInclude,
+    });
+  }
+
+  getLaptopRental(id: string) {
+    return this.db.laptopRentalProposal.findFirst({
+      where: { id, deletedAt: null },
+      include: laptopRentalInclude,
+    });
+  }
+
+  async createLaptopRental(data: LaptopRentalWrite) {
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      try {
+        return await this.db.$transaction(async (tx) => {
+          const proposalNumber = await nextLaptopRentalNumber(tx, data.proposalDate);
+          return tx.laptopRentalProposal.create({
+            data: { ...data, proposalNumber },
+            include: laptopRentalInclude,
+          });
+        });
+      } catch (error) {
+        if (attempt === 0 && isUniqueConflict(error)) continue;
+        throw error;
+      }
+    }
+    throw new Error('Could not assign a proposal number.');
+  }
+
+  updateLaptopRental(id: string, data: LaptopRentalWrite & { status: LaptopRentalStatus }) {
+    return this.db.laptopRentalProposal.update({
+      where: { id },
+      data,
+      include: laptopRentalInclude,
+    });
+  }
+
+  updateLaptopRentalStatus(id: string, status: LaptopRentalStatus) {
+    return this.db.laptopRentalProposal.update({
+      where: { id },
+      data: { status },
+      include: laptopRentalInclude,
+    });
+  }
+
+  async deleteLaptopRental(id: string) {
+    const result = await this.db.laptopRentalProposal.updateMany({
+      where: { id, deletedAt: null },
+      data: { deletedAt: new Date() },
+    });
+    return result.count > 0;
+  }
+}
+
+function roundMoney(value: number) {
+  return Math.round(value * 100) / 100;
+}
+
+const laptopRentalInclude = {
+  company: { select: { id: true, name: true } },
+  laptops: {
+    include: {
+      laptop: {
+        select: {
+          id: true,
+          name: true,
+          assetTag: true,
+          serialNumber: true,
+          brand: true,
+          model: true,
+          processor: true,
+          ram: true,
+          storage: true,
+          display: true,
+          operatingSystem: true,
+          deletedAt: true,
+        },
+      },
+    },
+  },
+} as const;
+
+export type LaptopRentalWrite = {
+  companyId: string;
+  customerCompanyName: string;
+  proposalDate: Date;
+  title: string;
+  proposalSummary: string;
+  quantity: number;
+  processor: string;
+  ram: string;
+  storage: string;
+  display: string;
+  operatingSystem: string;
+  brand: string;
+  condition: string;
+  accessories: string;
+  monthlyRate: number;
+  commitmentMonths: number;
+  commitmentRate: number;
+  gstPercent: number;
+  depositPerLaptop: number;
+  discountPercent: number;
+  deliveryLocation: string;
+  services: string[];
+  supportText: string;
+  responsibilities: string[];
+  paymentDueText: string;
+  depositNote: string;
+  returnIntro: string;
+  returnChecks: string[];
+  wearNote: string;
+  acceptanceText: string;
+  gstNote: string;
+  customerSignatoryName: string | null;
+  customerSignatoryDesignation: string | null;
+  issuerSignatoryName: string | null;
+  issuerSignatoryDesignation: string | null;
+  issuerName: string;
+  issuerAddress: string | null;
+  issuerPhone: string | null;
+  issuerEmail: string | null;
+  issuerGstin: string | null;
+};
+
+async function nextLaptopRentalNumber(tx: Prisma.TransactionClient, proposalDate: Date) {
+  const year = proposalDate.getUTCFullYear();
+  const prefix = `LRP-${year}-`;
+  const latest = await tx.laptopRentalProposal.findFirst({
+    where: { proposalNumber: { startsWith: prefix } },
+    orderBy: { proposalNumber: 'desc' },
+    select: { proposalNumber: true },
+  });
+  const current = latest ? Number(latest.proposalNumber.slice(prefix.length)) : 0;
+  const sequence = Number.isFinite(current) ? current + 1 : 1;
+  return `${prefix}${String(sequence).padStart(4, '0')}`;
+}
+
+function isUniqueConflict(error: unknown) {
+  return typeof error === 'object' && error !== null && 'code' in error && error.code === 'P2002';
 }

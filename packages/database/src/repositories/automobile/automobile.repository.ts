@@ -8,6 +8,7 @@ type ListParams = CursorPageParams & {
   featured?: boolean;
   manufacturerId?: string;
   manufacturerSlug?: string;
+  model?: string;
   category?: string;
   fuelType?: string;
   bodyType?: string;
@@ -37,6 +38,9 @@ export function automobileVehicleWhere(params: ListParams): Prisma.AutomobileVeh
   if (params.manufacturerId) and.push({ manufacturerId: params.manufacturerId });
   if (params.manufacturerSlug) {
     and.push({ manufacturer: { slug: params.manufacturerSlug, deletedAt: null } });
+  }
+  if (params.model) {
+    and.push({ model: { equals: params.model, mode: 'insensitive' } });
   }
   if (params.category) and.push({ category: { equals: params.category, mode: 'insensitive' } });
   if (params.fuelType) {
@@ -347,7 +351,7 @@ export class AutomobileVehicleRepository extends BaseRepository {
   async searchModels(params: ListParams & { limit?: number; page?: number }) {
     const where = automobileVehicleWhere(params);
     const page = params.page && params.page > 0 ? params.page : 1;
-    const limit = Math.min(params.limit ?? 12, 48);
+    const limit = Math.min(params.limit ?? 12, 100);
     const skip = (page - 1) * limit;
     const groups = await this.db.automobileVehicle.groupBy({
       by: ['manufacturerId', 'model'],

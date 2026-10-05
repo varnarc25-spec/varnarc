@@ -42,11 +42,23 @@ export const CATALOG_VARIANT_DETAIL_INCLUDE = {
 export class CarCatalogRepository {
   constructor(private readonly db: PrismaClient) {}
 
-  listBrands(params: { search?: string; status?: PublishStatus; limit?: number }) {
+  listBrands(params: {
+    search?: string;
+    status?: PublishStatus;
+    limit?: number;
+    withVehicles?: boolean;
+  }) {
     return this.db.automobileManufacturer.findMany({
       where: {
         deletedAt: null,
         ...(params.status ? { status: params.status } : {}),
+        ...(params.withVehicles
+          ? {
+              vehicles: {
+                some: { deletedAt: null, status: 'PUBLISHED', availableInIndia: true },
+              },
+            }
+          : {}),
         ...(params.search
           ? {
               OR: [

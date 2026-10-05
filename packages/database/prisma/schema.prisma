@@ -5377,6 +5377,11 @@ model HrEmployee {
   departmentId  String?   @map("department_id") @db.Uuid
   status        String    @default("ACTIVE")
   joinedOn      DateTime? @map("joined_on") @db.Date
+  dateOfBirth   DateTime? @map("date_of_birth") @db.Date
+  pan           String?
+  bankAccountNo String?   @map("bank_account_no")
+  ifscCode      String?   @map("ifsc_code")
+  taxRegime     String    @default("NEW") @map("tax_regime")
   notes         String?
   createdAt     DateTime  @default(now()) @map("created_at")
   updatedAt     DateTime  @updatedAt @map("updated_at")
@@ -5391,6 +5396,7 @@ model HrEmployee {
   roleLinks     HrRoleAssignment[]
   clientLinks   HrClientAssignment[]
   salary        HrSalary?
+  salaryHikes   HrSalaryHike[]
   payslips      HrPayslip[]
 
   @@index([departmentId])
@@ -5692,21 +5698,53 @@ model HrClientAssignment {
 model HrSalary {
   id          String   @id @default(uuid()) @db.Uuid
   employeeId  String   @unique @map("employee_id") @db.Uuid
-  basic       Decimal  @db.Decimal(12, 2)
-  hra         Decimal  @default(0) @db.Decimal(12, 2)
-  allowances  Decimal  @default(0) @db.Decimal(12, 2)
-  deductions  Decimal  @default(0) @db.Decimal(12, 2)
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
-  employee    HrEmployee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  basic                 Decimal  @db.Decimal(12, 2)
+  hra                   Decimal  @default(0) @db.Decimal(12, 2)
+  specialAllowance      Decimal  @default(0) @map("special_allowance") @db.Decimal(12, 2)
+  leaveTravelAllowance  Decimal  @default(0) @map("leave_travel_allowance") @db.Decimal(12, 2)
+  professionalTax       Decimal  @default(0) @map("professional_tax") @db.Decimal(12, 2)
+  providentFund         Decimal  @default(0) @map("provident_fund") @db.Decimal(12, 2)
+  allowances            Decimal  @default(0) @db.Decimal(12, 2)
+  deductions            Decimal  @default(0) @db.Decimal(12, 2)
+  createdAt             DateTime @default(now()) @map("created_at")
+  updatedAt             DateTime @updatedAt @map("updated_at")
+  employee              HrEmployee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
 
   @@map("hr_salaries")
 }
 
+model HrSalaryHike {
+  id                            String   @id @default(uuid()) @db.Uuid
+  employeeId                    String   @map("employee_id") @db.Uuid
+  effectiveOn                   DateTime @map("effective_on") @db.Date
+  percentage                    Decimal  @db.Decimal(6, 2)
+  previousBasic                 Decimal  @map("previous_basic") @db.Decimal(12, 2)
+  previousHra                   Decimal  @map("previous_hra") @db.Decimal(12, 2)
+  previousSpecialAllowance      Decimal  @map("previous_special_allowance") @db.Decimal(12, 2)
+  previousLeaveTravelAllowance Decimal  @map("previous_leave_travel_allowance") @db.Decimal(12, 2)
+  previousProfessionalTax       Decimal  @map("previous_professional_tax") @db.Decimal(12, 2)
+  previousProvidentFund         Decimal  @default(0) @map("previous_provident_fund") @db.Decimal(12, 2)
+  basic                         Decimal  @db.Decimal(12, 2)
+  hra                           Decimal  @db.Decimal(12, 2)
+  specialAllowance              Decimal  @map("special_allowance") @db.Decimal(12, 2)
+  leaveTravelAllowance          Decimal  @map("leave_travel_allowance") @db.Decimal(12, 2)
+  professionalTax               Decimal  @map("professional_tax") @db.Decimal(12, 2)
+  providentFund                 Decimal  @default(0) @map("provident_fund") @db.Decimal(12, 2)
+  notes                         String?
+  createdAt                     DateTime @default(now()) @map("created_at")
+  employee                      HrEmployee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@index([employeeId])
+  @@map("hr_salary_hikes")
+}
+
 model HrPayrollRun {
   id        String   @id @default(uuid()) @db.Uuid
-  period    String   @unique
-  status    String   @default("DRAFT")
+  period       String   @unique
+  companyName    String   @default("") @map("company_name")
+  companyAddress String   @default("") @map("company_address")
+  generatedBy    String   @default("Payroll") @map("generated_by")
+  status       String   @default("DRAFT")
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
   payslips  HrPayslip[]
@@ -5718,11 +5756,16 @@ model HrPayslip {
   id           String   @id @default(uuid()) @db.Uuid
   payrollRunId String   @map("payroll_run_id") @db.Uuid
   employeeId   String   @map("employee_id") @db.Uuid
-  basic        Decimal  @db.Decimal(12, 2)
-  hra          Decimal  @db.Decimal(12, 2)
-  allowances   Decimal  @db.Decimal(12, 2)
-  deductions   Decimal  @db.Decimal(12, 2)
-  netPay       Decimal  @map("net_pay") @db.Decimal(12, 2)
+  basic                Decimal  @db.Decimal(12, 2)
+  hra                  Decimal  @db.Decimal(12, 2)
+  specialAllowance     Decimal  @default(0) @map("special_allowance") @db.Decimal(12, 2)
+  leaveTravelAllowance Decimal  @default(0) @map("leave_travel_allowance") @db.Decimal(12, 2)
+  professionalTax      Decimal  @default(0) @map("professional_tax") @db.Decimal(12, 2)
+  providentFund        Decimal  @default(0) @map("provident_fund") @db.Decimal(12, 2)
+  grossPay             Decimal  @default(0) @map("gross_pay") @db.Decimal(12, 2)
+  allowances           Decimal  @db.Decimal(12, 2)
+  deductions           Decimal  @db.Decimal(12, 2)
+  netPay               Decimal  @map("net_pay") @db.Decimal(12, 2)
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
   payrollRun   HrPayrollRun @relation(fields: [payrollRunId], references: [id], onDelete: Cascade)
@@ -5730,4 +5773,443 @@ model HrPayslip {
 
   @@unique([payrollRunId, employeeId])
   @@map("hr_payslips")
+}
+
+enum LaptopRentalProposalStatus {
+  DRAFT
+  SENT
+  ACCEPTED
+  DECLINED
+
+  @@map("laptop_rental_proposal_status")
+}
+
+model LaptopRentalProposal {
+  id                            String                      @id @default(uuid()) @db.Uuid
+  proposalNumber                String                      @unique @map("proposal_number")
+  status                        LaptopRentalProposalStatus  @default(DRAFT)
+  companyId                     String                      @map("company_id") @db.Uuid
+  customerCompanyName           String                      @map("customer_company_name")
+  proposalDate                  DateTime                    @map("proposal_date") @db.Date
+  title                         String
+  proposalSummary               String                      @map("proposal_summary")
+  quantity                      Int
+  processor                     String
+  ram                           String
+  storage                       String
+  display                       String
+  operatingSystem               String                      @map("operating_system")
+  brand                         String
+  condition                     String
+  accessories                   String
+  monthlyRate                   Decimal                     @map("monthly_rate") @db.Decimal(12, 2)
+  commitmentMonths              Int                         @map("commitment_months")
+  commitmentRate                Decimal                     @map("commitment_rate") @db.Decimal(12, 2)
+  gstPercent                    Decimal                     @map("gst_percent") @db.Decimal(5, 2)
+  depositPerLaptop              Decimal                     @map("deposit_per_laptop") @db.Decimal(12, 2)
+  deliveryLocation              String                      @map("delivery_location")
+  services                      String[]
+  supportText                   String                      @map("support_text")
+  responsibilities              String[]
+  paymentDueText                String                      @map("payment_due_text")
+  depositNote                   String                      @map("deposit_note")
+  returnIntro                   String                      @map("return_intro")
+  returnChecks                  String[]                    @map("return_checks")
+  wearNote                      String                      @map("wear_note")
+  acceptanceText                String                      @map("acceptance_text")
+  gstNote                       String                      @map("gst_note")
+  customerSignatoryName         String?                     @map("customer_signatory_name")
+  customerSignatoryDesignation  String?                     @map("customer_signatory_designation")
+  issuerSignatoryName           String?                     @map("issuer_signatory_name")
+  issuerSignatoryDesignation    String?                     @map("issuer_signatory_designation")
+  issuerName                    String                      @map("issuer_name")
+  issuerAddress                 String?                     @map("issuer_address")
+  issuerPhone                   String?                     @map("issuer_phone")
+  issuerEmail                   String?                     @map("issuer_email")
+  issuerGstin                   String?                     @map("issuer_gstin")
+  discountPercent               Decimal                     @default(0) @map("discount_percent") @db.Decimal(5, 2)
+  createdAt                     DateTime                    @default(now()) @map("created_at")
+  updatedAt                     DateTime                    @updatedAt @map("updated_at")
+  deletedAt                     DateTime?                   @map("deleted_at")
+  company                       CrmCompany                  @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  agreement                     LaptopRentalAgreement?
+  activities                    CrmActivity[]
+  laptops                       LaptopRentalProposalLaptop[]
+
+  @@index([companyId])
+  @@index([status])
+  @@index([proposalDate])
+  @@map("laptop_rental_proposals")
+}
+
+enum LaptopRentalAgreementStatus {
+  PENDING_SIGNATURE
+  ACTIVE
+  CLOSED
+  CANCELLED
+
+  @@map("laptop_rental_agreement_status")
+}
+
+enum LaptopRentalUnitStatus {
+  READY
+  DELIVERED
+  IN_REPAIR
+  REPLACED
+  PICKED_UP
+  LOST
+  STOLEN
+
+  @@map("laptop_rental_unit_status")
+}
+
+enum LaptopRentalInvoiceKind {
+  RENTAL
+  CHARGE
+
+  @@map("laptop_rental_invoice_kind")
+}
+
+enum LaptopRentalInvoiceStatus {
+  DRAFT
+  ISSUED
+  PAID
+  VOID
+
+  @@map("laptop_rental_invoice_status")
+}
+
+enum LaptopRentalCaseKind {
+  HARDWARE_FAULT
+  REPAIR
+  REPLACEMENT
+
+  @@map("laptop_rental_case_kind")
+}
+
+enum LaptopRentalCaseStatus {
+  OPEN
+  RESOLVED
+
+  @@map("laptop_rental_case_status")
+}
+
+enum LaptopRentalChargeKind {
+  PHYSICAL_DAMAGE
+  LIQUID_DAMAGE
+  THEFT
+  LOSS
+
+  @@map("laptop_rental_charge_kind")
+}
+
+enum LaptopRentalChargeSettlement {
+  INVOICE
+  DEPOSIT
+
+  @@map("laptop_rental_charge_settlement")
+}
+
+enum LaptopRentalChargeStatus {
+  OPEN
+  BILLED
+  PAID
+  WAIVED
+  DEDUCTED
+
+  @@map("laptop_rental_charge_status")
+}
+
+model LaptopRentalAgreement {
+  id                           String                       @id @default(uuid()) @db.Uuid
+  proposalId                   String                       @unique @map("proposal_id") @db.Uuid
+  agreementNumber              String                       @unique @map("agreement_number")
+  status                       LaptopRentalAgreementStatus  @default(PENDING_SIGNATURE)
+  poNumber                     String?                      @map("po_number")
+  startDate                    DateTime                     @map("start_date") @db.Date
+  endDate                      DateTime                     @map("end_date") @db.Date
+  slaHours                     Int                          @map("sla_hours")
+  quantity                     Int
+  commitmentMonths             Int                          @map("commitment_months")
+  commitmentRate               Decimal                      @map("commitment_rate") @db.Decimal(12, 2)
+  gstPercent                   Decimal                      @map("gst_percent") @db.Decimal(5, 2)
+  depositPerLaptop             Decimal                      @map("deposit_per_laptop") @db.Decimal(12, 2)
+  deliveryLocation             String                       @map("delivery_location")
+  brand                        String
+  customerSignatoryName        String?                      @map("customer_signatory_name")
+  customerSignatoryDesignation String?                      @map("customer_signatory_designation")
+  customerSignedOn             DateTime?                    @map("customer_signed_on") @db.Date
+  issuerSignatoryName          String?                      @map("issuer_signatory_name")
+  issuerSignatoryDesignation   String?                      @map("issuer_signatory_designation")
+  issuerSignedOn               DateTime?                    @map("issuer_signed_on") @db.Date
+  depositReceived              Decimal                      @default(0) @map("deposit_received") @db.Decimal(12, 2)
+  depositReceivedOn            DateTime?                    @map("deposit_received_on") @db.Date
+  depositRefunded              Decimal                      @default(0) @map("deposit_refunded") @db.Decimal(12, 2)
+  depositRefundedOn            DateTime?                    @map("deposit_refunded_on") @db.Date
+  depositNotes                 String?                      @map("deposit_notes")
+  createdAt                    DateTime                     @default(now()) @map("created_at")
+  updatedAt                    DateTime                     @updatedAt @map("updated_at")
+  proposal                     LaptopRentalProposal         @relation(fields: [proposalId], references: [id], onDelete: Restrict)
+  units                        LaptopRentalUnit[]
+  invoices                     LaptopRentalInvoice[]
+  cases                        LaptopRentalCase[]
+  charges                      LaptopRentalCharge[]
+
+  @@index([status])
+  @@map("laptop_rental_agreements")
+}
+
+model LaptopRentalUnit {
+  id             String                  @id @default(uuid()) @db.Uuid
+  agreementId    String                  @map("agreement_id") @db.Uuid
+  assetTag        String                  @unique @map("asset_tag")
+  serialNumber    String                  @map("serial_number")
+  brand           String
+  model           String?
+  processor       String?
+  ram             String?
+  storage         String?
+  display         String?
+  operatingSystem String?                 @map("operating_system")
+  status          LaptopRentalUnitStatus  @default(READY)
+  deliveredOn    DateTime?               @map("delivered_on") @db.Date
+  pickedUpOn     DateTime?               @map("picked_up_on") @db.Date
+  replacesUnitId String?                 @unique @map("replaces_unit_id") @db.Uuid
+  notes          String?
+  createdAt      DateTime                @default(now()) @map("created_at")
+  updatedAt      DateTime                @updatedAt @map("updated_at")
+  agreement      LaptopRentalAgreement   @relation(fields: [agreementId], references: [id], onDelete: Cascade)
+  replaces       LaptopRentalUnit?       @relation("LaptopReplacement", fields: [replacesUnitId], references: [id], onDelete: Restrict)
+  replacedBy     LaptopRentalUnit?       @relation("LaptopReplacement")
+  cases          LaptopRentalCase[]
+  charges        LaptopRentalCharge[]
+
+  @@index([agreementId])
+  @@index([status])
+  @@map("laptop_rental_units")
+}
+
+model LaptopRentalInvoice {
+  id            String                     @id @default(uuid()) @db.Uuid
+  agreementId   String                     @map("agreement_id") @db.Uuid
+  invoiceNumber String                     @unique @map("invoice_number")
+  kind          LaptopRentalInvoiceKind
+  period        String
+  rentalAmount  Decimal                    @map("rental_amount") @db.Decimal(12, 2)
+  gstAmount     Decimal                    @map("gst_amount") @db.Decimal(12, 2)
+  totalAmount   Decimal                    @map("total_amount") @db.Decimal(12, 2)
+  status        LaptopRentalInvoiceStatus  @default(DRAFT)
+  issuedOn      DateTime?                  @map("issued_on") @db.Date
+  paidOn        DateTime?                  @map("paid_on") @db.Date
+  createdAt     DateTime                   @default(now()) @map("created_at")
+  updatedAt     DateTime                   @updatedAt @map("updated_at")
+  agreement     LaptopRentalAgreement      @relation(fields: [agreementId], references: [id], onDelete: Cascade)
+  charges       LaptopRentalCharge[]
+
+  @@unique([agreementId, kind, period])
+  @@index([agreementId])
+  @@index([status])
+  @@map("laptop_rental_invoices")
+}
+
+model LaptopRentalCase {
+  id          String                  @id @default(uuid()) @db.Uuid
+  agreementId String                  @map("agreement_id") @db.Uuid
+  unitId      String                  @map("unit_id") @db.Uuid
+  kind        LaptopRentalCaseKind
+  status      LaptopRentalCaseStatus  @default(OPEN)
+  summary     String
+  resolution  String?
+  reportedAt  DateTime                @map("reported_at")
+  dueAt       DateTime                @map("due_at")
+  resolvedAt  DateTime?               @map("resolved_at")
+  createdAt   DateTime                @default(now()) @map("created_at")
+  updatedAt   DateTime                @updatedAt @map("updated_at")
+  agreement   LaptopRentalAgreement   @relation(fields: [agreementId], references: [id], onDelete: Cascade)
+  unit        LaptopRentalUnit        @relation(fields: [unitId], references: [id], onDelete: Restrict)
+
+  @@index([agreementId])
+  @@index([unitId])
+  @@index([status])
+  @@map("laptop_rental_cases")
+}
+
+model LaptopRentalCharge {
+  id          String                        @id @default(uuid()) @db.Uuid
+  agreementId String                        @map("agreement_id") @db.Uuid
+  unitId      String?                       @map("unit_id") @db.Uuid
+  invoiceId   String?                       @map("invoice_id") @db.Uuid
+  kind        LaptopRentalChargeKind
+  settlement  LaptopRentalChargeSettlement
+  amount      Decimal                       @db.Decimal(12, 2)
+  description String
+  status      LaptopRentalChargeStatus      @default(OPEN)
+  reportedOn  DateTime                      @map("reported_on") @db.Date
+  createdAt   DateTime                      @default(now()) @map("created_at")
+  updatedAt   DateTime                      @updatedAt @map("updated_at")
+  agreement   LaptopRentalAgreement         @relation(fields: [agreementId], references: [id], onDelete: Cascade)
+  unit        LaptopRentalUnit?             @relation(fields: [unitId], references: [id], onDelete: SetNull)
+  invoice     LaptopRentalInvoice?          @relation(fields: [invoiceId], references: [id], onDelete: SetNull)
+
+  @@index([agreementId])
+  @@index([unitId])
+  @@index([status])
+  @@map("laptop_rental_charges")
+}
+
+model CrmCompany {
+  id         String    @id @default(uuid()) @db.Uuid
+  name       String
+  email      String?
+  phone      String?
+  address    String?
+  city       String?
+  gstin      String?
+  website    String?
+  notes      String?
+  createdAt  DateTime  @default(now()) @map("created_at")
+  updatedAt  DateTime  @updatedAt @map("updated_at")
+  deletedAt  DateTime? @map("deleted_at")
+  contacts   CrmContact[]
+  activities CrmActivity[]
+  proposals  LaptopRentalProposal[]
+
+  @@index([name])
+  @@map("crm_companies")
+}
+
+model CrmContact {
+  id          String     @id @default(uuid()) @db.Uuid
+  companyId   String     @map("company_id") @db.Uuid
+  name        String
+  designation String?
+  email       String?
+  phone       String?
+  isPrimary   Boolean    @default(false) @map("is_primary")
+  createdAt   DateTime   @default(now()) @map("created_at")
+  updatedAt   DateTime   @updatedAt @map("updated_at")
+  deletedAt   DateTime?  @map("deleted_at")
+  company     CrmCompany @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@map("crm_contacts")
+}
+
+enum CrmActivityKind {
+  NOTE
+  CALL
+  MEETING
+  EMAIL
+
+  @@map("crm_activity_kind")
+}
+
+model CrmActivity {
+  id         String                @id @default(uuid()) @db.Uuid
+  companyId  String                @map("company_id") @db.Uuid
+  proposalId String?               @map("proposal_id") @db.Uuid
+  kind       CrmActivityKind       @default(NOTE)
+  body       String
+  occurredOn DateTime              @map("occurred_on") @db.Date
+  createdAt  DateTime              @default(now()) @map("created_at")
+  updatedAt  DateTime              @updatedAt @map("updated_at")
+  company    CrmCompany            @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  proposal   LaptopRentalProposal? @relation(fields: [proposalId], references: [id], onDelete: SetNull)
+
+  @@index([companyId])
+  @@index([proposalId])
+  @@map("crm_activities")
+}
+
+enum CrmLaptopStatus {
+  AVAILABLE
+  RESERVED
+  RENTED
+  RETIRED
+
+  @@map("crm_laptop_status")
+}
+
+enum CrmLaptopCategory {
+  WINDOWS_LAPTOP
+  APPLE_LAPTOP
+
+  @@map("crm_laptop_category")
+}
+
+enum CrmLaptopAvailability {
+  IN_STOCK
+  OUT_OF_STOCK
+  VARIES
+
+  @@map("crm_laptop_availability")
+}
+
+model CrmLaptop {
+  id               String                @id @default(uuid()) @db.Uuid
+  name             String
+  slug             String?               @unique
+  category         CrmLaptopCategory     @default(WINDOWS_LAPTOP)
+  assetTag         String?               @unique @map("asset_tag")
+  serialNumber     String?               @unique @map("serial_number")
+  brand            String
+  model            String?
+  listedYear       Int?                  @map("listed_year")
+  generation       String?
+  processor        String
+  processorFull    String?               @map("processor_full")
+  ram              String?
+  storage          String?
+  display          String?
+  graphics         String?
+  camera           Boolean               @default(false)
+  operatingSystem  String                @map("operating_system")
+  modelNumber      String?               @map("model_number")
+  ports            String?
+  adapter          String?
+  useCase          String?               @map("use_case")
+  condition        String?
+  notes            String?
+  monthlyRate      Decimal?              @map("monthly_rate") @db.Decimal(12, 2)
+  commitmentMonths Int                   @default(12) @map("commitment_months")
+  commitmentRate   Decimal               @default(0) @map("commitment_rate") @db.Decimal(12, 2)
+  gstPercent       Decimal               @default(18) @map("gst_percent") @db.Decimal(5, 2)
+  depositPerLaptop Decimal               @default(0) @map("deposit_per_laptop") @db.Decimal(12, 2)
+  taxesNote        String?               @map("taxes_note")
+  availability     CrmLaptopAvailability @default(IN_STOCK)
+  status           CrmLaptopStatus       @default(AVAILABLE)
+  createdAt        DateTime              @default(now()) @map("created_at")
+  updatedAt        DateTime              @updatedAt @map("updated_at")
+  deletedAt        DateTime?             @map("deleted_at")
+  proposals        LaptopRentalProposalLaptop[]
+
+  @@index([category])
+  @@index([status])
+  @@map("crm_laptops")
+}
+
+model CrmRentalDiscount {
+  id        String   @id @default(uuid()) @db.Uuid
+  months    Int      @unique
+  percent   Decimal  @db.Decimal(5, 2)
+  sortOrder Int      @default(0) @map("sort_order")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("crm_rental_discounts")
+}
+
+model LaptopRentalProposalLaptop {
+  proposalId       String                @map("proposal_id") @db.Uuid
+  laptopId         String                @map("laptop_id") @db.Uuid
+  quantity         Int                   @default(1)
+  monthlyRate      Decimal               @default(0) @map("monthly_rate") @db.Decimal(12, 2)
+  commitmentRate   Decimal               @default(0) @map("commitment_rate") @db.Decimal(12, 2)
+  depositPerLaptop Decimal               @default(0) @map("deposit_per_laptop") @db.Decimal(12, 2)
+  proposal         LaptopRentalProposal @relation(fields: [proposalId], references: [id], onDelete: Cascade)
+  laptop           CrmLaptop             @relation(fields: [laptopId], references: [id], onDelete: Restrict)
+
+  @@id([proposalId, laptopId])
+  @@index([laptopId])
+  @@map("laptop_rental_proposal_laptops")
 }

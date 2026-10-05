@@ -10,6 +10,20 @@ type Employee = {
   phone: string | null;
   jobTitle: string;
   notes: string | null;
+  dateOfBirth: string | null;
+  pan: string | null;
+  bankAccountNo: string | null;
+  ifscCode: string | null;
+  taxRegime: string;
+  joinedOn: string | null;
+  salary: {
+    basic: string | number;
+    hra: string | number;
+    specialAllowance: string | number;
+    leaveTravelAllowance: string | number;
+    professionalTax: string | number;
+    providentFund: string | number;
+  } | null;
 };
 
 export default async function HrProfilePage() {
@@ -19,7 +33,7 @@ export default async function HrProfilePage() {
     <div>
       <PageHeader
         title="My Profile"
-        description="Update an employee profile. Pick the person, then save their contact details."
+        description="Update an employee profile, including the monthly salary used on payslips."
       />
       {result.error ? <p className="mb-4 text-sm text-red-600">{result.error}</p> : null}
       <HrPanel>

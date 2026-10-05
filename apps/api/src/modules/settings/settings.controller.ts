@@ -15,8 +15,10 @@ import { PERMISSIONS } from '@varnarc/auth';
 import {
   cmsDefaultsSettingsSchema,
   contactSettingsSchema,
+  sendContactTestEmailSchema,
   createThemeSchema,
   cursorPaginationQuerySchema,
+  companyProfileSchema,
   generalSettingsSchema,
   maintenanceSettingsSchema,
   securitySettingsSchema,
@@ -31,8 +33,10 @@ import {
   type Auth0SettingsInput,
   type CmsDefaultsSettingsInput,
   type ContactSettingsInput,
+  type SendContactTestEmailInput,
   type CreateThemeInput,
   type CursorPaginationQuery,
+  type CompanyProfileInput,
   type GeneralSettingsInput,
   type MaintenanceSettingsInput,
   type SecuritySettingsInput,
@@ -89,6 +93,21 @@ export class SettingsController {
     @Body(new ZodValidationPipe(generalSettingsSchema)) body: GeneralSettingsInput,
   ) {
     return ok(await this.service.setGeneral(body, user.id));
+  }
+
+  @Get('company')
+  @RequirePermissions(PERMISSIONS.SETTINGS_MANAGE)
+  async company() {
+    return ok(await this.service.getCompany());
+  }
+
+  @Put('company')
+  @RequirePermissions(PERMISSIONS.SETTINGS_MANAGE)
+  async updateCompany(
+    @CurrentUserDecorator() user: CurrentUser,
+    @Body(new ZodValidationPipe(companyProfileSchema)) body: CompanyProfileInput,
+  ) {
+    return ok(await this.service.setCompany(body, user.id));
   }
 
   @Get('maintenance')
@@ -179,6 +198,14 @@ export class SettingsController {
     @Body(new ZodValidationPipe(contactSettingsSchema)) body: ContactSettingsInput,
   ) {
     return ok(await this.service.setContact(body, user.id));
+  }
+
+  @Post('contact/test')
+  @RequirePermissions(PERMISSIONS.SETTINGS_MANAGE)
+  async contactTest(
+    @Body(new ZodValidationPipe(sendContactTestEmailSchema)) body: SendContactTestEmailInput,
+  ) {
+    return ok(await this.service.sendContactTest(body));
   }
 
   @Get('adsense')

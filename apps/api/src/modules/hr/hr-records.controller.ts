@@ -22,6 +22,7 @@ import {
   createHrOrganizationSchema,
   createHrRoleSchema,
   createHrSessionSchema,
+  emailHrPayslipSchema,
   generateHrPayrollSchema,
   updateHrStatusSchema,
   upsertHrSalarySchema,
@@ -45,6 +46,7 @@ import {
   type CreateHrOrganizationInput,
   type CreateHrRoleInput,
   type CreateHrSessionInput,
+  type EmailHrPayslipInput,
   type GenerateHrPayrollInput,
   type UpdateHrStatusInput,
   type UpsertHrSalaryInput,
@@ -423,5 +425,14 @@ export class HrRecordsController {
   @RequirePermissions(PERMISSIONS.HR_VIEW)
   async payslip(@Param('id', ParseUUIDPipe) id: string) {
     return ok(await this.hr.getPayslip(id));
+  }
+
+  @Post('payslips/:id/email')
+  @RequirePermissions(PERMISSIONS.HR_EDIT)
+  async emailPayslip(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body(new ZodValidationPipe(emailHrPayslipSchema)) body: EmailHrPayslipInput,
+  ) {
+    return ok(await this.hr.emailPayslip(id, body));
   }
 }

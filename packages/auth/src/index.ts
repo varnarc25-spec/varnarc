@@ -150,6 +150,10 @@ export const PERMISSIONS = {
   HR_CREATE: 'hr.create',
   HR_EDIT: 'hr.edit',
   HR_DELETE: 'hr.delete',
+  CRM_VIEW: 'crm.view',
+  CRM_CREATE: 'crm.create',
+  CRM_EDIT: 'crm.edit',
+  CRM_DELETE: 'crm.delete',
 } as const;
 
 export type Permission = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];
@@ -317,6 +321,8 @@ export function hasPermission(
     if (p === PERMISSIONS.MEDIA_READ && hasMediaView) return true;
     if (p === PERMISSIONS.MEDIA_EDIT && hasMediaUpload) return true;
     if (p.startsWith('hr.') && granted.includes(PERMISSIONS.USER_UPDATE)) return true;
+    if (p.startsWith('crm.') && granted.includes(PERMISSIONS.USER_UPDATE)) return true;
+    if (p.startsWith('crm.') && granted.includes(p.replace('crm.', 'hr.'))) return true;
     return false;
   });
 }

@@ -1,4 +1,11 @@
-import { ForbiddenException, Inject, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Inject,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import nodemailer from 'nodemailer';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import type { Cache } from 'cache-manager';
 import type { Repositories } from '@varnarc/database';
@@ -6,7 +13,9 @@ import type {
   CmsDefaultsSettingsInput,
   ContactSettingsInput,
   CreateThemeInput,
+  SendContactTestEmailInput,
   CursorPaginationQuery,
+  CompanyProfileInput,
   GeneralSettingsInput,
   MaintenanceSettingsInput,
   SecuritySettingsInput,
@@ -24,6 +33,7 @@ import {
   normalizeHttpPublicUrl,
   cmsDefaultsSettingsSchema,
   contactSettingsSchema,
+  companyProfileSchema,
   generalSettingsSchema,
   maintenanceSettingsSchema,
   securitySettingsSchema,
@@ -56,6 +66,7 @@ function redactSettingSecrets(value: unknown): unknown {
 
 export const SETTINGS_KEYS = {
   general: 'settings.general',
+  company: 'settings.company',
   maintenance: 'settings.maintenance',
   security: 'settings.security',
   cms: 'settings.cms',
@@ -78,6 +89,23 @@ const DEFAULT_GENERAL: GeneralSettingsInput = {
   companyAddress: null,
   timezone: 'UTC',
   locale: 'en',
+};
+
+const DEFAULT_COMPANY: CompanyProfileInput = {
+  legalName: null,
+  address: null,
+  city: null,
+  state: null,
+  postalCode: null,
+  country: 'India',
+  email: null,
+  phone: null,
+  website: null,
+  gstin: null,
+  pan: null,
+  cin: null,
+  logoUrl: null,
+  payslipGeneratedBy: 'Payroll',
 };
 
 const DEFAULT_MAINTENANCE: MaintenanceSettingsInput = {
@@ -230,6 +258,39 @@ export class SettingsService {
 
   async getGeneral() {
     return this.readJson(SETTINGS_KEYS.general, DEFAULT_GENERAL);
+  }
+
+  async getCompany() {
+    const stored = await this.readJson(SETTINGS_KEYS.company, DEFAULT_COMPANY);
+    const general = await this.getGeneral();
+    return companyProfileSchema.parse({
+      ...DEFAULT_COMPANY,
+      ...stored,
+      legalName: stored.legalName || general.companyName || null,
+      address: stored.address || general.companyAddress || null,
+    });
+  }
+
+  async setCompany(input: CompanyProfileInput, actorId: string) {
+    const parsed = companyProfileSchema.parse(input);
+    const merged = { ...DEFAULT_COMPANY, ...(await this.getCompany()), ...parsed };
+    await this.writeJson(
+      SETTINGS_KEYS.company,
+      merged,
+      'company',
+      actorId,
+      'settings.company.update',
+    );
+    const general = await this.getGeneral();
+    await this.setGeneral(
+      {
+        ...general,
+        companyName: merged.legalName ?? null,
+        companyAddress: formatCompanyAddress(merged),
+      },
+      actorId,
+    );
+    return merged;
   }
 
   async setGeneral(input: GeneralSettingsInput, actorId: string) {
@@ -409,6 +470,15 @@ export class SettingsService {
     return this.getContact();
   }
 
+  async sendContactTest(input: SendContactTestEmailInput) {
+    const contact = await this.getContactRaw();
+    const sent = await deliverContactTest(contact, input.to);
+    if (!sent.ok) {
+      throw new BadRequestException(sent.error);
+    }
+    return { to: input.to, accepted: sent.accepted, messageId: sent.messageId };
+  }
+
   async getAdsense(): Promise<AdsenseSettingsInput> {
     return this.readJson(SETTINGS_KEYS.adsense, DEFAULT_ADSENSE);
   }
@@ -531,7 +601,9 @@ export class SettingsService {
     return {
       domain: process.env.AUTH0_DOMAIN?.trim() || '',
       clientId:
-        process.env.AUTH0_CLIENT_ID?.trim() || process.env.NEXT_PUBLIC_AUTH0_CLIENT_ID?.trim() || '',
+        process.env.AUTH0_CLIENT_ID?.trim() ||
+        process.env.NEXT_PUBLIC_AUTH0_CLIENT_ID?.trim() ||
+        '',
       clientSecret: process.env.AUTH0_CLIENT_SECRET?.trim() || '',
       secret: process.env.AUTH0_SECRET?.trim() || '',
       audience: process.env.AUTH0_AUDIENCE?.trim() || '',
@@ -581,7 +653,11 @@ export class SettingsService {
     );
     return {
       configured,
-      source: fromDb ? ('database' as const) : configured ? ('environment' as const) : ('none' as const),
+      source: fromDb
+        ? ('database' as const)
+        : configured
+          ? ('environment' as const)
+          : ('none' as const),
       domain: domain || null,
       clientId: clientId || null,
       clientSecret: clientSecret || null,
@@ -716,4 +792,98 @@ export class SettingsService {
       direction: query.direction,
     });
   }
+}
+
+async function deliverContactTest(contact: ContactSettingsInput, to: string) {
+  const provider = contact.emailProvider ?? 'resend';
+  const subject = 'Varnarc email test';
+  const text =
+    'This is a test from Varnarc admin. If you can read it, email sending is working. A message sent to your own address is listed under Sent.';
+  const html = `<p>${text}</p>`;
+
+  if (provider === 'smtp') {
+    const host = process.env.SMTP_HOST?.trim() || contact.smtpHost?.trim() || null;
+    const username = process.env.SMTP_USERNAME?.trim() || contact.smtpUsername?.trim() || null;
+    const password = process.env.SMTP_PASSWORD?.trim() || contact.smtpPassword?.trim() || null;
+    const from = contactTestFrom(contact.fromEmail, username);
+    if (!host || !username || !password || !from) {
+      return {
+        ok: false as const,
+        error:
+          'Save Google Workspace with business@varnarc.com and an App Password, then send the test again.',
+      };
+    }
+    const transporter = nodemailer.createTransport({
+      host,
+      port: Number(process.env.SMTP_PORT || contact.smtpPort || 587),
+      secure:
+        process.env.SMTP_SECURE !== undefined
+          ? process.env.SMTP_SECURE === 'true'
+          : Boolean(contact.smtpSecure),
+      requireTLS: host === 'smtp.gmail.com',
+      auth: { user: username, pass: password },
+    });
+    try {
+      const info = await transporter.sendMail({ from, to, subject, text, html });
+      const rejected = Array.isArray(info.rejected) ? info.rejected.map(String) : [];
+      if (rejected.length > 0) {
+        return { ok: false as const, error: `The mail server rejected ${rejected.join(', ')}.` };
+      }
+      return {
+        ok: true as const,
+        accepted: Array.isArray(info.accepted) ? info.accepted.map(String) : [to],
+        messageId: typeof info.messageId === 'string' ? info.messageId : null,
+      };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'SMTP delivery failed';
+      return { ok: false as const, error: message.slice(0, 300) };
+    }
+  }
+
+  const apiKey = process.env.RESEND_API_KEY?.trim() || contact.resendApiKey?.trim() || null;
+  const from = contactTestFrom(contact.fromEmail, null);
+  if (!apiKey || !from) {
+    return {
+      ok: false as const,
+      error: 'Save a From address and a Resend API key, then send the test again.',
+    };
+  }
+  const res = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ from, to: [to], subject, text, html }),
+  });
+  if (!res.ok) {
+    const body = await res.text().catch(() => '');
+    return { ok: false as const, error: body.slice(0, 300) || `HTTP ${res.status}` };
+  }
+  const json = (await res.json().catch(() => ({}))) as { id?: string };
+  return { ok: true as const, accepted: [to], messageId: json.id ?? null };
+}
+
+function contactTestFrom(fromEmail: string | null | undefined, mailbox: string | null) {
+  const configured =
+    fromEmail?.trim() ||
+    process.env.CONTACT_FROM_EMAIL?.trim() ||
+    process.env.RESEND_FROM_EMAIL?.trim() ||
+    '';
+  if (mailbox?.includes('@')) {
+    if (configured.toLowerCase().includes(mailbox.toLowerCase())) return configured;
+    return `Varnarc <${mailbox}>`;
+  }
+  return configured || null;
+}
+
+export function formatCompanyAddress(profile: CompanyProfileInput): string | null {
+  const lines = [
+    profile.address,
+    [profile.city, profile.state, profile.postalCode].filter(Boolean).join(', '),
+    profile.country,
+  ]
+    .map((line) => line?.trim())
+    .filter((line): line is string => Boolean(line));
+  return lines.length > 0 ? lines.join('\n') : null;
 }

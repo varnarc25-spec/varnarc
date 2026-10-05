@@ -6,10 +6,17 @@ export type AdminNavItem = {
   permission: Permission | null;
 };
 
+export type AdminNavSection = {
+  id: string;
+  label: string;
+  items: AdminNavItem[];
+};
+
 export type AdminNavGroup = {
   id: string;
   label: string;
   items: AdminNavItem[];
+  sections?: AdminNavSection[];
 };
 
 export const ADMIN_NAV_GROUPS: AdminNavGroup[] = [
@@ -47,41 +54,109 @@ export const ADMIN_NAV_GROUPS: AdminNavGroup[] = [
     ],
   },
   {
+    id: 'crm',
+    label: 'CRM',
+    items: [
+      { href: '/crm', label: 'Dashboard', permission: PERMISSIONS.CRM_VIEW },
+      { href: '/crm/companies', label: 'Companies', permission: PERMISSIONS.CRM_VIEW },
+      { href: '/crm/contacts', label: 'Contacts', permission: PERMISSIONS.CRM_VIEW },
+      { href: '/crm/laptops', label: 'Laptops', permission: PERMISSIONS.CRM_VIEW },
+      { href: '/crm/discounts', label: 'Discounts', permission: PERMISSIONS.CRM_VIEW },
+      { href: '/crm/proposals', label: 'Proposals', permission: PERMISSIONS.CRM_VIEW },
+      { href: '/crm/rentals', label: 'Rentals', permission: PERMISSIONS.CRM_VIEW },
+    ],
+  },
+  {
     id: 'hr',
     label: 'Human Resources',
-    items: [
-      { href: '/hr', label: 'HRMS Dashboard', permission: PERMISSIONS.HR_VIEW },
-      { href: '/hr/reports', label: 'HR Reports', permission: PERMISSIONS.HR_VIEW },
-      { href: '/hr/notifications', label: 'Notifications', permission: PERMISSIONS.HR_VIEW },
-      { href: '/hr/organization', label: 'Organization', permission: PERMISSIONS.HR_VIEW },
-      { href: '/hr/exits', label: 'Exit Management', permission: PERMISSIONS.HR_VIEW },
-      { href: '/hr/employees', label: 'Employees', permission: PERMISSIONS.HR_VIEW },
-      { href: '/hr/leave', label: 'Leave', permission: PERMISSIONS.HR_VIEW },
-      { href: '/hr/recruitment', label: 'Recruitment', permission: PERMISSIONS.HR_VIEW },
-      { href: '/hr/openings', label: 'Job Openings', permission: PERMISSIONS.HR_VIEW },
-      { href: '/hr/candidates', label: 'Candidates', permission: PERMISSIONS.HR_VIEW },
-      { href: '/hr/interviews', label: 'Interviews', permission: PERMISSIONS.HR_VIEW },
-      { href: '/hr/assets', label: 'Assets', permission: PERMISSIONS.HR_VIEW },
-      { href: '/hr/assets/inventory', label: 'Asset Inventory', permission: PERMISSIONS.HR_VIEW },
-      { href: '/hr/assets/masters', label: 'Asset Masters', permission: PERMISSIONS.HR_VIEW },
-      { href: '/hr/assets/reports', label: 'Asset Reports', permission: PERMISSIONS.HR_VIEW },
-      { href: '/hr/documents', label: 'Documents', permission: PERMISSIONS.HR_VIEW },
-      { href: '/hr/documents/browse', label: 'Browse Documents', permission: PERMISSIONS.HR_VIEW },
-      { href: '/hr/documents/folders', label: 'Document Folders', permission: PERMISSIONS.HR_VIEW },
-      { href: '/hr/documents/types', label: 'Document Types', permission: PERMISSIONS.HR_VIEW },
-      { href: '/hr/accounts', label: 'User Accounts', permission: PERMISSIONS.HR_VIEW },
-      { href: '/hr/sessions', label: 'Login Sessions', permission: PERMISSIONS.HR_VIEW },
-      { href: '/hr/ess/requests', label: 'ESS Requests', permission: PERMISSIONS.HR_VIEW },
+    items: [],
+    sections: [
       {
-        href: '/hr/ess/announcements',
-        label: 'ESS Announcements',
-        permission: PERMISSIONS.HR_VIEW,
+        id: 'hr-overview',
+        label: 'Overview',
+        items: [
+          { href: '/hr', label: 'HRMS Dashboard', permission: PERMISSIONS.HR_VIEW },
+          { href: '/hr/reports', label: 'HR Reports', permission: PERMISSIONS.HR_VIEW },
+          { href: '/hr/notifications', label: 'Notifications', permission: PERMISSIONS.HR_VIEW },
+        ],
       },
-      { href: '/hr/profile', label: 'My Profile', permission: PERMISSIONS.HR_VIEW },
-      { href: '/hr/roles', label: 'Roles', permission: PERMISSIONS.HR_VIEW },
-      { href: '/hr/clients', label: 'Assign Client', permission: PERMISSIONS.HR_VIEW },
-      { href: '/hr/payroll', label: 'Payroll', permission: PERMISSIONS.HR_VIEW },
-      { href: '/hr/payroll/payslips', label: 'Payslips', permission: PERMISSIONS.HR_VIEW },
+      {
+        id: 'hr-people',
+        label: 'People',
+        items: [
+          { href: '/hr/employees', label: 'Employees', permission: PERMISSIONS.HR_VIEW },
+          { href: '/hr/organization', label: 'Organization', permission: PERMISSIONS.HR_VIEW },
+          { href: '/hr/leave', label: 'Leave', permission: PERMISSIONS.HR_VIEW },
+          { href: '/hr/exits', label: 'Exit Management', permission: PERMISSIONS.HR_VIEW },
+          { href: '/hr/profile', label: 'My Profile', permission: PERMISSIONS.HR_VIEW },
+          { href: '/hr/roles', label: 'Roles', permission: PERMISSIONS.HR_VIEW },
+          { href: '/hr/clients', label: 'Assign Client', permission: PERMISSIONS.HR_VIEW },
+        ],
+      },
+      {
+        id: 'hr-recruitment',
+        label: 'Recruitment',
+        items: [
+          { href: '/hr/recruitment', label: 'Recruitment', permission: PERMISSIONS.HR_VIEW },
+          { href: '/hr/openings', label: 'Job Openings', permission: PERMISSIONS.HR_VIEW },
+          { href: '/hr/candidates', label: 'Candidates', permission: PERMISSIONS.HR_VIEW },
+          { href: '/hr/interviews', label: 'Interviews', permission: PERMISSIONS.HR_VIEW },
+        ],
+      },
+      {
+        id: 'hr-assets',
+        label: 'Assets',
+        items: [
+          { href: '/hr/assets', label: 'Assets', permission: PERMISSIONS.HR_VIEW },
+          {
+            href: '/hr/assets/inventory',
+            label: 'Asset Inventory',
+            permission: PERMISSIONS.HR_VIEW,
+          },
+          { href: '/hr/assets/masters', label: 'Asset Masters', permission: PERMISSIONS.HR_VIEW },
+          { href: '/hr/assets/reports', label: 'Asset Reports', permission: PERMISSIONS.HR_VIEW },
+        ],
+      },
+      {
+        id: 'hr-documents',
+        label: 'Documents',
+        items: [
+          { href: '/hr/documents', label: 'Documents', permission: PERMISSIONS.HR_VIEW },
+          {
+            href: '/hr/documents/browse',
+            label: 'Browse Documents',
+            permission: PERMISSIONS.HR_VIEW,
+          },
+          {
+            href: '/hr/documents/folders',
+            label: 'Document Folders',
+            permission: PERMISSIONS.HR_VIEW,
+          },
+          { href: '/hr/documents/types', label: 'Document Types', permission: PERMISSIONS.HR_VIEW },
+        ],
+      },
+      {
+        id: 'hr-self-service',
+        label: 'Self service',
+        items: [
+          { href: '/hr/accounts', label: 'User Accounts', permission: PERMISSIONS.HR_VIEW },
+          { href: '/hr/sessions', label: 'Login Sessions', permission: PERMISSIONS.HR_VIEW },
+          { href: '/hr/ess/requests', label: 'ESS Requests', permission: PERMISSIONS.HR_VIEW },
+          {
+            href: '/hr/ess/announcements',
+            label: 'ESS Announcements',
+            permission: PERMISSIONS.HR_VIEW,
+          },
+        ],
+      },
+      {
+        id: 'hr-payroll',
+        label: 'Payroll',
+        items: [
+          { href: '/hr/payroll', label: 'Payroll', permission: PERMISSIONS.HR_VIEW },
+          { href: '/hr/payroll/payslips', label: 'Payslips', permission: PERMISSIONS.HR_VIEW },
+        ],
+      },
     ],
   },
   {
@@ -430,6 +505,11 @@ export const ADMIN_NAV_GROUPS: AdminNavGroup[] = [
     label: 'Platform',
     items: [
       { href: '/settings', label: 'Settings', permission: PERMISSIONS.SETTINGS_MANAGE },
+      {
+        href: '/settings/company',
+        label: 'Company profile',
+        permission: PERMISSIONS.SETTINGS_MANAGE,
+      },
       { href: '/premium', label: 'Premium billing', permission: PERMISSIONS.PREMIUM_VIEW },
       { href: '/catalog-ops', label: 'Catalog ops', permission: PERMISSIONS.FINANCE_VIEW },
       { href: '/api', label: 'API console', permission: PERMISSIONS.API_VIEW },

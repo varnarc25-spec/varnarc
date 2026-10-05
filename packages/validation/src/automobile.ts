@@ -132,6 +132,7 @@ export const automobileListQuerySchema = cursorPaginationQuerySchema.extend({
   status: publishStatusSchema.optional(),
   manufacturerId: uuidSchema.optional(),
   manufacturerSlug: z.string().max(120).optional(),
+  model: z.string().trim().min(1).max(120).optional(),
   category: z.string().max(80).optional(),
   fuelType: z.string().max(80).optional(),
   featured: z.coerce.boolean().optional(),

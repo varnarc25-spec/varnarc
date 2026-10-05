@@ -1,12 +1,42 @@
 import { describe, expect, it } from 'vitest';
+import { sendContactTestEmailSchema } from '../src/contact';
 import {
   adsenseSettingsSchema,
   auth0SettingsSchema,
+  companyProfileSchema,
   gcsSettingsSchema,
   generalSettingsSchema,
   maintenanceSettingsSchema,
   securitySettingsSchema,
 } from '../src/settings';
+
+describe('companyProfileSchema', () => {
+  it('accepts a legal name and blanks', () => {
+    const parsed = companyProfileSchema.parse({
+      legalName: 'Extern Data Solutions (OPC) Private Limited',
+      pan: '',
+      website: '',
+    });
+    expect(parsed.legalName).toContain('Extern');
+    expect(parsed.pan).toBeNull();
+  });
+
+  it('names the field when PAN or email is invalid', () => {
+    const result = companyProfileSchema.safeParse({
+      pan: 'NOT-A-PAN',
+      email: 'not-an-email',
+      website: 'https://',
+    });
+    expect(result.success).toBe(false);
+    if (result.success) return;
+    const messages = result.error.issues.map(
+      (issue) => `${issue.path.join('.')}: ${issue.message}`,
+    );
+    expect(messages.some((line) => line.startsWith('pan:'))).toBe(true);
+    expect(messages.some((line) => line.startsWith('email:'))).toBe(true);
+    expect(messages.join(' ')).toContain('ABCDE1234F');
+  });
+});
 
 describe('generalSettingsSchema', () => {
   it('applies defaults', () => {
@@ -90,5 +120,14 @@ describe('securitySettingsSchema', () => {
     expect(() => securitySettingsSchema.parse({ rateLimitPerMinute: 0 })).toThrow();
     const parsed = securitySettingsSchema.parse({});
     expect(parsed.rateLimitPerMinute).toBe(120);
+  });
+});
+
+describe('sendContactTestEmailSchema', () => {
+  it('accepts an email address', () => {
+    expect(sendContactTestEmailSchema.parse({ to: 'varnarc25@gmail.com' }).to).toBe(
+      'varnarc25@gmail.com',
+    );
+    expect(sendContactTestEmailSchema.safeParse({ to: 'not-an-email' }).success).toBe(false);
   });
 });

@@ -55,6 +55,10 @@ export function ContactSettingsForm({
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [testTo, setTestTo] = useState('');
+  const [testing, setTesting] = useState(false);
+  const [testMessage, setTestMessage] = useState<string | null>(null);
+  const [testError, setTestError] = useState<string | null>(null);
 
   function update<K extends keyof typeof form>(key: K, value: (typeof form)[K]) {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -118,6 +122,32 @@ export function ContactSettingsForm({
       setError(err instanceof Error ? err.message : 'Save failed');
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function sendTest() {
+    setTesting(true);
+    setTestMessage(null);
+    setTestError(null);
+    try {
+      const res = await fetch('/api/admin/settings/contact/test', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ to: testTo.trim() }),
+      });
+      const json = (await res.json().catch(() => ({}))) as {
+        data?: { to?: string };
+        error?: { message?: string };
+      };
+      if (!res.ok) throw new Error(json.error?.message || 'Test email failed');
+      const to = json.data?.to || testTo.trim();
+      setTestMessage(
+        `Gmail accepted the test for ${to}. Check that inbox and Spam. If this is your own address, also look under Sent.`,
+      );
+    } catch (err) {
+      setTestError(err instanceof Error ? err.message : 'Test email failed');
+    } finally {
+      setTesting(false);
     }
   }
 
@@ -358,6 +388,29 @@ export function ContactSettingsForm({
             ? 'Save alert email settings'
             : 'Save contact settings'}
       </Button>
+
+      <div className="space-y-3 border-t border-[var(--varnarc-border)] pt-4">
+        <p className="text-sm font-medium">Send a test email</p>
+        <p className="text-sm text-[var(--varnarc-subtle)]">
+          Uses the saved settings. Send it to varnarc25@gmail.com. A test sent to
+          business@varnarc.com only appears under Sent, not as a new inbox message.
+        </p>
+        <label className="block text-sm">
+          Send test to
+          <input
+            type="email"
+            className={inputClass}
+            placeholder="varnarc25@gmail.com"
+            value={testTo}
+            onChange={(e) => setTestTo(e.target.value)}
+          />
+        </label>
+        <Button type="button" onClick={() => void sendTest()} disabled={testing || saving}>
+          {testing ? 'Sending test…' : 'Send test email'}
+        </Button>
+        {testMessage ? <p className="text-sm text-emerald-700">{testMessage}</p> : null}
+        {testError ? <p className="text-sm text-red-700">{testError}</p> : null}
+      </div>
     </div>
   );
 }

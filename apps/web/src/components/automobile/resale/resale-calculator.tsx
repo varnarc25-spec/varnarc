@@ -37,40 +37,60 @@ const STEPS = [
 
 type Brand = { id: string; name: string; slug: string };
 type ModelRow = {
-  id: string;
-  name: string;
-  slug: string;
-  bodyType?: string | null;
-  vehicleSegment?: string | null;
-  discontinuedYear?: number | null;
+  model: string;
+  bodyTypes?: string[];
+};
+type ModelPage = {
+  items?: ModelRow[];
+  total?: number;
 };
 type VariantRow = {
   id: string;
   name: string;
   slug: string;
+  model: string;
+  variant?: string | null;
   fuelType?: string | null;
-  transmissionType?: string | null;
+  transmission?: string | null;
   exShowroomPrice?: unknown;
   modelYear?: number | null;
+  bodyType?: string | null;
+  category?: string | null;
 };
 type VariantDetail = VariantRow & {
-  drivetrain?: string | null;
-  discontinuedDate?: string | null;
-  model?: {
-    bodyType?: string | null;
-    discontinuedYear?: number | null;
-  } | null;
-  engine?: {
-    engineName?: string | null;
-    displacementCc?: unknown;
-    maxPowerBhp?: unknown;
+  engineCapacity?: string | null;
+  horsepower?: unknown;
+  launchStatus?: string | null;
+  pricingView?: {
+    currentPrice?: { currency?: string | null; amount?: number | null } | null;
   } | null;
 };
+
+function modelSlug(name: string) {
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '');
+}
+
+function variantLabel(row: VariantRow) {
+  const trim = row.variant?.trim();
+  if (trim) return trim;
+  return row.name;
+}
 
 function textAmount(value: unknown, suffix: string): string | null {
   const amount = parseInrAmount(value) ?? (typeof value === 'number' ? value : Number(value));
   if (!Number.isFinite(amount) || amount <= 0) return null;
   return `${amount}${suffix}`;
+}
+
+function cataloguePrice(detail: VariantDetail): number | null {
+  const listed = parseInrAmount(detail.exShowroomPrice);
+  if (listed) return listed;
+  const current = detail.pricingView?.currentPrice;
+  if (current?.currency === 'INR') return parseInrAmount(current.amount);
+  return null;
 }
 
 function specLines(
@@ -81,15 +101,11 @@ function specLines(
   if (price) lines.push({ label: 'Ex-showroom', value: `₹${price.toLocaleString('en-IN')}` });
   if (detail.modelYear) lines.push({ label: 'Model year', value: String(detail.modelYear) });
   if (detail.fuelType) lines.push({ label: 'Fuel type', value: detail.fuelType });
-  if (detail.transmissionType)
-    lines.push({ label: 'Transmission', value: detail.transmissionType });
-  if (detail.model?.bodyType) lines.push({ label: 'Body type', value: detail.model.bodyType });
-  if (detail.engine?.engineName) lines.push({ label: 'Engine', value: detail.engine.engineName });
-  const cc = textAmount(detail.engine?.displacementCc, ' cc');
-  if (cc) lines.push({ label: 'Displacement', value: cc });
-  const power = textAmount(detail.engine?.maxPowerBhp, ' bhp');
+  if (detail.transmission) lines.push({ label: 'Transmission', value: detail.transmission });
+  if (detail.bodyType) lines.push({ label: 'Body type', value: detail.bodyType });
+  if (detail.engineCapacity) lines.push({ label: 'Engine', value: detail.engineCapacity });
+  const power = textAmount(detail.horsepower, ' bhp');
   if (power) lines.push({ label: 'Power', value: power });
-  if (detail.drivetrain) lines.push({ label: 'Drivetrain', value: detail.drivetrain });
   return lines;
 }
 
@@ -136,7 +152,7 @@ export function ResaleCalculator() {
   function loadBrands() {
     setBrandsLoading(true);
     setBrandsError(null);
-    apiClientFetch<Brand[]>('/cars/brands')
+    apiClientFetch<Brand[]>('/cars/brands?withVehicles=1')
       .then(({ data }) => setBrands(Array.isArray(data) ? data : []))
       .catch(() => setBrandsError('We could not load manufacturers. Try again in a moment.'))
       .finally(() => setBrandsLoading(false));
@@ -154,9 +170,27 @@ export function ResaleCalculator() {
     let cancelled = false;
     setModelsLoading(true);
     setModelsError(null);
-    apiClientFetch<ModelRow[]>(`/cars/models?brandId=${encodeURIComponent(form.manufacturerId)}`)
-      .then(({ data }) => {
-        if (!cancelled) setModels(Array.isArray(data) ? data : []);
+    const manufacturerId = form.manufacturerId;
+    async function loadModels() {
+      const collected: ModelRow[] = [];
+      let total = Number.POSITIVE_INFINITY;
+      for (let page = 1; page <= 10 && collected.length < total; page += 1) {
+        const { data } = await apiClientFetch<ModelPage>(
+          `/automobile/vehicles/models?manufacturerId=${encodeURIComponent(manufacturerId)}&limit=100&page=${page}`,
+        );
+        const items = (Array.isArray(data?.items) ? data.items : []).filter((item) => item.model);
+        total = data?.total ?? collected.length + items.length;
+        collected.push(...items);
+        if (!items.length) break;
+      }
+      const unique = new Map(collected.map((item) => [item.model.toLowerCase(), item]));
+      return [...unique.values()].sort((a, b) =>
+        a.model.localeCompare(b.model, undefined, { sensitivity: 'base' }),
+      );
+    }
+    loadModels()
+      .then((items) => {
+        if (!cancelled) setModels(items);
       })
       .catch(() => {
         if (!cancelled) setModelsError('We could not load models for this manufacturer.');
@@ -170,18 +204,41 @@ export function ResaleCalculator() {
   }, [form.manufacturerId]);
 
   useEffect(() => {
-    if (!form.modelId) {
+    if (!form.manufacturerId || !form.modelId) {
       setVariants([]);
       return;
     }
     let cancelled = false;
     setVariantsLoading(true);
-    apiClientFetch<VariantRow[]>(
-      `/cars?modelId=${encodeURIComponent(form.modelId)}&limit=100&sort=name`,
-    )
-      .then(({ data }) => {
+    const manufacturerId = form.manufacturerId;
+    const modelName = form.modelId;
+    async function loadVariants() {
+      const rows: VariantRow[] = [];
+      let cursor: string | undefined;
+      for (let page = 0; page < 10; page += 1) {
+        const params = new URLSearchParams({
+          manufacturerId,
+          model: modelName,
+          limit: '100',
+        });
+        if (cursor) params.set('cursor', cursor);
+        const { data, meta } = await apiClientFetch<VariantRow[]>(
+          `/automobile/vehicles?${params.toString()}`,
+        );
+        const batch = Array.isArray(data) ? data : [];
+        rows.push(...batch.filter((row) => row.model.toLowerCase() === modelName.toLowerCase()));
+        const next = typeof meta?.nextCursor === 'string' ? meta.nextCursor : null;
+        if (!meta?.hasMore || !next) break;
+        cursor = next;
+      }
+      return rows;
+    }
+    loadVariants()
+      .then((rows) => {
         if (cancelled) return;
-        const rows = Array.isArray(data) ? data : [];
+        rows.sort((a, b) =>
+          variantLabel(a).localeCompare(variantLabel(b), undefined, { sensitivity: 'base' }),
+        );
         setVariants(rows);
         setForm((prev) => ({ ...prev, variantsAvailable: rows.length > 0 }));
       })
@@ -195,7 +252,7 @@ export function ResaleCalculator() {
     return () => {
       cancelled = true;
     };
-  }, [form.modelId]);
+  }, [form.manufacturerId, form.modelId]);
 
   useEffect(() => {
     if (!form.variantId) {
@@ -204,26 +261,23 @@ export function ResaleCalculator() {
     }
     let cancelled = false;
     setDetailLoading(true);
-    apiClientFetch<VariantDetail>(`/cars/${form.variantId}`)
+    apiClientFetch<VariantDetail>(`/automobile/vehicles/${form.variantId}`)
       .then(({ data }) => {
         if (cancelled || !data) return;
-        const price = parseInrAmount(data.exShowroomPrice);
+        const price = cataloguePrice(data);
         const fuel = normalizeResaleFuel(data.fuelType);
-        const transmission = normalizeResaleTransmission(data.transmissionType);
-        const year = new Date().getFullYear();
-        const discontinued = Boolean(
-          data.discontinuedDate ||
-          (data.model?.discontinuedYear && data.model.discontinuedYear <= year),
-        );
+        const transmission = normalizeResaleTransmission(data.transmission);
+        const discontinued = /discontinu/i.test(data.launchStatus ?? '');
         setForm((prev) => ({
           ...prev,
           variantSlug: data.slug ?? prev.variantSlug,
-          variantName: data.name ?? prev.variantName,
+          variantName: variantLabel(data),
           catalogPrice: price,
           manualPrice: price ? '' : prev.manualPrice,
           fuel: fuel === 'unknown' ? prev.fuel : fuel,
           transmission: transmission === 'unknown' ? prev.transmission : transmission,
-          bodyType: data.model?.bodyType || prev.bodyType,
+          bodyType: data.bodyType || prev.bodyType,
+          category: data.category || prev.category,
           discontinued,
           specLines: specLines(data, price),
         }));
@@ -284,18 +338,14 @@ export function ResaleCalculator() {
 
   useEffect(() => {
     if (!share.model || !form.manufacturerId || form.modelId || models.length === 0) return;
-    const model = models.find((item) => item.slug === share.model);
+    const model = models.find((item) => modelSlug(item.model) === share.model);
     if (!model) return;
     setForm((prev) => ({
       ...prev,
-      modelId: model.id,
-      modelSlug: model.slug,
-      modelName: model.name,
-      bodyType: model.bodyType ?? '',
-      category: model.vehicleSegment ?? '',
-      discontinued: Boolean(
-        model.discontinuedYear && model.discontinuedYear <= new Date().getFullYear(),
-      ),
+      modelId: model.model,
+      modelSlug: modelSlug(model.model),
+      modelName: model.model,
+      bodyType: model.bodyTypes?.[0] ?? '',
     }));
   }, [models, form.manufacturerId, form.modelId, share.model]);
 
@@ -317,15 +367,11 @@ export function ResaleCalculator() {
     setForm((prev) => {
       const next = { ...prev, ...patch };
       if (patch.modelId && patch.modelId !== prev.modelId) {
-        const model = models.find((item) => item.id === patch.modelId);
+        const model = models.find((item) => item.model === patch.modelId);
         if (model) {
-          next.modelSlug = model.slug;
-          next.modelName = model.name;
-          next.bodyType = model.bodyType ?? '';
-          next.category = model.vehicleSegment ?? '';
-          next.discontinued = Boolean(
-            model.discontinuedYear && model.discontinuedYear <= new Date().getFullYear(),
-          );
+          next.modelSlug = modelSlug(model.model);
+          next.modelName = model.model;
+          next.bodyType = model.bodyTypes?.[0] ?? '';
         }
       }
       return next;
@@ -487,13 +533,13 @@ export function ResaleCalculator() {
     slug: brand.slug,
   }));
   const modelOptions = models.map((model) => ({
-    value: model.id,
-    label: model.name,
-    slug: model.slug,
+    value: model.model,
+    label: model.model,
+    slug: modelSlug(model.model),
   }));
   const variantOptions = variants.map((variant) => ({
     value: variant.id,
-    label: variant.name,
+    label: variantLabel(variant),
     slug: variant.slug,
   }));
 

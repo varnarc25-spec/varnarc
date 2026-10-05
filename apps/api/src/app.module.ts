@@ -29,6 +29,7 @@ import { FinanceModule } from './modules/finance/finance.module';
 import { ConstructionModule } from './modules/construction/construction.module';
 import { AutomobileModule } from './modules/automobile/automobile.module';
 import { HrModule } from './modules/hr/hr.module';
+import { CrmModule } from './modules/crm/crm.module';
 import { ComparisonModule } from './modules/comparison/comparison.module';
 import { ContactModule } from './modules/contact/contact.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
@@ -90,6 +91,7 @@ const rateLimit = Number(process.env.RATE_LIMIT_PER_MINUTE ?? SECURITY_RATE_LIMI
     ConstructionModule,
     AutomobileModule,
     HrModule,
+    CrmModule,
     ComparisonModule,
     ContactModule,
     DashboardModule,

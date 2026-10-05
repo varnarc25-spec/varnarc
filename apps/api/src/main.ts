@@ -7,6 +7,7 @@ import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import helmet from 'helmet';
 import compression from 'compression';
+import { json, urlencoded } from 'express';
 import { AppModule } from './app.module';
 import { API_PREFIX } from '@varnarc/config';
 import { requestIdMiddleware } from './common/middleware/request-id.middleware';
@@ -39,7 +40,9 @@ async function bootstrap() {
   // eslint-disable-next-line no-console
   console.log('[startup] Environment validation passed');
 
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, { bodyParser: false });
+  app.use(json({ limit: '4mb' }));
+  app.use(urlencoded({ extended: true, limit: '4mb' }));
   // eslint-disable-next-line no-console
   console.log('[startup] Nest application created');
 

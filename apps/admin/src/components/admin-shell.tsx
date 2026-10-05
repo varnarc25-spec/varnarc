@@ -23,10 +23,19 @@ function canSeeItem(permission: Permission | null, currentUser: CurrentUser | nu
 }
 
 function filterNavGroups(currentUser: CurrentUser | null): AdminNavGroup[] {
-  return ADMIN_NAV_GROUPS.map((group) => ({
-    ...group,
-    items: group.items.filter((item) => canSeeItem(item.permission, currentUser)),
-  })).filter((group) => group.items.length > 0);
+  return ADMIN_NAV_GROUPS.map((group) => {
+    const sections = group.sections
+      ?.map((section) => ({
+        ...section,
+        items: section.items.filter((item) => canSeeItem(item.permission, currentUser)),
+      }))
+      .filter((section) => section.items.length > 0);
+    return {
+      ...group,
+      items: group.items.filter((item) => canSeeItem(item.permission, currentUser)),
+      sections,
+    };
+  }).filter((group) => group.items.length > 0 || (group.sections?.length ?? 0) > 0);
 }
 
 export function AdminShell({
