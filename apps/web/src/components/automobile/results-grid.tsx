@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import type { AutomobileModelSummary } from '@/services/automobile';
@@ -29,14 +29,14 @@ export function AutomobileResultsGrid({
   const [selected, setSelected] = useState<string[]>([]);
   const pages = Math.max(1, Math.ceil(total / pageSize));
 
-  function toggle(id: string) {
+  const toggle = useCallback((id: string) => {
     setSelected((prev) => {
       if (prev.includes(id)) return prev.filter((x) => x !== id);
       if (prev.length >= 3) return prev;
       trackAutomobileEvent('vehicle_compare_added');
       return [...prev, id];
     });
-  }
+  }, []);
 
   const hrefFor = useMemo(() => {
     return (next: { page?: number; sort?: string }) => {
@@ -75,9 +75,10 @@ export function AutomobileResultsGrid({
       <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
         {models.map((model) => (
           <AutomobileDiscoveryCard
-            key={`${model.manufacturerId}-${model.model}`}
+            key={model.representativeId}
             model={model}
             selected={selected.includes(model.representativeId)}
+            compareDisabled={selected.length >= 3 && !selected.includes(model.representativeId)}
             onToggleCompare={toggle}
           />
         ))}

@@ -14,6 +14,7 @@ type AdBannerProps = {
   categoryId?: string;
   articleId?: string;
   collapseWhenEmpty?: boolean;
+  orientation?: 'horizontal' | 'vertical';
 };
 
 /**
@@ -27,7 +28,9 @@ export async function AdBanner({
   categoryId,
   articleId,
   collapseWhenEmpty = false,
+  orientation = 'horizontal',
 }: AdBannerProps) {
+  const frame = orientation === 'vertical' ? 'min-h-[90px] w-full lg:min-h-[70vh]' : 'min-h-[90px]';
   const result = await fetchAdsForPlacement(slot, {
     pageType,
     categoryId,
@@ -41,14 +44,21 @@ export async function AdBanner({
     const client = getAdsenseClientFromConfig(adsense);
     const adsenseSlot = getAdsenseSlotForPlacement(slot, adsense);
     if (client && adsenseSlot) {
-      return <GoogleAdsenseUnit client={client} slot={adsenseSlot} className={className} />;
+      return (
+        <GoogleAdsenseUnit
+          client={client}
+          slot={adsenseSlot}
+          format={orientation === 'vertical' ? 'vertical' : 'auto'}
+          className={`${frame} ${className}`}
+        />
+      );
     }
 
     if (collapseWhenEmpty) return null;
 
     return (
       <aside
-        className={`flex min-h-[90px] items-center justify-center rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-6 text-center ${className}`}
+        className={`flex ${frame} items-center justify-center rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-6 text-center ${className}`}
         data-ad-slot={slot}
         aria-label="Advertisement"
       >
@@ -62,5 +72,5 @@ export async function AdBanner({
     );
   }
 
-  return <AdCreative ad={ad} className={className} />;
+  return <AdCreative ad={ad} className={`${frame} ${className}`} />;
 }

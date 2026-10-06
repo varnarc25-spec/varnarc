@@ -2,17 +2,20 @@
 
 import Image from 'next/image';
 import { useEffect, useState } from 'react';
+import { CarFront } from 'lucide-react';
 import { getApiBaseUrl } from '@/services/api-client';
 
 export function AutomobileVehicleImage({
   src,
   alt,
+  label,
   vehicleId,
   attribution,
   priority = false,
 }: {
   src?: string | null;
   alt: string;
+  label: string;
   vehicleId?: string;
   attribution?: string | null;
   priority?: boolean;
@@ -22,7 +25,8 @@ export function AutomobileVehicleImage({
 
   useEffect(() => {
     setUrl(src ?? null);
-  }, [src]);
+    setCredit(attribution ?? null);
+  }, [src, attribution]);
 
   useEffect(() => {
     if (url || !vehicleId) return;
@@ -46,28 +50,32 @@ export function AutomobileVehicleImage({
     };
   }, [url, vehicleId]);
 
-  const initial = alt.trim().charAt(0).toUpperCase() || 'C';
-
   return (
-    <div className="relative aspect-[16/10] overflow-hidden bg-slate-100">
+    <div className="relative aspect-[16/10] w-full overflow-hidden bg-slate-50">
       {url ? (
-        <Image
-          src={url}
-          alt={alt}
-          fill
-          unoptimized
-          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-          className="object-cover"
-          priority={priority}
-        />
+        <div className="absolute inset-3">
+          <div className="relative h-full w-full">
+            <Image
+              src={url}
+              alt={alt}
+              fill
+              unoptimized
+              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+              className="object-contain object-center"
+              priority={priority}
+            />
+          </div>
+        </div>
       ) : (
-        <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-[#0b1f3a] to-slate-600 text-4xl font-extrabold text-white">
-          <span aria-hidden="true">{initial}</span>
+        <div className="flex h-full flex-col items-center justify-center gap-1.5 px-6 text-center">
+          <CarFront className="h-7 w-7 text-slate-400" aria-hidden="true" />
+          <p className="line-clamp-2 text-sm font-semibold text-slate-600">{label}</p>
+          <p className="text-xs text-slate-400">Image coming soon</p>
           <span className="sr-only">{alt}</span>
         </div>
       )}
-      {credit ? (
-        <p className="absolute bottom-0 left-0 right-0 bg-black/50 px-2 py-0.5 text-[10px] text-white">
+      {credit && url ? (
+        <p className="absolute bottom-1 left-2 right-2 truncate text-[10px] text-slate-500">
           {credit}
         </p>
       ) : null}

@@ -54,7 +54,7 @@ export const AUTOMOBILE_DISCOVERY_PAGES: AutomobileDiscoveryPage[] = [
       h1: `Cars under ₹${lakhs} lakh`,
       title: `Cars under ₹${lakhs} Lakh in India — Prices & Specs | Varnarc`,
       description: `Browse cars with published ex-showroom prices under ₹${lakhs} lakh. Compare mileage, fuel and seating — indicative, not a dealer quote.`,
-      intro: `This list includes published models whose lowest listed ex-showroom price is under ₹${lakhs} lakh. Many catalogue rows have no price yet and are omitted here on purpose.`,
+      intro: `Each published variant with an ex-showroom price under ₹${lakhs} lakh is listed. Rows without a price stay hidden rather than guessed.`,
       filter: { maxPrice: lakhs * 100000, sort: 'price_asc' },
       faqs: [
         {
@@ -65,7 +65,7 @@ export const AUTOMOBILE_DISCOVERY_PAGES: AutomobileDiscoveryPage[] = [
         {
           question: 'Why are some popular cars missing?',
           answer:
-            'A model appears only when at least one published variant has an ex-showroom price in this band. Missing prices stay hidden rather than guessed.',
+            'A variant appears only when it has a published ex-showroom price in this band. Missing prices stay hidden rather than guessed.',
         },
       ],
     }),

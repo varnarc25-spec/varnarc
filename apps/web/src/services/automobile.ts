@@ -187,6 +187,7 @@ type ListOptions = {
   maxPrice?: number;
   minMileage?: number;
   minSafety?: number;
+  modelYear?: number;
   sort?: 'featured' | 'price_asc' | 'price_desc' | 'mileage' | 'newest';
   page?: number;
   launchMode?: 'current' | 'upcoming' | 'launches';
@@ -217,6 +218,15 @@ export type AutomobileModelSummary = {
   transmissions: string[];
   bodyTypes: string[];
   featured?: boolean;
+  variant?: string | null;
+  launchStatus?: string | null;
+  marketStatus?: string | null;
+  indiaAvailability?: string | null;
+  currentIndiaModel?: boolean | null;
+  engineCapacity?: string | null;
+  rangeKm?: number | string | null;
+  priceType?: string | null;
+  images?: Array<{ imageUrl?: string | null; altText?: string | null }> | null;
 };
 
 function buildQs(options?: ListOptions) {
@@ -233,6 +243,7 @@ function buildQs(options?: ListOptions) {
   if (options?.maxPrice != null) qs.set('maxPrice', String(options.maxPrice));
   if (options?.minMileage != null) qs.set('minMileage', String(options.minMileage));
   if (options?.minSafety != null) qs.set('minSafety', String(options.minSafety));
+  if (options?.modelYear != null) qs.set('modelYear', String(options.modelYear));
   if (options?.sort) qs.set('sort', options.sort);
   if (options?.page) qs.set('page', String(options.page));
   if (options?.launchMode) qs.set('launchMode', options.launchMode);
@@ -259,6 +270,24 @@ export async function fetchAutomobileManufacturers(options?: ListOptions) {
 
 export async function fetchAutomobileManufacturerBySlug(slug: string) {
   return apiPublicFetch<AutomobileManufacturer>(`/automobile/manufacturers/slug/${slug}`);
+}
+
+export async function fetchAutomobileVehiclePage(options?: ListOptions) {
+  const page = options?.page ?? 1;
+  const limit = options?.limit ?? 24;
+  try {
+    const res = await apiPublicFetch<AutomobileVehicle[]>(
+      `/automobile/vehicles?${buildQs({ ...options, page, limit })}`,
+    );
+    return {
+      items: Array.isArray(res.data) ? res.data : [],
+      total: Number(res.meta?.total ?? 0),
+      page: Number(res.meta?.page ?? page),
+      pageSize: Number(res.meta?.pageSize ?? limit),
+    };
+  } catch {
+    return { items: [] as AutomobileVehicle[], total: 0, page, pageSize: limit };
+  }
 }
 
 export async function fetchAutomobileVehicles(options?: ListOptions) {

@@ -17,9 +17,54 @@ import { automobileHubBreadcrumbs } from '@/lib/automobile/seo';
 import {
   AUTOMOBILE_CALCULATOR_LINKS,
   fetchAutomobileManufacturers,
-  fetchAutomobileModels,
+  fetchAutomobileVehiclePage,
   type AutomobileModelSummary,
+  type AutomobileVehicle,
 } from '@/services/automobile';
+
+function vehicleToSummary(vehicle: AutomobileVehicle): AutomobileModelSummary {
+  return {
+    manufacturerId: vehicle.manufacturerId || vehicle.manufacturer?.id || vehicle.id,
+    manufacturer: {
+      id: vehicle.manufacturer?.id || vehicle.manufacturerId || vehicle.id,
+      name: vehicle.manufacturer?.name || '',
+      slug: vehicle.manufacturer?.slug || '',
+      logoUrl: vehicle.manufacturer?.logoUrl ?? null,
+    },
+    model: vehicle.model || vehicle.name,
+    name: vehicle.name,
+    slug: vehicle.slug,
+    representativeId: vehicle.id,
+    variantCount: 1,
+    imageUrl: vehicle.imageUrl,
+    imageAttribution: vehicle.imageAttribution,
+    minPrice: vehicle.exShowroomPrice,
+    maxPrice: vehicle.exShowroomPrice,
+    minMileage: vehicle.mileage,
+    maxMileage: vehicle.mileage,
+    minSeats: vehicle.seatingCapacity,
+    maxSeats: vehicle.seatingCapacity,
+    minYear: vehicle.modelYear,
+    maxYear: vehicle.modelYear,
+    safetyRating: vehicle.safetyRating,
+    safetyAgency: vehicle.safetyAgency,
+    groundClearance: vehicle.groundClearance,
+    fuels: vehicle.fuelType ? [vehicle.fuelType] : [],
+    transmissions: vehicle.transmission ? [vehicle.transmission] : [],
+    bodyTypes: [vehicle.bodyType || vehicle.category].filter((value): value is string =>
+      Boolean(value),
+    ),
+    featured: vehicle.featured,
+    variant: vehicle.variant,
+    launchStatus: vehicle.launchStatus,
+    indiaAvailability: vehicle.indiaAvailability,
+    engineCapacity: vehicle.engineCapacity,
+    images: vehicle.images?.map((image) => ({
+      imageUrl: image.imageUrl,
+      altText: image.altText,
+    })),
+  };
+}
 
 export function discoveryFilterToQuery(filter: AutomobileDiscoveryFilter) {
   return {
@@ -50,23 +95,25 @@ export async function AutomobileDiscoveryLanding({
   sort?: string;
   extraQuery?: string;
   crumbsLabel?: string;
-  query?: Parameters<typeof fetchAutomobileModels>[0];
+  query?: Parameters<typeof fetchAutomobileVehiclePage>[0];
   h1Override?: string;
   descriptionOverride?: string;
 }) {
   const landing = getAutomobileDiscoveryByPath(path);
-  const [{ data: mfrs }, modelsRes] = await Promise.all([
+  const listQuery = {
+    ...(landing ? discoveryFilterToQuery(landing.filter) : {}),
+    ...query,
+    page,
+    sort: (sort as 'featured') || query?.sort || landing?.filter.sort || 'featured',
+    limit: 24,
+    modelYear: new Date().getFullYear(),
+  };
+  const [{ data: mfrs }, vehiclePage] = await Promise.all([
     fetchAutomobileManufacturers({ limit: 80 }),
-    fetchAutomobileModels({
-      ...(landing ? discoveryFilterToQuery(landing.filter) : {}),
-      ...query,
-      page,
-      sort: (sort as 'featured') || query?.sort || landing?.filter.sort || 'featured',
-      limit: 12,
-    }),
+    fetchAutomobileVehiclePage(listQuery),
   ]);
-  const models: AutomobileModelSummary[] = modelsRes.data?.items ?? [];
-  const total = modelsRes.data?.total ?? 0;
+  const models: AutomobileModelSummary[] = vehiclePage.items.map(vehicleToSummary);
+  const total = vehiclePage.total;
   const h1 = h1Override ?? landing?.h1 ?? 'Find Cars in India';
   const description =
     descriptionOverride ??
@@ -95,6 +142,7 @@ export async function AutomobileDiscoveryLanding({
       <ContentLayout
         title={h1}
         description={description}
+        adLayout="rail"
         breadcrumbs={[
           { label: 'Home', href: '/' },
           { label: 'Automobile', href: '/automobile' },
@@ -131,8 +179,8 @@ export async function AutomobileDiscoveryLanding({
             <AutomobileResultsGrid
               models={models}
               total={total}
-              page={modelsRes.data?.page ?? 1}
-              pageSize={modelsRes.data?.pageSize ?? 12}
+              page={vehiclePage.page}
+              pageSize={vehiclePage.pageSize}
               sort={sort || landing?.filter.sort}
               basePath={path}
               search={extraQuery}

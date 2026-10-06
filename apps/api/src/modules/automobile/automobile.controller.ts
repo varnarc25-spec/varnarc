@@ -164,13 +164,21 @@ export class AutomobileController {
   async vehicles(
     @Query(new ZodValidationPipe(automobileListQuerySchema)) query: AutomobileListQuery,
   ) {
-    return okCursor(
-      await this.service.listVehicles({
-        ...query,
-        status: query.status ?? 'PUBLISHED',
-        availableInIndia: true,
-      }),
-    );
+    const filters = {
+      ...query,
+      status: query.status ?? 'PUBLISHED',
+      availableInIndia: true,
+    };
+    if (query.page != null) {
+      const result = await this.service.listVehiclesPaged(filters);
+      return okPage(result.items, {
+        total: result.total,
+        page: result.page,
+        pageSize: result.pageSize,
+        hasMore: result.page * result.pageSize < result.total,
+      });
+    }
+    return okCursor(await this.service.listVehicles(filters));
   }
 
   @Public()
