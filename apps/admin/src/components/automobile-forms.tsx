@@ -1,6 +1,7 @@
 'use client';
 
 import type { ReactNode } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Button } from '@varnarc/ui';
@@ -14,6 +15,120 @@ function slugify(value: string) {
     .toLowerCase()
     .replace(/\s+/g, '-')
     .replace(/[^a-z0-9-]/g, '');
+}
+
+type VehicleColor = { name: string; hex: string };
+
+function parseAvailableColors(value: unknown): VehicleColor[] {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((item) => {
+    if (typeof item === 'string' && item.trim()) return [{ name: item.trim(), hex: '' }];
+    if (!item || typeof item !== 'object' || !('name' in item)) return [];
+    const name = String((item as { name?: unknown }).name ?? '').trim();
+    const hex = String((item as { hex?: unknown }).hex ?? '').trim();
+    return name ? [{ name, hex }] : [];
+  });
+}
+
+function AvailableColorsEditor({
+  colors,
+  onChange,
+}: {
+  colors: VehicleColor[];
+  onChange: (colors: VehicleColor[]) => void;
+}) {
+  return (
+    <div className="md:col-span-2 lg:col-span-3">
+      <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-[var(--varnarc-subtle)]">
+        Available colors
+      </p>
+      <div className="space-y-2">
+        {colors.map((color, index) => (
+          <div key={`${index}-${color.name}`} className="flex items-center gap-2">
+            <input
+              type="color"
+              aria-label={`Swatch for ${color.name || 'color'}`}
+              className="h-10 w-12 cursor-pointer rounded-md border border-[var(--varnarc-border)] bg-[var(--varnarc-surface)] p-1"
+              value={/^#[0-9a-fA-F]{6}$/.test(color.hex) ? color.hex : '#d1d5db'}
+              onChange={(event) => {
+                const next = [...colors];
+                next[index] = { ...color, hex: event.target.value };
+                onChange(next);
+              }}
+            />
+            <input
+              className={inputClass}
+              placeholder="Color name, for example Pearl White"
+              value={color.name}
+              onChange={(event) => {
+                const next = [...colors];
+                next[index] = { ...color, name: event.target.value };
+                onChange(next);
+              }}
+            />
+            <button
+              type="button"
+              className="shrink-0 text-sm text-red-600 hover:underline"
+              onClick={() => onChange(colors.filter((_, itemIndex) => itemIndex !== index))}
+            >
+              Remove
+            </button>
+          </div>
+        ))}
+        <button
+          type="button"
+          className="text-sm text-[var(--varnarc-brand)] hover:underline"
+          onClick={() => onChange([...colors, { name: '', hex: '' }])}
+        >
+          Add color
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function ManufacturerField({
+  manufacturerId,
+  manufacturers,
+  onChange,
+}: {
+  manufacturerId: string;
+  manufacturers: Array<{ id: string; name: string }>;
+  onChange: (id: string) => void;
+}) {
+  return (
+    <div>
+      <select
+        className={inputClass}
+        value={manufacturerId}
+        onChange={(event) => onChange(event.target.value)}
+        aria-label="Manufacturer"
+      >
+        <option value="">Select manufacturer</option>
+        {manufacturers.map((manufacturer) => (
+          <option key={manufacturer.id} value={manufacturer.id}>
+            {manufacturer.name}
+          </option>
+        ))}
+      </select>
+      <div className="mt-1 flex flex-wrap gap-3 text-xs">
+        <Link
+          href="/automobile/manufacturers"
+          className="text-[var(--varnarc-brand)] hover:underline"
+        >
+          Manufacturer page
+        </Link>
+        {manufacturerId ? (
+          <Link
+            href={`/automobile/manufacturers/${manufacturerId}`}
+            className="text-[var(--varnarc-brand)] hover:underline"
+          >
+            Edit this manufacturer
+          </Link>
+        ) : null}
+      </div>
+    </div>
+  );
 }
 
 function sortManufacturersByName<T extends { name: string }>(list: T[]): T[] {
@@ -552,6 +667,7 @@ export function AutomobileVehicleForm({
   const [affiliateUrl, setAffiliateUrl] = useState('');
   const [featured, setFeatured] = useState(false);
   const [sponsored, setSponsored] = useState(false);
+  const [availableColors, setAvailableColors] = useState<VehicleColor[]>([]);
   const [message, setMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -574,6 +690,9 @@ export function AutomobileVehicleForm({
           affiliateUrl: affiliateUrl || undefined,
           featured,
           sponsored,
+          availableColors: availableColors
+            .map((color) => ({ name: color.name.trim(), hex: color.hex || undefined }))
+            .filter((color) => color.name),
         }),
       });
       const json = (await res.json()) as { error?: { message?: string } };
@@ -586,6 +705,7 @@ export function AutomobileVehicleForm({
       setAffiliateUrl('');
       setFeatured(false);
       setSponsored(false);
+      setAvailableColors([]);
       setMessage('Created');
       router.refresh();
     } catch (err) {
@@ -598,18 +718,11 @@ export function AutomobileVehicleForm({
   return (
     <AutomobileFormShell title="New vehicle" message={message}>
       <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-        <select
-          className={inputClass}
-          value={manufacturerId}
-          onChange={(e) => setManufacturerId(e.target.value)}
-        >
-          <option value="">Select manufacturer</option>
-          {manufacturersSorted.map((m) => (
-            <option key={m.id} value={m.id}>
-              {m.name}
-            </option>
-          ))}
-        </select>
+        <ManufacturerField
+          manufacturerId={manufacturerId}
+          manufacturers={manufacturersSorted}
+          onChange={setManufacturerId}
+        />
         <input
           className={inputClass}
           placeholder="Name"
@@ -668,6 +781,7 @@ export function AutomobileVehicleForm({
           />
           Sponsored
         </label>
+        <AvailableColorsEditor colors={availableColors} onChange={setAvailableColors} />
       </div>
       <FormActions
         loading={loading}
@@ -705,6 +819,7 @@ export function AutomobileVehicleEditForm({
     featured?: boolean;
     sponsored?: boolean;
     availableInIndia?: boolean;
+    availableColors?: unknown;
   };
 }) {
   const manufacturersSorted = sortManufacturersByName(manufacturers);
@@ -733,6 +848,9 @@ export function AutomobileVehicleEditForm({
   const [featured, setFeatured] = useState(Boolean(initial.featured));
   const [sponsored, setSponsored] = useState(Boolean(initial.sponsored));
   const [availableInIndia, setAvailableInIndia] = useState(Boolean(initial.availableInIndia));
+  const [availableColors, setAvailableColors] = useState<VehicleColor[]>(
+    parseAvailableColors(initial.availableColors),
+  );
   const [message, setMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -766,6 +884,9 @@ export function AutomobileVehicleEditForm({
           featured,
           sponsored,
           availableInIndia,
+          availableColors: availableColors
+            .map((color) => ({ name: color.name.trim(), hex: color.hex || undefined }))
+            .filter((color) => color.name),
         }),
       });
       const json = (await res.json()) as { error?: { message?: string } };
@@ -782,18 +903,11 @@ export function AutomobileVehicleEditForm({
   return (
     <AutomobileFormShell title="Edit vehicle" message={message}>
       <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-        <select
-          className={inputClass}
-          value={manufacturerId}
-          onChange={(e) => setManufacturerId(e.target.value)}
-        >
-          <option value="">Select manufacturer</option>
-          {manufacturersSorted.map((m) => (
-            <option key={m.id} value={m.id}>
-              {m.name}
-            </option>
-          ))}
-        </select>
+        <ManufacturerField
+          manufacturerId={manufacturerId}
+          manufacturers={manufacturersSorted}
+          onChange={setManufacturerId}
+        />
         <input
           className={inputClass}
           placeholder="Name"
@@ -896,6 +1010,7 @@ export function AutomobileVehicleEditForm({
           />
           Available in India
         </label>
+        <AvailableColorsEditor colors={availableColors} onChange={setAvailableColors} />
         <textarea
           className={`${inputClass} min-h-24 py-2 md:col-span-2 lg:col-span-3`}
           placeholder="Description"

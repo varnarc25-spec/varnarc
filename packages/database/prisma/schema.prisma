@@ -3256,6 +3256,7 @@ model AutomobileVehicle {
   specifications       Json?
   pros                 Json?
   cons                 Json?
+  availableColors      Json?         @map("available_colors")
   imageUrl             String?       @map("image_url")
   imageSource          String?       @map("image_source")
   imageSourcePage      String?       @map("image_source_page")

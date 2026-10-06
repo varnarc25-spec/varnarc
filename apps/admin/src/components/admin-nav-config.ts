@@ -36,6 +36,7 @@ export const ADMIN_NAV_GROUPS: AdminNavGroup[] = [
       { href: '/categories', label: 'Categories', permission: PERMISSIONS.ARTICLE_EDIT },
       { href: '/tags', label: 'Tags', permission: PERMISSIONS.ARTICLE_EDIT },
       { href: '/media', label: 'Media', permission: PERMISSIONS.MEDIA_VIEW },
+      { href: '/media/storage', label: 'Cloud storage', permission: PERMISSIONS.MEDIA_VIEW },
       { href: '/menus', label: 'Menus', permission: PERMISSIONS.MENU_MANAGE },
       { href: '/homepage', label: 'Homepage', permission: PERMISSIONS.HOMEPAGE_MANAGE },
     ],

@@ -596,4 +596,26 @@ export class MediaService {
     await this.audit(actorId, 'media.collection.delete', id);
     return { deleted: true };
   }
+
+  listStorage(prefix: string) {
+    return this.storage.listBrowser(prefix);
+  }
+
+  uploadStorageFile(file: Express.Multer.File | undefined, prefix: string) {
+    if (!file) {
+      throw new BadRequestException({
+        success: false,
+        error: { code: 'FILE_REQUIRED', message: 'Choose a file to upload.' },
+      });
+    }
+    return this.storage.uploadIntoPrefix(file, prefix);
+  }
+
+  createStorageFolder(prefix: string, name: string) {
+    return this.storage.createFolder(prefix, name);
+  }
+
+  deleteStorageObject(path: string, kind: 'file' | 'folder') {
+    return this.storage.deleteBrowserObject(path, kind);
+  }
 }

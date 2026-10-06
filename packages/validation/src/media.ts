@@ -106,6 +106,42 @@ export const bulkDeleteMediaSchema = z.object({
   ids: z.array(uuidSchema).min(1).max(100),
 });
 
+function gcsPath(min: number) {
+  return z
+    .string()
+    .min(min)
+    .max(512)
+    .refine((value) => !value.split('/').some((part) => part === '.' || part === '..'), {
+      message: 'Storage paths cannot contain . or .. segments.',
+    });
+}
+
+export const gcsBrowserQuerySchema = z.object({
+  prefix: gcsPath(0).optional().default(''),
+});
+
+export const gcsCreateFolderSchema = z.object({
+  prefix: gcsPath(0).optional().default(''),
+  name: z
+    .string()
+    .trim()
+    .min(1)
+    .max(80)
+    .regex(/^[A-Za-z0-9][A-Za-z0-9 ._-]*$/, 'Use letters, numbers, spaces, dots, _ or -.'),
+});
+
+export const gcsDeleteObjectSchema = z.object({
+  path: gcsPath(1),
+  kind: z.enum(['file', 'folder']),
+});
+
+/** Prefix used to list one folder. Empty string is the bucket root. */
+export function normalizeGcsPrefix(raw: string | undefined): string {
+  const text = (raw ?? '').trim().replace(/\\/g, '/').replace(/^\/+/, '');
+  if (!text) return '';
+  return text.endsWith('/') ? text : `${text}/`;
+}
+
 export type MediaListQuery = z.infer<typeof mediaListQuerySchema>;
 export type MediaSearchQuery = z.infer<typeof mediaSearchQuerySchema>;
 export type CreateMediaAssetInput = z.infer<typeof createMediaAssetSchema>;
@@ -114,3 +150,6 @@ export type CreateMediaFolderInput = z.infer<typeof createMediaFolderSchema>;
 export type UpdateMediaFolderInput = z.infer<typeof updateMediaFolderSchema>;
 export type CreateMediaCollectionInput = z.infer<typeof createMediaCollectionSchema>;
 export type UpdateMediaCollectionInput = z.infer<typeof updateMediaCollectionSchema>;
+export type GcsBrowserQuery = z.infer<typeof gcsBrowserQuerySchema>;
+export type GcsCreateFolderInput = z.infer<typeof gcsCreateFolderSchema>;
+export type GcsDeleteObjectInput = z.infer<typeof gcsDeleteObjectSchema>;

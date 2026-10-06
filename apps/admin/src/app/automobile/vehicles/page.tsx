@@ -127,6 +127,12 @@ export default async function AutomobileVehiclesAdminPage({
         description="Filter and page the catalog on the server. India-only uses the available-in-India flag."
         actions={
           <div className="flex items-center gap-3">
+            <Link
+              href="/automobile/manufacturers"
+              className="text-sm text-[var(--varnarc-brand)] hover:underline"
+            >
+              Manufacturers
+            </Link>
             <a
               href={`/api/admin/automobile/vehicles/export?${qs.toString()}`}
               className="inline-flex h-9 items-center rounded-md border border-[var(--varnarc-border)] px-3 text-sm font-medium hover:bg-[var(--varnarc-muted)]"

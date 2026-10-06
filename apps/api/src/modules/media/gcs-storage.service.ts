@@ -4,6 +4,7 @@ import { randomUUID } from 'crypto';
 import {
   ALLOWED_MEDIA_MIME_TYPES,
   MAX_MEDIA_UPLOAD_BYTES,
+  normalizeGcsPrefix,
   normalizeHttpPublicUrl,
   validateFileSignature,
 } from '@varnarc/validation';
@@ -253,7 +254,8 @@ export class GcsStorageService {
         .replace(/^-|-$/g, '')
         .slice(0, 80) || 'asset';
 
-    const folder = options.folderPath ? options.folderPath.replace(/^\/+|\/+$/g, '') : 'uploads';
+    const folder =
+      options.folderPath === undefined ? 'uploads' : options.folderPath.replace(/^\/+|\/+$/g, '');
     const objectId = options.publicId ?? `${folder}/${safeName}-${randomUUID().slice(0, 8)}.${ext}`;
     const publicId = objectId.replace(/^\/+/, '');
 
@@ -304,6 +306,120 @@ export class GcsStorageService {
         },
       ],
     };
+  }
+
+  async listBrowser(rawPrefix: string) {
+    const prefix = this.safePrefix(rawPrefix);
+    const { cfg, storage } = await this.requireClient();
+    try {
+      const bucket = storage.bucket(cfg.bucket);
+      const [objects, , apiResponse] = await bucket.getFiles({
+        prefix,
+        delimiter: '/',
+        autoPaginate: false,
+        maxResults: 200,
+      });
+      const prefixes = (apiResponse as { prefixes?: string[] } | undefined)?.prefixes ?? [];
+      const markerPrefixes = objects
+        .filter((file) => file.name.endsWith('/') && file.name !== prefix)
+        .map((file) => file.name);
+      const folders = [...new Set([...prefixes, ...markerPrefixes])]
+        .map((full) => {
+          const name = full.slice(prefix.length).replace(/\/$/, '');
+          return { name, prefix: full.endsWith('/') ? full : `${full}/` };
+        })
+        .filter((folder) => folder.name.length > 0 && !folder.name.includes('/'))
+        .sort((a, b) => a.name.localeCompare(b.name));
+      const files = objects
+        .filter((file) => file.name !== prefix && !file.name.endsWith('/'))
+        .map((file) => ({
+          name: file.name.slice(prefix.length),
+          path: file.name,
+          size: Number(file.metadata.size ?? 0),
+          updated: (file.metadata.updated as string | undefined) ?? null,
+          contentType: (file.metadata.contentType as string | undefined) ?? null,
+          url: this.buildPublicUrl(file.name, cfg),
+        }))
+        .sort((a, b) => a.name.localeCompare(b.name));
+      return { bucket: cfg.bucket, prefix, folders, files };
+    } catch (err) {
+      this.throwUploadError(err, cfg.bucket);
+    }
+  }
+
+  async uploadIntoPrefix(file: Express.Multer.File, rawPrefix: string) {
+    const prefix = this.safePrefix(rawPrefix);
+    return this.upload(file, { folderPath: prefix.replace(/\/$/, '') });
+  }
+
+  async createFolder(rawPrefix: string, name: string) {
+    const prefix = this.safePrefix(rawPrefix);
+    const folderName = name.trim().replace(/\/+$/, '');
+    const objectName = `${prefix}${folderName}/`;
+    const { cfg, storage } = await this.requireClient();
+    try {
+      await storage
+        .bucket(cfg.bucket)
+        .file(objectName)
+        .save(Buffer.alloc(0), { resumable: false, contentType: 'application/x-directory' });
+      return { name: folderName, prefix: objectName };
+    } catch (err) {
+      this.throwUploadError(err, cfg.bucket);
+    }
+  }
+
+  async deleteBrowserObject(path: string, kind: 'file' | 'folder') {
+    const { cfg, storage } = await this.requireClient();
+    const bucket = storage.bucket(cfg.bucket);
+    try {
+      if (kind === 'folder') {
+        const prefix = this.safePrefix(path);
+        if (!prefix) {
+          throw new BadRequestException({
+            success: false,
+            error: { code: 'INVALID_PATH', message: 'The bucket root cannot be deleted.' },
+          });
+        }
+        const [objects] = await bucket.getFiles({ prefix, autoPaginate: false, maxResults: 500 });
+        if (objects.length >= 500) {
+          throw new BadRequestException({
+            success: false,
+            error: {
+              code: 'PREFIX_TOO_LARGE',
+              message: 'This folder has 500 or more objects. Delete a smaller folder first.',
+            },
+          });
+        }
+        await Promise.all(objects.map((file) => file.delete({ ignoreNotFound: true })));
+        return { deleted: objects.length, path: prefix };
+      }
+      const objectPath = path.trim().replace(/\\/g, '/').replace(/^\/+/, '');
+      if (
+        !objectPath ||
+        objectPath.endsWith('/') ||
+        objectPath.split('/').some((part) => part === '.' || part === '..')
+      ) {
+        throw new BadRequestException({
+          success: false,
+          error: { code: 'INVALID_PATH', message: 'Choose a file inside the bucket.' },
+        });
+      }
+      await bucket.file(objectPath).delete();
+      return { deleted: 1, path: objectPath };
+    } catch (err) {
+      if (err instanceof BadRequestException) throw err;
+      this.throwUploadError(err, cfg.bucket);
+    }
+  }
+
+  private safePrefix(raw: string) {
+    if ((raw ?? '').split('/').some((part) => part === '.' || part === '..')) {
+      throw new BadRequestException({
+        success: false,
+        error: { code: 'INVALID_PATH', message: 'Storage paths cannot contain . or .. segments.' },
+      });
+    }
+    return normalizeGcsPrefix(raw);
   }
 
   async destroy(publicId: string, _resourceType: MediaResourceType) {

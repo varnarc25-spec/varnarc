@@ -87,6 +87,7 @@ export type AutomobileVehicle = {
   sponsored?: boolean;
   seoTitle?: string | null;
   seoDescription?: string | null;
+  availableColors?: Array<{ name?: string; hex?: string | null }> | null;
   manufacturer?: { id: string; name: string; slug: string; logoUrl?: string | null } | null;
   manufacturerId?: string | null;
   images?: Array<{

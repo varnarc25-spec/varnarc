@@ -35,6 +35,16 @@ export const createAutomobileManufacturerSchema = z.object({
 
 export const updateAutomobileManufacturerSchema = createAutomobileManufacturerSchema.partial();
 
+export const automobileAvailableColorSchema = z.object({
+  name: z.string().trim().min(1).max(60),
+  hex: z
+    .string()
+    .regex(/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/)
+    .optional()
+    .nullable()
+    .or(z.literal('')),
+});
+
 export const automobileGalleryImageSchema = z.object({
   imageUrl: z.string().url().max(500).optional().nullable().or(z.literal('')),
   mediaId: uuidSchema.optional().nullable(),
@@ -68,6 +78,7 @@ export const createAutomobileVehicleSchema = z.object({
   specifications: jsonValueSchema.optional().nullable(),
   pros: jsonValueSchema.optional().nullable(),
   cons: jsonValueSchema.optional().nullable(),
+  availableColors: z.array(automobileAvailableColorSchema).max(24).optional().nullable(),
   imageUrl: z.string().url().max(500).optional().nullable().or(z.literal('')),
   brochureUrl: z.string().url().max(500).optional().nullable().or(z.literal('')),
   brochureMediaId: uuidSchema.optional().nullable(),

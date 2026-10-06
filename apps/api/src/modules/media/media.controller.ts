@@ -22,6 +22,9 @@ import {
   createMediaAssetSchema,
   createMediaCollectionSchema,
   createMediaFolderSchema,
+  gcsBrowserQuerySchema,
+  gcsCreateFolderSchema,
+  gcsDeleteObjectSchema,
   mediaListQuerySchema,
   mediaSearchQuerySchema,
   updateMediaAssetSchema,
@@ -30,6 +33,9 @@ import {
   type CreateMediaAssetInput,
   type CreateMediaCollectionInput,
   type CreateMediaFolderInput,
+  type GcsBrowserQuery,
+  type GcsCreateFolderInput,
+  type GcsDeleteObjectInput,
   type MediaListQuery,
   type MediaSearchQuery,
   type UpdateMediaAssetInput,
@@ -61,6 +67,41 @@ export class MediaController {
   @RequirePermissions(PERMISSIONS.MEDIA_VIEW)
   async search(@Query(new ZodValidationPipe(mediaSearchQuerySchema)) query: MediaSearchQuery) {
     return okCursor(await this.service.search(query));
+  }
+
+  @Get('storage')
+  @RequirePermissions(PERMISSIONS.MEDIA_VIEW)
+  async listStorage(@Query(new ZodValidationPipe(gcsBrowserQuerySchema)) query: GcsBrowserQuery) {
+    return ok(await this.service.listStorage(query.prefix));
+  }
+
+  @Post('storage/folders')
+  @RequirePermissions(PERMISSIONS.MEDIA_UPLOAD)
+  async createStorageFolder(
+    @Body(new ZodValidationPipe(gcsCreateFolderSchema)) body: GcsCreateFolderInput,
+  ) {
+    return ok(await this.service.createStorageFolder(body.prefix, body.name));
+  }
+
+  @Post('storage/upload')
+  @RequirePermissions(PERMISSIONS.MEDIA_UPLOAD)
+  @ApiConsumes('multipart/form-data')
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: uploadStorage,
+      limits: { fileSize: 50 * 1024 * 1024 },
+    }),
+  )
+  async uploadStorage(@UploadedFile() file: Express.Multer.File, @Body('prefix') prefix?: string) {
+    return ok(await this.service.uploadStorageFile(file, prefix ?? ''));
+  }
+
+  @Delete('storage')
+  @RequirePermissions(PERMISSIONS.MEDIA_DELETE)
+  async deleteStorage(
+    @Query(new ZodValidationPipe(gcsDeleteObjectSchema)) query: GcsDeleteObjectInput,
+  ) {
+    return ok(await this.service.deleteStorageObject(query.path, query.kind));
   }
 
   @Get('public/:id')

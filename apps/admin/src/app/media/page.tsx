@@ -39,22 +39,34 @@ export default async function MediaPage({
         actions={
           <div className="flex flex-wrap items-center gap-2">
             <Badge>{assets.length} shown</Badge>
-            <Link href="/media/folders" className="text-sm text-[var(--varnarc-brand)] hover:underline">
+            <Link
+              href="/media/storage"
+              className="text-sm text-[var(--varnarc-brand)] hover:underline"
+            >
+              Cloud storage
+            </Link>
+            <Link
+              href="/media/folders"
+              className="text-sm text-[var(--varnarc-brand)] hover:underline"
+            >
               Folders
             </Link>
-            <Link href="/media/collections" className="text-sm text-[var(--varnarc-brand)] hover:underline">
+            <Link
+              href="/media/collections"
+              className="text-sm text-[var(--varnarc-brand)] hover:underline"
+            >
               Collections
             </Link>
           </div>
         }
       />
 
-      {mediaResult.error ? (
-        <p className="mb-4 text-sm text-red-600">{mediaResult.error}</p>
-      ) : null}
+      {mediaResult.error ? <p className="mb-4 text-sm text-red-600">{mediaResult.error}</p> : null}
 
       <details className="mb-4 rounded-lg border border-[var(--varnarc-border)] bg-[var(--varnarc-surface)] p-3">
-        <summary className="cursor-pointer text-sm font-medium">Register existing CDN asset</summary>
+        <summary className="cursor-pointer text-sm font-medium">
+          Register existing CDN asset
+        </summary>
         <div className="mt-3">
           <MediaRegisterForm />
         </div>

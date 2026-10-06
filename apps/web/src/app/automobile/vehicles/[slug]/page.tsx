@@ -185,6 +185,12 @@ export default async function AutomobileVehicleDetailPage({ params }: Props) {
           ['Overview', '#overview'],
           ['Price', '#price'],
           ['Specifications', '#specifications'],
+          ...(Array.isArray(vehicle.availableColors) && vehicle.availableColors.length
+            ? [['Colors', '#colors']]
+            : []),
+          ...(vehicle.manufacturer?.slug
+            ? [['Manufacturer', `/automobile/manufacturers/${vehicle.manufacturer.slug}`]]
+            : []),
           ['Safety', '#safety'],
           ['EMI', '/automobile/calculators/car-loan'],
           ['On-road price', `/automobile/vehicles/${slug}/on-road-price/bangalore`],
@@ -260,6 +266,28 @@ export default async function AutomobileVehicleDetailPage({ params }: Props) {
           </div>
         ) : null}
       </div>
+
+      {Array.isArray(vehicle.availableColors) && vehicle.availableColors.length ? (
+        <div id="colors">
+          <AutomobileDetailSection title="Available colors">
+            <ul className="flex flex-wrap gap-3">
+              {vehicle.availableColors.map((color) => (
+                <li
+                  key={`${color.name}-${color.hex ?? ''}`}
+                  className="flex items-center gap-2 text-sm"
+                >
+                  <span
+                    className="h-6 w-6 rounded-full border border-slate-200"
+                    style={{ backgroundColor: color.hex || '#e2e8f0' }}
+                    aria-hidden
+                  />
+                  <span className="font-medium text-[#0b1f3a]">{color.name}</span>
+                </li>
+              ))}
+            </ul>
+          </AutomobileDetailSection>
+        </div>
+      ) : null}
 
       {specs.length ? (
         <div id="specifications">

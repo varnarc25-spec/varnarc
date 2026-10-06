@@ -27,6 +27,7 @@ type VehicleDetail = {
   featured?: boolean;
   sponsored?: boolean;
   availableInIndia?: boolean;
+  availableColors?: unknown;
   manufacturerId?: string | null;
   manufacturer?: { id: string; name: string } | null;
   reviewLinks?: Array<{ reviewId: string }>;
@@ -42,7 +43,7 @@ export default async function AutomobileVehicleEditPage({
   const { id } = await params;
   const [vehicleResult, manufacturersResult] = await Promise.all([
     apiServerFetch<VehicleDetail>(`/automobile/vehicles/${id}`),
-    apiServerFetch<ManufacturerRow[]>('/automobile/admin/manufacturers?limit=100'),
+    apiServerFetch<ManufacturerRow[]>('/automobile/admin/manufacturers/options'),
   ]);
   const vehicle = vehicleResult.data;
   const manufacturers = Array.isArray(manufacturersResult.data) ? manufacturersResult.data : [];
@@ -102,6 +103,7 @@ export default async function AutomobileVehicleEditPage({
               featured: vehicle.featured,
               sponsored: vehicle.sponsored,
               availableInIndia: vehicle.availableInIndia,
+              availableColors: vehicle.availableColors,
             }}
           />
           <AutomobileMarketPricing vehicleId={vehicle.id} />

@@ -84,6 +84,14 @@ export class AutomobileService {
     return (v ?? '').trim();
   }
 
+  private normalizeAvailableColors(colors: CreateAutomobileVehicleInput['availableColors']) {
+    if (colors == null) return null;
+    return colors.map((color) => ({
+      name: color.name.trim(),
+      hex: color.hex?.trim() ? color.hex.trim() : null,
+    }));
+  }
+
   private async mediaUrl(mediaId?: string | null) {
     if (!mediaId) return null;
     const asset = await this.db.mediaAsset.findFirst({
@@ -553,6 +561,7 @@ export class AutomobileService {
       specifications: input.specifications as never,
       pros: input.pros as never,
       cons: input.cons as never,
+      availableColors: this.normalizeAvailableColors(input.availableColors) as never,
       imageUrl: this.emptyUrl(input.imageUrl),
       brochureUrl: this.emptyUrl(input.brochureUrl),
       brochureMediaId: input.brochureMediaId,
@@ -649,6 +658,9 @@ export class AutomobileService {
         : {}),
       ...(input.pros !== undefined ? { pros: input.pros as never } : {}),
       ...(input.cons !== undefined ? { cons: input.cons as never } : {}),
+      ...(input.availableColors !== undefined
+        ? { availableColors: this.normalizeAvailableColors(input.availableColors) as never }
+        : {}),
       ...(input.imageUrl !== undefined ? { imageUrl: this.emptyUrl(input.imageUrl) } : {}),
       ...(input.brochureUrl !== undefined ? { brochureUrl: this.emptyUrl(input.brochureUrl) } : {}),
       ...(input.brochureMediaId !== undefined ? { brochureMediaId: input.brochureMediaId } : {}),
@@ -749,6 +761,7 @@ export class AutomobileService {
       specifications: existing.specifications as never,
       pros: existing.pros as never,
       cons: existing.cons as never,
+      availableColors: existing.availableColors as never,
       imageUrl: existing.imageUrl,
       brochureUrl: existing.brochureUrl,
       brochureMediaId: existing.brochureMediaId,

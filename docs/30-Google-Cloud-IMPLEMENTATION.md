@@ -20,6 +20,7 @@ GCP infrastructure is **documentation + automation scripts** integrated with exi
 | Cost optimization                                          | Done — `deploy/gcp/cost-optimization.md`          |
 | Admin ops pages (from 28)                                  | Done — `/system/*`                                |
 | GCS media integration (app code)                           | Pre-existing — `gcs-storage.service.ts`           |
+| Admin bucket browser (list, upload, folders, delete)       | Done — Admin → Cloud storage (`/media/storage`)   |
 
 ## Key paths
 
