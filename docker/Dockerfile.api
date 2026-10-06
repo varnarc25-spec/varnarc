@@ -52,24 +52,105 @@ RUN set -e; \
     DEST_NODE_MODULES="$(dirname "$(dirname "$CLIENT_PKG")")"; \
     cp -r "$SRC_ROOT" "$DEST_NODE_MODULES/"; \
     test -f "$DEST_NODE_MODULES/.prisma/client/index.js" || (echo "ERROR: Prisma client not copied into deploy bundle" && exit 1)
-# pnpm deploy --prod omits the Prisma CLI. Admin Settings → Database migrate needs it.
-RUN set -e; \
-    copy_pkg() { \
-      _name="$1"; \
-      _src="$(find /app/node_modules/.pnpm -path "*/node_modules/${_name}/package.json" | head -n1)"; \
-      if [ -n "$_src" ]; then \
-        mkdir -p "/deploy/node_modules/${_name}"; \
-        cp -a "$(dirname "$_src")/." "/deploy/node_modules/${_name}/"; \
-      fi; \
-    }; \
-    copy_pkg prisma; \
-    copy_pkg @prisma/engines; \
-    copy_pkg @prisma/engines-version; \
-    mkdir -p /deploy/node_modules/.bin; \
-    if [ -f /deploy/node_modules/prisma/build/index.js ]; then \
-      printf '%s\n' '#!/bin/sh' 'exec node "$(dirname "$0")/../prisma/build/index.js" "$@"' > /deploy/node_modules/.bin/prisma; \
-      chmod +x /deploy/node_modules/.bin/prisma; \
-    fi
+# pnpm deploy --prod omits the Prisma CLI. Copy the CLI and its dependency
+# closure as real directories. Copying only prisma/@prisma/engines leaves
+# require('@prisma/debug') unresolved, so migrate deploy exits immediately.
+RUN node <<'EOF'
+const { spawnSync } = require('child_process');
+const fs = require('fs');
+const path = require('path');
+
+const store = '/app/node_modules/.pnpm';
+const destRoot = '/deploy/node_modules';
+const index = new Map();
+
+function remember(name, dir) {
+  let real = dir;
+  try {
+    real = fs.realpathSync(dir);
+  } catch {
+    return;
+  }
+  const score = real.split(`${path.sep}node_modules${path.sep}`).length;
+  const prev = index.get(name);
+  if (!prev || score < prev.score) index.set(name, { dir: real, score });
+}
+
+function walk(dir) {
+  let entries;
+  try {
+    entries = fs.readdirSync(dir, { withFileTypes: true });
+  } catch {
+    return;
+  }
+  for (const ent of entries) {
+    if (ent.name === '.bin') continue;
+    const full = path.join(dir, ent.name);
+    let isDir = ent.isDirectory();
+    if (ent.isSymbolicLink()) {
+      try {
+        isDir = fs.statSync(full).isDirectory();
+      } catch {
+        isDir = false;
+      }
+    }
+    if (!isDir) continue;
+    if (ent.name !== 'node_modules') {
+      walk(full);
+      continue;
+    }
+    for (const child of fs.readdirSync(full, { withFileTypes: true })) {
+      const childPath = path.join(full, child.name);
+      if (child.name.startsWith('@')) {
+        let scopeEntries;
+        try {
+          scopeEntries = fs.readdirSync(childPath, { withFileTypes: true });
+        } catch {
+          continue;
+        }
+        for (const pkg of scopeEntries) {
+          const pkgDir = path.join(childPath, pkg.name);
+          if (fs.existsSync(path.join(pkgDir, 'package.json'))) {
+            remember(`${child.name}/${pkg.name}`, pkgDir);
+          }
+        }
+      } else if (fs.existsSync(path.join(childPath, 'package.json'))) {
+        remember(child.name, childPath);
+      }
+    }
+  }
+}
+
+walk(store);
+
+const copied = new Set();
+function copyPkg(name) {
+  if (copied.has(name)) return;
+  copied.add(name);
+  const hit = index.get(name);
+  if (!hit) throw new Error(`Prisma CLI dependency not found in pnpm store: ${name}`);
+  const dest = path.join(destRoot, name);
+  if (!fs.existsSync(dest)) {
+    fs.mkdirSync(path.dirname(dest), { recursive: true });
+    const result = spawnSync('cp', ['-aL', `${hit.dir}/.`, `${dest}/`], { stdio: 'inherit' });
+    if (result.status !== 0) throw new Error(`Failed to copy ${name}`);
+  }
+  const pkg = JSON.parse(fs.readFileSync(path.join(hit.dir, 'package.json'), 'utf8'));
+  for (const dep of Object.keys(pkg.dependencies || {})) copyPkg(dep);
+}
+
+copyPkg('prisma');
+copyPkg('iconv-lite');
+
+const binDir = path.join(destRoot, '.bin');
+fs.mkdirSync(binDir, { recursive: true });
+fs.writeFileSync(
+  path.join(binDir, 'prisma'),
+  '#!/bin/sh\nexec node "$(dirname "$0")/../prisma/build/index.js" "$@"\n',
+);
+fs.chmodSync(path.join(binDir, 'prisma'), 0o755);
+EOF
+RUN cd /deploy && node -e "require('@prisma/debug'); require('@prisma/engines'); require('@prisma/config')"
 # dist/main.js requires express from the app root. pnpm deploy only links
 # direct dependencies there, so express must stay in apps/api/package.json.
 RUN cd /deploy && node -e "require('express')"
