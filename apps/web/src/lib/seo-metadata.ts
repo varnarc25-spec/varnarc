@@ -19,6 +19,15 @@ export type SeoOverride = {
 const HERO_IMAGE_WIDTH_MIN = 80;
 const HERO_IMAGE_WIDTH_MAX = 800;
 
+/** Alt text saved with a page image. Blank values are ignored. */
+export function readOgImageAlt(metadata: unknown): string | null {
+  if (!metadata || typeof metadata !== 'object' || Array.isArray(metadata)) return null;
+  const value = (metadata as { ogImageAlt?: unknown }).ogImageAlt;
+  if (typeof value !== 'string') return null;
+  const alt = value.trim().slice(0, 300);
+  return alt || null;
+}
+
 /** Pixel width saved on a site page. Values outside 80–800 are ignored. */
 export function readHeroImageWidth(metadata: unknown): number | null {
   if (!metadata || typeof metadata !== 'object' || Array.isArray(metadata)) return null;
@@ -84,6 +93,11 @@ export async function fetchSitePageSeo(path: string): Promise<SeoOverride | null
 export async function fetchSiteHeroImageWidth(path: string): Promise<number | null> {
   const page = await fetchSitePageRecord(path);
   return readHeroImageWidth(page?.metadata);
+}
+
+export async function fetchSiteOgImageAlt(path: string): Promise<string | null> {
+  const page = await fetchSitePageRecord(path);
+  return readOgImageAlt(page?.metadata);
 }
 
 function prefer(primary?: string | null, fallback?: string | null) {

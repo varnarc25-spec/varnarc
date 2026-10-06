@@ -48,6 +48,11 @@ function heroWidthFromMetadata(metadata: Record<string, unknown> | null | undefi
   return typeof value === 'number' && Number.isFinite(value) ? String(Math.round(value)) : '';
 }
 
+function altFromMetadata(metadata: Record<string, unknown> | null | undefined) {
+  const value = metadata?.ogImageAlt;
+  return typeof value === 'string' ? value : '';
+}
+
 function parseHeroImageWidth(value: string): number | null | 'invalid' {
   const trimmed = value.trim();
   if (!trimmed) return null;
@@ -93,6 +98,7 @@ export function PageEditActions({
     seoDescription: seoDescription || '',
     seoKeywords: seoKeywords || '',
     ogImage: ogImage || '',
+    ogImageAlt: altFromMetadata(metadata),
     heroImageWidth: heroWidthFromMetadata(metadata),
     scheduleAt: toLocalInputValue(publishedAt),
   });
@@ -113,19 +119,20 @@ export function PageEditActions({
         `Hero image width must be a whole number from ${HERO_WIDTH_MIN} to ${HERO_WIDTH_MAX}.`,
       );
     }
-    const pageMetadata =
-      sitePath === RESALE_HERO_PATH
-        ? {
-            ...(metadata ?? {}),
-            ...(heroImageWidth == null ? {} : { heroImageWidth }),
-          }
-        : undefined;
-    if (pageMetadata && heroImageWidth == null) delete pageMetadata.heroImageWidth;
+    const pageMetadata: Record<string, unknown> = { ...(metadata ?? {}) };
+    if (sitePath === RESALE_HERO_PATH) {
+      if (heroImageWidth == null) delete pageMetadata.heroImageWidth;
+      else pageMetadata.heroImageWidth = heroImageWidth;
+    }
+    const ogImageAlt = f.ogImageAlt.trim().slice(0, 300);
+    if (ogImageAlt) pageMetadata.ogImageAlt = ogImageAlt;
+    else delete pageMetadata.ogImageAlt;
+    const hadMetadata = Boolean(metadata && Object.keys(metadata).length);
     return {
       pageId,
       title: f.title,
       ...(sitePath ? {} : { slug: f.slug, content: f.content }),
-      ...(pageMetadata ? { metadata: pageMetadata } : {}),
+      ...(hadMetadata || ogImageAlt ? { metadata: pageMetadata } : {}),
       seo: {
         title: f.seoTitle || null,
         description: f.seoDescription || null,
@@ -183,6 +190,7 @@ export function PageEditActions({
     form.seoTitle,
     form.seoDescription,
     form.ogImage,
+    form.ogImageAlt,
     form.heroImageWidth,
     save,
   ]);
@@ -353,8 +361,10 @@ export function PageEditActions({
       <EntityMediaField
         label="Image"
         help="Used as the social share image. On the car resale page it also replaces the hero graphic."
-        value={{ mediaId: null, url: form.ogImage || null, alt: '' }}
-        onChange={(next) => setForm((f) => ({ ...f, ogImage: next.url || '' }))}
+        value={{ mediaId: null, url: form.ogImage || null, alt: form.ogImageAlt }}
+        onChange={(next) =>
+          setForm((f) => ({ ...f, ogImage: next.url || '', ogImageAlt: next.alt }))
+        }
       />
       {sitePath === RESALE_HERO_PATH ? (
         <label className="block max-w-xs text-sm">

@@ -11,7 +11,12 @@ type PageDetail = {
   content: string | null;
   status: string;
   publishedAt: string | null;
-  metadata?: { kind?: string; path?: string; heroImageWidth?: number } | null;
+  metadata?: {
+    kind?: string;
+    path?: string;
+    heroImageWidth?: number;
+    ogImageAlt?: string;
+  } | null;
   seo: {
     title: string | null;
     description: string | null;

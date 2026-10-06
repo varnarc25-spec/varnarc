@@ -6,7 +6,7 @@ import { RelatedCalculators } from '@/components/automobile/resale/related-calcu
 import { ResaleCalculator } from '@/components/automobile/resale/resale-calculator';
 import { RESALE_FAQS, ResaleValueGuide } from '@/components/automobile/resale/resale-guide';
 import { buildAutomobilePageMetadata } from '@/lib/automobile/seo';
-import { fetchSiteHeroImageWidth, fetchSitePageSeo } from '@/lib/seo-metadata';
+import { fetchSiteHeroImageWidth, fetchSiteOgImageAlt, fetchSitePageSeo } from '@/lib/seo-metadata';
 import { brandTitleOnce } from '@/lib/seo-defaults';
 
 const TITLE = 'Car Resale Value Calculator India 2026 | Used Car Value – Varnarc';
@@ -20,9 +20,10 @@ type Props = {
 
 export async function generateMetadata({ searchParams }: Props): Promise<Metadata> {
   const sp = await searchParams;
-  const [meta, siteSeo] = await Promise.all([
+  const [meta, siteSeo, imageAlt] = await Promise.all([
     buildAutomobilePageMetadata('calc-resale-value', { searchParams: sp }),
     fetchSitePageSeo(PATH),
+    fetchSiteOgImageAlt(PATH),
   ]);
   const title = siteSeo?.title?.trim() ? brandTitleOnce(siteSeo.title.trim()) : TITLE;
   const description = siteSeo?.description?.trim() || DESCRIPTION;
@@ -36,7 +37,7 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
       ...meta.openGraph,
       title,
       description,
-      images: image ? [{ url: image }] : meta.openGraph?.images,
+      images: image ? [{ url: image, alt: imageAlt ?? undefined }] : meta.openGraph?.images,
     },
     twitter: {
       ...meta.twitter,
@@ -72,9 +73,10 @@ function HeroMark() {
 export default async function CarResaleValuePage({ searchParams }: Props) {
   const sp = await searchParams;
   void sp;
-  const [siteSeo, heroImageWidth] = await Promise.all([
+  const [siteSeo, heroImageWidth, heroImageAlt] = await Promise.all([
     fetchSitePageSeo(PATH),
     fetchSiteHeroImageWidth(PATH),
+    fetchSiteOgImageAlt(PATH),
   ]);
   const heroImage = siteSeo?.ogImage?.trim() || null;
   return (
@@ -139,7 +141,7 @@ export default async function CarResaleValuePage({ searchParams }: Props) {
                 {heroImage ? (
                   <img
                     src={heroImage}
-                    alt="Car resale value"
+                    alt={heroImageAlt || 'Car resale value'}
                     className={
                       heroImageWidth
                         ? 'h-auto max-w-full rounded-2xl object-contain'
