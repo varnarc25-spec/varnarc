@@ -77,6 +77,7 @@ import {
   AutomobileManufacturerRepository,
   AutomobileVehicleRepository,
   AutomobileMaintenanceRepository,
+  AutomobileColorRepository,
 } from './automobile/automobile.repository';
 import { CarCatalogRepository } from './automobile/car-catalog.repository';
 import { ResaleValuationRepository } from './automobile/resale-valuation.repository';
@@ -268,6 +269,7 @@ export function createRepositories(db: PrismaClient) {
     constructionComparisons: new ConstructionComparisonRepository(db),
     automobileManufacturers: new AutomobileManufacturerRepository(db),
     automobileVehicles: new AutomobileVehicleRepository(db),
+    automobileColors: new AutomobileColorRepository(db),
     automobileMaintenance: new AutomobileMaintenanceRepository(db),
     carCatalog: new CarCatalogRepository(db),
     resaleValuation: new ResaleValuationRepository(db),

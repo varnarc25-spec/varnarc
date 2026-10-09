@@ -41,7 +41,7 @@ Implements [05-Backend.md](./05-Backend.md).
 
 `/analytics`, `/newsletter`, `/notifications`, `/search`, `/finance`, `/construction`, `/automobile`, `/comparison` — each exposes `GET .../status` until domain APIs expand.
 
-Public automobile vehicle lists use `availableInIndia=true`. Admin **Automobile → Vehicles → Mark India catalog** matches the India make/model list and sets `available_in_india`. Vehicle add and edit store available colors in `available_colors`. Manufacturer pages stay at Admin → Automobile → Manufacturers.
+Public automobile vehicle lists use `availableInIndia=true`. Admin **Automobile → Vehicles → Mark India catalog** matches the India make/model list and sets `available_in_india`. Paint colors live in `automobile_colors` and are managed at Admin → Automobile → Colors. A car stores its selection in `automobile_vehicle_colors`; adding a color on the car form inserts it into that catalogue first. Manufacturer pages stay at Admin → Automobile → Manufacturers.
 
 ## Bootstrap
 

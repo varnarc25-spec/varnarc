@@ -134,7 +134,7 @@ export class CrmRepository {
   listLaptops() {
     return this.db.crmLaptop.findMany({
       where: { deletedAt: null },
-      orderBy: { name: 'asc' },
+      orderBy: [{ listedYear: { sort: 'desc', nulls: 'last' } }, { name: 'asc' }],
       include: {
         proposals: {
           where: { proposal: { deletedAt: null, status: { not: 'DECLINED' } } },

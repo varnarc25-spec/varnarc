@@ -25,10 +25,12 @@ import {
   automobileListQuerySchema,
   automobileExistingSlugsSchema,
   automobileRefreshPricesSchema,
+  createAutomobileColorSchema,
   createAutomobileComparisonSchema,
   createAutomobileMaintenanceSchema,
   createAutomobileManufacturerSchema,
   createAutomobileVehicleSchema,
+  updateAutomobileColorSchema,
   updateAutomobileMaintenanceSchema,
   updateAutomobileManufacturerSchema,
   updateAutomobileVehicleSchema,
@@ -38,10 +40,12 @@ import {
   type AutomobileListQuery,
   type AutomobileExistingSlugsInput,
   type AutomobileRefreshPricesInput,
+  type CreateAutomobileColorInput,
   type CreateAutomobileComparisonInput,
   type CreateAutomobileMaintenanceInput,
   type CreateAutomobileManufacturerInput,
   type CreateAutomobileVehicleInput,
+  type UpdateAutomobileColorInput,
   type UpdateAutomobileMaintenanceInput,
   type UpdateAutomobileManufacturerInput,
   type UpdateAutomobileVehicleInput,
@@ -112,6 +116,37 @@ export class AutomobileController {
   @ApiOperation({ summary: 'Manufacturer id/name options for admin filters' })
   async adminManufacturerOptions() {
     return ok(await this.service.listManufacturerFilterOptions());
+  }
+
+  @Get('admin/colors')
+  @RequirePermissions(PERMISSIONS.AUTOMOBILE_VIEW)
+  @ApiOperation({ summary: 'Color catalogue for admin' })
+  async adminColors() {
+    return ok(await this.service.listColors());
+  }
+
+  @Post('colors')
+  @RequirePermissions(PERMISSIONS.AUTOMOBILE_CREATE)
+  @ApiOperation({ summary: 'Add a color to the catalogue' })
+  async createColor(
+    @Body(new ZodValidationPipe(createAutomobileColorSchema)) body: CreateAutomobileColorInput,
+  ) {
+    return ok(await this.service.createColor(body));
+  }
+
+  @Put('colors/:id')
+  @RequirePermissions(PERMISSIONS.AUTOMOBILE_EDIT)
+  async updateColor(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body(new ZodValidationPipe(updateAutomobileColorSchema)) body: UpdateAutomobileColorInput,
+  ) {
+    return ok(await this.service.updateColor(id, body));
+  }
+
+  @Delete('colors/:id')
+  @RequirePermissions(PERMISSIONS.AUTOMOBILE_DELETE)
+  async deleteColor(@Param('id', ParseUUIDPipe) id: string) {
+    return ok(await this.service.deleteColor(id));
   }
 
   @Public()

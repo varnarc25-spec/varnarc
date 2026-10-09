@@ -219,6 +219,10 @@ export class AutomobileVehicleRepository extends BaseRepository {
     maintenanceSchedules: { where: { deletedAt: null }, orderBy: { sortOrder: 'asc' as const } },
     images: { where: { deletedAt: null }, orderBy: { displayOrder: 'asc' as const } },
     prices: { where: { isCurrent: true }, orderBy: { countryCode: 'asc' as const } },
+    vehicleColors: {
+      orderBy: { sortOrder: 'asc' as const },
+      include: { color: true },
+    },
     reviewLinks: {
       where: { review: { deletedAt: null, status: 'PUBLISHED' } },
       include: {
@@ -619,5 +623,104 @@ export class AutomobileMaintenanceRepository extends BaseRepository {
 
   softDelete(id: string, actorId?: string | null) {
     return softDeleteById(this.db.automobileMaintenanceSchedule, id, actorId);
+  }
+}
+
+export function automobileColorNameKey(name: string) {
+  return name.trim().replace(/\s+/g, ' ').toLowerCase();
+}
+
+export class AutomobileColorRepository extends BaseRepository {
+  constructor(db: PrismaClient) {
+    super(db);
+  }
+
+  list() {
+    return this.db.automobileColor.findMany({
+      where: { deletedAt: null },
+      orderBy: { name: 'asc' },
+      include: { _count: { select: { vehicles: true } } },
+    });
+  }
+
+  findById(id: string) {
+    return this.db.automobileColor.findFirst({ where: { id, deletedAt: null } });
+  }
+
+  async upsert(name: string, hex: string | null) {
+    const trimmed = name.trim().replace(/\s+/g, ' ');
+    const nameKey = automobileColorNameKey(trimmed);
+    const existing = await this.db.automobileColor.findUnique({ where: { nameKey } });
+    if (existing) {
+      return this.db.automobileColor.update({
+        where: { id: existing.id },
+        data: {
+          name: trimmed,
+          deletedAt: null,
+          ...(hex ? { hex } : {}),
+        },
+      });
+    }
+    return this.db.automobileColor.create({
+      data: { name: trimmed, nameKey, hex },
+    });
+  }
+
+  async updateColor(id: string, name: string, hex: string | null) {
+    const current = await this.findById(id);
+    if (!current) return null;
+    const trimmed = name.trim().replace(/\s+/g, ' ');
+    const nameKey = automobileColorNameKey(trimmed);
+    if (nameKey !== current.nameKey) {
+      const clash = await this.db.automobileColor.findUnique({ where: { nameKey } });
+      if (clash && clash.id !== id) {
+        if (!clash.deletedAt) return 'conflict' as const;
+        await this.db.automobileColor.delete({ where: { id: clash.id } });
+      }
+    }
+    return this.db.automobileColor.update({
+      where: { id },
+      data: { name: trimmed, nameKey, hex },
+    });
+  }
+
+  async remove(id: string) {
+    const current = await this.db.automobileColor.findFirst({ where: { id, deletedAt: null } });
+    if (!current) return false;
+    await this.db.automobileVehicleColor.deleteMany({ where: { colorId: id } });
+    await this.db.automobileColor.update({
+      where: { id },
+      data: { deletedAt: new Date() },
+    });
+    return true;
+  }
+
+  async replaceForVehicle(vehicleId: string, colorIds: string[]) {
+    const unique = [...new Set(colorIds)];
+    const colors = unique.length
+      ? await this.db.automobileColor.findMany({
+          where: { id: { in: unique }, deletedAt: null },
+        })
+      : [];
+    const ordered = unique
+      .map((id) => colors.find((color) => color.id === id))
+      .filter((color): color is (typeof colors)[number] => Boolean(color));
+    await this.db.automobileVehicleColor.deleteMany({ where: { vehicleId } });
+    if (ordered.length) {
+      await this.db.automobileVehicleColor.createMany({
+        data: ordered.map((color, index) => ({
+          vehicleId,
+          colorId: color.id,
+          sortOrder: index,
+        })),
+      });
+    }
+    await this.db.automobileVehicle.update({
+      where: { id: vehicleId },
+      data: {
+        availableColors: ordered.map((color) => ({ name: color.name, hex: color.hex })),
+      },
+    });
+    return ordered;
   }
 }

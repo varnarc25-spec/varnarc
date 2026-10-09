@@ -287,6 +287,7 @@ export const ADMIN_NAV_GROUPS: AdminNavGroup[] = [
         permission: PERMISSIONS.AUTOMOBILE_VIEW,
       },
       { href: '/automobile/vehicles', label: 'Vehicles', permission: PERMISSIONS.AUTOMOBILE_VIEW },
+      { href: '/automobile/colors', label: 'Colors', permission: PERMISSIONS.AUTOMOBILE_VIEW },
       {
         href: '/automobile/comparisons',
         label: 'Comparisons',

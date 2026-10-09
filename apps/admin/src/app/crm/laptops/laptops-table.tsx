@@ -13,10 +13,12 @@ import {
   type SortingState,
 } from '@tanstack/react-table';
 import {
+  buildLaptopPriceListDocument,
   discountedMonthlyRate,
   formatProposalInr,
   type RentalDiscountTier,
 } from '@varnarc/validation';
+import { drawProposal } from '../proposals/proposal-pdf';
 
 export type LaptopTableRow = {
   id: string;
@@ -47,6 +49,35 @@ export type LaptopTableRow = {
 };
 
 const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
+
+const COLUMN_FILTERS = [
+  ['brand', 'Brand'],
+  ['processor', 'Processor'],
+  ['ram', 'RAM'],
+  ['listedYear', 'Year'],
+  ['category', 'Category'],
+  ['availability', 'Stock'],
+] as const;
+
+type ColumnFilterKey = (typeof COLUMN_FILTERS)[number][0];
+
+const EMPTY_FILTERS: Record<ColumnFilterKey, string> = {
+  brand: '',
+  processor: '',
+  ram: '',
+  listedYear: '',
+  category: '',
+  availability: '',
+};
+
+export type PriceListCompany = {
+  name: string;
+  address: string;
+  phone: string;
+  email: string;
+  gstin: string;
+  logoDataUrl: string | null;
+};
 
 function termPrice(row: LaptopTableRow, percent: number) {
   return discountedMonthlyRate(row.monthlyRate, percent);
@@ -110,13 +141,37 @@ function exportCsv(rows: LaptopTableRow[], discounts: RentalDiscountTier[]) {
 export function LaptopsTable({
   rows,
   discounts,
+  company,
 }: {
   rows: LaptopTableRow[];
   discounts: RentalDiscountTier[];
+  company: PriceListCompany;
 }) {
-  const [sorting, setSorting] = useState<SortingState>([{ id: 'name', desc: false }]);
+  const [sorting, setSorting] = useState<SortingState>([{ id: 'listedYear', desc: true }]);
   const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 10 });
   const [globalFilter, setGlobalFilter] = useState('');
+  const [filters, setFilters] = useState(EMPTY_FILTERS);
+  const [clientName, setClientName] = useState('');
+  const [pdfPending, setPdfPending] = useState(false);
+  const [pdfError, setPdfError] = useState<string | null>(null);
+
+  const filterOptions = useMemo(() => {
+    const options = {} as Record<ColumnFilterKey, string[]>;
+    for (const [key] of COLUMN_FILTERS) {
+      options[key] = [...new Set(rows.map((row) => row[key]).filter(Boolean))].sort((left, right) =>
+        left.localeCompare(right, undefined, { numeric: true }),
+      );
+    }
+    return options;
+  }, [rows]);
+
+  const narrowed = useMemo(
+    () =>
+      rows.filter((row) =>
+        COLUMN_FILTERS.every(([key]) => !filters[key] || row[key] === filters[key]),
+      ),
+    [rows, filters],
+  );
 
   const columns = useMemo<ColumnDef<LaptopTableRow>[]>(
     () => [
@@ -129,8 +184,16 @@ export function LaptopsTable({
           </Link>
         ),
       },
+      {
+        accessorKey: 'listedYear',
+        header: 'Year',
+        sortingFn: (a, b) =>
+          (Number(a.original.listedYear) || 0) - (Number(b.original.listedYear) || 0),
+      },
       { accessorKey: 'category', header: 'Category' },
       { accessorKey: 'processorDetail', header: 'Processor' },
+      { accessorKey: 'ram', header: 'RAM' },
+      { accessorKey: 'storage', header: 'Storage' },
       {
         accessorKey: 'monthlyRate',
         header: '1 month',
@@ -170,7 +233,7 @@ export function LaptopsTable({
   );
 
   const table = useReactTable({
-    data: rows,
+    data: narrowed,
     columns,
     state: { sorting, pagination, globalFilter },
     onSortingChange: setSorting,
@@ -205,6 +268,43 @@ export function LaptopsTable({
     getPaginationRowModel: getPaginationRowModel(),
   });
 
+  async function exportPriceList(selected: LaptopTableRow[]) {
+    setPdfPending(true);
+    setPdfError(null);
+    try {
+      const proposalDate = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
+      const document = buildLaptopPriceListDocument({
+        customerCompanyName: clientName.trim() || 'Client',
+        proposalDate,
+        issuerName: company.name,
+        issuerAddress: company.address || null,
+        issuerPhone: company.phone || null,
+        issuerEmail: company.email || null,
+        issuerGstin: company.gstin || null,
+        discountTiers: discounts,
+        lines: selected.map((row) => ({
+          name: row.name,
+          processor: row.processorDetail || row.processor,
+          ram: row.ram,
+          storage: row.storage,
+          display: row.display,
+          operatingSystem: row.operatingSystem,
+          monthlyRate: row.monthlyRate,
+          depositPerLaptop: row.depositPerLaptop,
+          gstPercent: row.gstPercent,
+        })),
+      });
+      const { jsPDF } = await import('jspdf');
+      const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+      drawProposal(pdf, document, company.logoDataUrl);
+      pdf.save(document.fileName);
+    } catch {
+      setPdfError('Could not create the PDF. Try again.');
+    } finally {
+      setPdfPending(false);
+    }
+  }
+
   if (!rows.length) {
     return (
       <p className="rounded-lg border border-[var(--varnarc-border)] px-4 py-8 text-center text-sm text-[var(--varnarc-subtle)]">
@@ -232,19 +332,71 @@ export function LaptopsTable({
           placeholder="Search laptops…"
           className="h-10 w-full max-w-md rounded-md border border-[var(--varnarc-border)] bg-[var(--varnarc-surface)] px-3 text-sm"
         />
-        <button
-          type="button"
-          className="inline-flex h-10 items-center rounded-md border border-[var(--varnarc-border)] bg-[var(--varnarc-surface)] px-4 text-sm font-medium hover:bg-[var(--varnarc-muted)] disabled:opacity-40"
-          disabled={filteredCount === 0}
-          onClick={() =>
-            exportCsv(
-              filteredRows.map((row) => row.original),
-              discounts,
-            )
-          }
-        >
-          Export CSV
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          <input
+            value={clientName}
+            onChange={(event) => setClientName(event.target.value)}
+            placeholder="Client name"
+            className="h-10 w-44 rounded-md border border-[var(--varnarc-border)] bg-[var(--varnarc-surface)] px-3 text-sm"
+          />
+          <button
+            type="button"
+            className="inline-flex h-10 items-center rounded-md border border-[var(--varnarc-border)] bg-[var(--varnarc-surface)] px-4 text-sm font-medium hover:bg-[var(--varnarc-muted)] disabled:opacity-40"
+            disabled={filteredCount === 0}
+            onClick={() =>
+              exportCsv(
+                filteredRows.map((row) => row.original),
+                discounts,
+              )
+            }
+          >
+            Export CSV
+          </button>
+          <button
+            type="button"
+            className="inline-flex h-10 items-center rounded-md bg-[var(--varnarc-brand)] px-4 text-sm font-medium text-white disabled:opacity-40"
+            disabled={filteredCount === 0 || pdfPending}
+            onClick={() => void exportPriceList(filteredRows.map((row) => row.original))}
+          >
+            {pdfPending ? 'Preparing PDF…' : 'Export PDF'}
+          </button>
+        </div>
+      </div>
+      {pdfError ? <p className="text-sm text-red-600">{pdfError}</p> : null}
+      <div className="flex flex-wrap gap-2">
+        {COLUMN_FILTERS.map(([key, label]) => (
+          <label key={key} className="flex items-center gap-2 text-sm text-[var(--varnarc-subtle)]">
+            {label}
+            <select
+              className="h-9 rounded-md border border-[var(--varnarc-border)] bg-[var(--varnarc-surface)] px-2 text-sm text-[var(--varnarc-ink)]"
+              value={filters[key]}
+              onChange={(event) => {
+                const value = event.target.value;
+                setFilters((current) => ({ ...current, [key]: value }));
+                setPagination((current) => ({ ...current, pageIndex: 0 }));
+              }}
+            >
+              <option value="">All</option>
+              {filterOptions[key].map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
+          </label>
+        ))}
+        {COLUMN_FILTERS.some(([key]) => filters[key]) ? (
+          <button
+            type="button"
+            className="h-9 rounded-md px-2 text-sm underline"
+            onClick={() => {
+              setFilters(EMPTY_FILTERS);
+              setPagination((current) => ({ ...current, pageIndex: 0 }));
+            }}
+          >
+            Clear filters
+          </button>
+        ) : null}
       </div>
 
       <div className="overflow-x-auto rounded-lg border border-[var(--varnarc-border)] bg-[var(--varnarc-surface)]">
@@ -275,7 +427,7 @@ export function LaptopsTable({
             {table.getRowModel().rows.length === 0 ? (
               <tr>
                 <td className="px-4 py-6 text-[var(--varnarc-subtle)]" colSpan={columns.length}>
-                  No laptops match this search.
+                  No laptops match these filters.
                 </td>
               </tr>
             ) : (

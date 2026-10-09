@@ -35,15 +35,29 @@ export const createAutomobileManufacturerSchema = z.object({
 
 export const updateAutomobileManufacturerSchema = createAutomobileManufacturerSchema.partial();
 
+export const automobileColorHexSchema = z
+  .string()
+  .regex(/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/)
+  .optional()
+  .nullable()
+  .or(z.literal(''));
+
 export const automobileAvailableColorSchema = z.object({
   name: z.string().trim().min(1).max(60),
-  hex: z
-    .string()
-    .regex(/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/)
-    .optional()
-    .nullable()
-    .or(z.literal('')),
+  hex: automobileColorHexSchema,
 });
+
+export const createAutomobileColorSchema = z.object({
+  name: z.string().trim().min(1).max(60),
+  hex: automobileColorHexSchema,
+});
+
+export const updateAutomobileColorSchema = createAutomobileColorSchema;
+
+/** Case-insensitive key used to keep one row per color name. */
+export function automobileColorNameKey(name: string) {
+  return name.trim().replace(/\s+/g, ' ').toLowerCase();
+}
 
 export const automobileGalleryImageSchema = z.object({
   imageUrl: z.string().url().max(500).optional().nullable().or(z.literal('')),
@@ -79,6 +93,7 @@ export const createAutomobileVehicleSchema = z.object({
   pros: jsonValueSchema.optional().nullable(),
   cons: jsonValueSchema.optional().nullable(),
   availableColors: z.array(automobileAvailableColorSchema).max(24).optional().nullable(),
+  colorIds: z.array(uuidSchema).max(24).optional(),
   imageUrl: z.string().url().max(500).optional().nullable().or(z.literal('')),
   brochureUrl: z.string().url().max(500).optional().nullable().or(z.literal('')),
   brochureMediaId: uuidSchema.optional().nullable(),
@@ -212,6 +227,8 @@ export const automobileExistingSlugsSchema = z.object({
 
 export type CreateAutomobileManufacturerInput = z.infer<typeof createAutomobileManufacturerSchema>;
 export type UpdateAutomobileManufacturerInput = z.infer<typeof updateAutomobileManufacturerSchema>;
+export type CreateAutomobileColorInput = z.infer<typeof createAutomobileColorSchema>;
+export type UpdateAutomobileColorInput = z.infer<typeof updateAutomobileColorSchema>;
 export type CreateAutomobileVehicleInput = z.infer<typeof createAutomobileVehicleSchema>;
 export type UpdateAutomobileVehicleInput = z.infer<typeof updateAutomobileVehicleSchema>;
 export type CreateAutomobileMaintenanceInput = z.infer<typeof createAutomobileMaintenanceSchema>;

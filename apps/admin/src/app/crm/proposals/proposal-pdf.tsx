@@ -44,7 +44,11 @@ export function ProposalPdfButton({
   );
 }
 
-function drawProposal(pdf: jsPDF, proposal: LaptopRentalDocument, logoDataUrl: string | null) {
+export function drawProposal(
+  pdf: jsPDF,
+  proposal: LaptopRentalDocument,
+  logoDataUrl: string | null,
+) {
   const margin = 14;
   const width = 210 - margin * 2;
   let y = 16;
@@ -153,6 +157,44 @@ function drawProposal(pdf: jsPDF, proposal: LaptopRentalDocument, logoDataUrl: s
     gap(2);
   }
 
+  function wrapTable(headers: string[], body: string[][], weights: number[]) {
+    const lineHeight = 3.2;
+    const drawRow = (cells: string[], header: boolean) => {
+      pdf.setFont('helvetica', header ? 'bold' : 'normal');
+      pdf.setFontSize(7);
+      const wrapped = cells.map((cell, index) => {
+        const column = width * (weights[index] ?? 0);
+        return pdf.splitTextToSize(plain(cell), Math.max(8, column - 2)) as string[];
+      });
+      const lineCount = Math.min(3, Math.max(1, ...wrapped.map((lines) => lines.length)));
+      const rowHeight = lineCount * lineHeight + 2.2;
+      need(rowHeight);
+      if (header) {
+        pdf.setFillColor(15, 23, 42);
+        pdf.rect(margin, y - 3.4, width, rowHeight, 'F');
+        pdf.setTextColor(255, 255, 255);
+      } else {
+        ink();
+      }
+      let x = margin;
+      wrapped.forEach((lines, index) => {
+        const column = width * (weights[index] ?? 0);
+        const shown = lines.slice(0, 3);
+        shown.forEach((line, lineIndex) => {
+          const textX = index === 0 ? x + 1.2 : x + column - 1.2;
+          pdf.text(line, textX, y + lineIndex * lineHeight, {
+            align: index === 0 ? 'left' : 'right',
+          });
+        });
+        x += column;
+      });
+      gap(rowHeight);
+    };
+    drawRow(headers, true);
+    body.forEach((row) => drawRow(row, false));
+    gap(2);
+  }
+
   ink();
   pdf.setFont('helvetica', 'bold');
   pdf.setFontSize(9);
@@ -211,12 +253,22 @@ function drawProposal(pdf: jsPDF, proposal: LaptopRentalDocument, logoDataUrl: s
   }
 
   heading('3. Rental Pricing');
-  table(
-    ['Rental Plan', 'Per Laptop', 'Qty', 'Monthly Rental'],
-    proposal.plans.map((plan) => [plan.name, plan.perLaptop, plan.quantity, plan.monthly]),
-    [0.34, 0.24, 0.14, 0.28],
-    [false, true, true, true],
-  );
+  if (proposal.modelRates && proposal.modelRates.rows.length > 0) {
+    const count = proposal.modelRates.headers.length;
+    const nameWeight = 0.3;
+    const rest = count > 1 ? (1 - nameWeight) / (count - 1) : 1;
+    wrapTable(proposal.modelRates.headers, proposal.modelRates.rows, [
+      nameWeight,
+      ...Array.from({ length: Math.max(0, count - 1) }, () => rest),
+    ]);
+  } else {
+    table(
+      ['Rental Plan', 'Per Laptop', 'Qty', 'Monthly Rental'],
+      proposal.plans.map((plan) => [plan.name, plan.perLaptop, plan.quantity, plan.monthly]),
+      [0.34, 0.24, 0.14, 0.28],
+      [false, true, true, true],
+    );
+  }
   paragraph(`GST: ${proposal.gstNote}`);
   pdf.setFont('helvetica', 'bold');
   pdf.setFontSize(11);
@@ -246,7 +298,8 @@ function drawProposal(pdf: jsPDF, proposal: LaptopRentalDocument, logoDataUrl: s
 
   heading('4. Security Deposit');
   paragraph(
-    `A refundable security deposit of ${proposal.depositRows[0]?.value ?? ''} per laptop is applicable.`,
+    proposal.depositIntro ??
+      `A refundable security deposit of ${proposal.depositRows[0]?.value ?? ''} per laptop is applicable.`,
   );
   table(
     ['Description', 'Amount'],

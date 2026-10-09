@@ -83,17 +83,25 @@ export function ProposalSheet({
       </Section>
 
       <Section number="3" title="Rental Pricing">
-        <Table
-          headers={['Rental Plan', 'Rental Per Laptop', 'Quantity', 'Monthly Rental']}
-          rows={document.plans.map((plan) => [
-            plan.name,
-            plan.perLaptop,
-            plan.quantity,
-            plan.monthly,
-          ])}
-          align={['left', 'right', 'right', 'right']}
-          emphasizeLastColumn
-        />
+        {document.modelRates && document.modelRates.rows.length > 0 ? (
+          <Table
+            headers={document.modelRates.headers}
+            rows={document.modelRates.rows}
+            align={document.modelRates.headers.map((_, index) => (index === 0 ? 'left' : 'right'))}
+          />
+        ) : (
+          <Table
+            headers={['Rental Plan', 'Rental Per Laptop', 'Quantity', 'Monthly Rental']}
+            rows={document.plans.map((plan) => [
+              plan.name,
+              plan.perLaptop,
+              plan.quantity,
+              plan.monthly,
+            ])}
+            align={['left', 'right', 'right', 'right']}
+            emphasizeLastColumn
+          />
+        )}
         <p className="mt-3 text-sm">
           <span className="font-medium">GST:</span> {document.gstNote}
         </p>
@@ -117,11 +125,17 @@ export function ProposalSheet({
 
       <Section number="4" title="Security Deposit">
         <p className="mt-3 text-sm leading-6">
-          A{' '}
-          <strong>
-            refundable security deposit of {document.depositRows[0]?.value} per laptop
-          </strong>{' '}
-          is applicable.
+          {document.depositIntro ? (
+            document.depositIntro
+          ) : (
+            <>
+              A{' '}
+              <strong>
+                refundable security deposit of {document.depositRows[0]?.value} per laptop
+              </strong>{' '}
+              is applicable.
+            </>
+          )}
         </p>
         <Table
           headers={['Description', 'Amount']}

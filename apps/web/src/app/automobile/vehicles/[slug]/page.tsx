@@ -4,14 +4,12 @@ import { PageShell } from '@/components/layout/page-shell';
 import { AutomobileSeo } from '@/components/automobile/automobile-seo';
 import {
   AffiliateCta,
-  AutomobileDetailSection,
   AffiliateLeadCapture,
   RelatedCalculators,
-  VehicleGallery,
   VehicleOfferCards,
   VehicleReviewsBlock,
-  formatAutomobileInr,
 } from '@/components/automobile/vehicle-card';
+import { VehicleDetailExperience } from '@/components/automobile/vehicle-detail-experience';
 import {
   AUTOMOBILE_CALCULATOR_LINKS,
   fetchAutomobileReviews,
@@ -32,6 +30,46 @@ import {
 import { isWeakIndiaAutomobile } from '@/lib/editorial-copy';
 
 type Props = { params: Promise<{ slug: string }> };
+
+function indicativeEmi(amount: number) {
+  const principal = amount * 0.8;
+  const monthlyRate = 0.085 / 12;
+  const months = 60;
+  const factor = (1 + monthlyRate) ** months;
+  return Math.round((principal * monthlyRate * factor) / (factor - 1));
+}
+
+function formatEmi(amount: number | null) {
+  if (amount == null || !Number.isFinite(amount) || amount <= 0) return null;
+  const formatted = formatIndianVehiclePrice(indicativeEmi(amount));
+  return formatted ? `${formatted} / month` : null;
+}
+
+type BrochureSpec = {
+  sourceName?: string;
+  sourceUrl?: string;
+  groups?: Array<{ title: string; rows: Array<{ label: string; value: string }> }>;
+  features?: Array<{ name: string; value: string }>;
+};
+
+function readBrochure(specifications: unknown): BrochureSpec | null {
+  if (!specifications || typeof specifications !== 'object') return null;
+  const brochure = (specifications as { brochure?: unknown }).brochure;
+  if (!brochure || typeof brochure !== 'object') return null;
+  return brochure as BrochureSpec;
+}
+
+function galleryImages(
+  images: Array<{ imageUrl?: string | null; altText?: string | null }> | undefined,
+  fallbackUrl: string | null | undefined,
+  alt: string,
+) {
+  const photos = (images ?? [])
+    .filter((image) => image.imageUrl)
+    .map((image) => ({ src: image.imageUrl as string, alt: image.altText || alt }));
+  if (!photos.length && fallbackUrl) photos.push({ src: fallbackUrl, alt });
+  return photos;
+}
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
@@ -106,6 +144,15 @@ export default async function AutomobileVehicleDetailPage({ params }: Props) {
     { label: 'Year', value: vehicle.modelYear },
     { label: 'Fuel', value: vehicle.fuelType },
     { label: 'Transmission', value: vehicle.transmission },
+    { label: 'Engine', value: vehicle.engineCapacity },
+    {
+      label: 'Power',
+      value: vehicle.horsepower != null ? `${vehicle.horsepower} hp` : null,
+    },
+    {
+      label: 'Torque',
+      value: vehicle.torque != null ? `${vehicle.torque} Nm` : null,
+    },
     { label: 'Mileage', value: formatAutomobileMileage(vehicle.mileage) },
     { label: 'Seating', value: vehicle.seatingCapacity },
     {
@@ -125,7 +172,18 @@ export default async function AutomobileVehicleDetailPage({ params }: Props) {
       : null;
   const ukPrice = vehicle.pricingView?.otherMarkets?.find((price) => price.market === 'GB');
   const shownIndiaPrice = indiaPrice ?? (ukPrice ? null : vehicle.exShowroomPrice);
+  const indiaAmount =
+    shownIndiaPrice != null && (indiaPrice != null || !ukPrice) ? Number(shownIndiaPrice) : null;
   const availability = vehicle.pricingView?.indiaAvailability ?? vehicle.indiaAvailability ?? null;
+  const brochure = readBrochure(vehicle.specifications);
+  const brochureGroups = brochure?.groups ?? [];
+  const safetyGroups = brochureGroups.filter((group) =>
+    /safety|airbag|brake|ncap|adas/i.test(group.title),
+  );
+  const specGroups = brochureGroups.filter((group) => !safetyGroups.includes(group));
+  const features = (brochure?.features ?? []).filter(
+    (feature) => feature.value !== 'No' && feature.name,
+  );
 
   const weakIndia = isWeakIndiaAutomobile({
     slug,
@@ -163,8 +221,6 @@ export default async function AutomobileVehicleDetailPage({ params }: Props) {
         }}
       />
 
-      <VehicleGallery images={vehicle.images} fallbackUrl={vehicle.imageUrl} alt={vehicle.name} />
-
       {weakIndia ? (
         <p className="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
           This listing is from the global catalog and may not be sold widely in India. Specs and
@@ -180,182 +236,101 @@ export default async function AutomobileVehicleDetailPage({ params }: Props) {
         </p>
       ) : null}
 
-      <nav className="mb-6 flex flex-wrap gap-2 text-sm" aria-label="On this page">
-        {[
-          ['Overview', '#overview'],
-          ['Price', '#price'],
-          ['Specifications', '#specifications'],
-          ...(Array.isArray(vehicle.availableColors) && vehicle.availableColors.length
-            ? [['Colors', '#colors']]
+      <VehicleDetailExperience
+        name={vehicle.name}
+        images={galleryImages(vehicle.images, vehicle.imageUrl, vehicle.name)}
+        manufacturer={
+          vehicle.manufacturer
+            ? { name: vehicle.manufacturer.name, slug: vehicle.manufacturer.slug }
+            : null
+        }
+        featured={Boolean(vehicle.featured)}
+        sponsored={Boolean(vehicle.sponsored)}
+        chips={[vehicle.fuelType, vehicle.transmission, vehicle.bodyType, vehicle.modelYear]
+          .filter((value) => value != null && String(value).trim() !== '')
+          .map(String)}
+        priceLabel={
+          indiaAmount != null && Number.isFinite(indiaAmount)
+            ? formatIndianVehiclePrice(indiaAmount)
+            : null
+        }
+        priceNote={
+          indiaAmount != null && Number.isFinite(indiaAmount)
+            ? INDIA_PRICE_DISCLAIMER
+            : availability === 'MODEL_ONLY'
+              ? 'This model is sold in India, but this exact variant is not.'
+              : availability === 'NOT_AVAILABLE'
+                ? 'Not officially available in India'
+                : 'India price not verified'
+        }
+        onRoadLabel={
+          vehicle.estimatedOnRoadPrice != null && indiaPrice != null
+            ? formatIndianVehiclePrice(vehicle.estimatedOnRoadPrice)
+            : null
+        }
+        emiLabel={formatEmi(indiaAmount)}
+        ukLabel={
+          ukPrice?.amount != null
+            ? formatInternationalVehiclePrice(ukPrice.amount, ukPrice.currency)
+            : null
+        }
+        ukNote={ukPrice?.amount != null ? INTERNATIONAL_PRICE_DISCLAIMER : null}
+        highlights={specs.map((row) => ({ label: row.label, value: String(row.value) }))}
+        specGroups={specGroups
+          .map((group) => ({
+            title: group.title,
+            rows: group.rows.filter((row) => row.label && row.value),
+          }))
+          .filter((group) => group.rows.length > 0)}
+        safetyRows={[
+          ...(vehicle.safetyRating != null && Number(vehicle.safetyRating) > 0
+            ? [
+                {
+                  label: 'Crash-test rating',
+                  value: `${vehicle.safetyRating}${vehicle.safetyAgency ? ` · ${vehicle.safetyAgency}` : ''}`,
+                },
+              ]
             : []),
-          ...(vehicle.manufacturer?.slug
-            ? [['Manufacturer', `/automobile/manufacturers/${vehicle.manufacturer.slug}`]]
-            : []),
-          ['Safety', '#safety'],
-          ['EMI', '/automobile/calculators/car-loan'],
-          ['On-road price', `/automobile/vehicles/${slug}/on-road-price/bangalore`],
-        ].map(([label, href]) => (
-          <a key={label} href={href} className="min-h-11 rounded-full border px-3 py-2">
-            {label}
-          </a>
-        ))}
-      </nav>
+          ...safetyGroups.flatMap((group) =>
+            group.rows
+              .filter((row) => row.label && row.value)
+              .map((row) => ({ label: row.label, value: row.value })),
+          ),
+        ]}
+        features={features.map((feature) => ({
+          label: feature.name,
+          value: feature.value === 'Yes' ? 'Yes' : feature.value,
+        }))}
+        colors={(vehicle.availableColors ?? [])
+          .filter((color) => color.name)
+          .map((color) => ({ name: color.name as string, hex: color.hex ?? null }))}
+        cities={AUTOMOBILE_ONROAD_CITIES.map((city) => ({
+          name: city.name,
+          href: `/automobile/vehicles/${slug}/on-road-price/${city.slug}`,
+        }))}
+        brochure={
+          brochure?.sourceUrl
+            ? {
+                name: brochure.sourceName || 'Official brochure',
+                url: brochure.sourceUrl,
+              }
+            : null
+        }
+        compareHref={`/automobile/compare?ids=${vehicle.id}`}
+        emiHref="/automobile/calculators/car-loan"
+        onRoadHref={`/automobile/vehicles/${slug}/on-road-price/bangalore`}
+        maintenanceHref={`/automobile/maintenance?vehicleId=${vehicle.id}`}
+        rating={
+          aggregateRating
+            ? { value: aggregateRating.ratingValue, count: aggregateRating.reviewCount }
+            : null
+        }
+      />
 
-      <div className="mb-6 flex flex-wrap gap-2">
-        {vehicle.featured ? (
-          <span className="rounded-full bg-[#0b1f3a] px-2 py-0.5 text-xs font-semibold uppercase text-white">
-            Featured
-          </span>
-        ) : null}
-        {vehicle.sponsored ? (
-          <span className="rounded-full bg-[#ea580c] px-2 py-0.5 text-xs font-semibold uppercase text-white">
-            Sponsored
-          </span>
-        ) : null}
-        {vehicle.manufacturer ? (
-          <Link
-            href={`/automobile/manufacturers/${vehicle.manufacturer.slug}`}
-            className="text-sm font-medium text-[#ea580c] hover:underline"
-          >
-            {vehicle.manufacturer.name}
-          </Link>
-        ) : null}
+      <div id="reviews" className="scroll-mt-28 lg:scroll-mt-40">
+        <VehicleReviewsBlock reviews={linkedReviews} />
       </div>
-
-      <div className="mb-8 grid gap-4 sm:grid-cols-2" id="price">
-        {shownIndiaPrice != null && (indiaPrice != null || !ukPrice) ? (
-          <div className="rounded-xl border border-slate-200 bg-white p-4">
-            <div className="text-xs uppercase tracking-wide text-slate-500">Ex-showroom</div>
-            <div className="mt-1 text-2xl font-extrabold text-[#0b1f3a]">
-              {formatIndianVehiclePrice(shownIndiaPrice) ?? formatAutomobileInr(shownIndiaPrice)}
-            </div>
-            <p className="mt-3 text-xs leading-5 text-slate-500">{INDIA_PRICE_DISCLAIMER}</p>
-          </div>
-        ) : (
-          <div className="rounded-xl border border-slate-200 bg-white p-4">
-            <div className="text-xs uppercase tracking-wide text-slate-500">India</div>
-            <div className="mt-1 text-lg font-semibold text-[#0b1f3a]">
-              {availability === 'MODEL_ONLY'
-                ? 'This model is sold in India, but this exact variant is not.'
-                : availability === 'NOT_AVAILABLE'
-                  ? 'Not officially available in India'
-                  : 'India price not verified'}
-            </div>
-          </div>
-        )}
-        {ukPrice?.amount != null ? (
-          <div className="rounded-xl border border-slate-200 bg-white p-4">
-            <div className="text-xs uppercase tracking-wide text-slate-500">
-              International pricing
-            </div>
-            <div className="mt-1 text-2xl font-extrabold text-[#0b1f3a]">
-              UK price: {formatInternationalVehiclePrice(ukPrice.amount, ukPrice.currency)}
-            </div>
-            <p className="mt-3 text-xs leading-5 text-slate-500">
-              {INTERNATIONAL_PRICE_DISCLAIMER}
-            </p>
-          </div>
-        ) : null}
-        {vehicle.estimatedOnRoadPrice != null && indiaPrice != null ? (
-          <div className="rounded-xl border border-slate-200 bg-white p-4">
-            <div className="text-xs uppercase tracking-wide text-slate-500">Est. on-road</div>
-            <div className="mt-1 text-2xl font-extrabold text-[#0b1f3a]">
-              {formatIndianVehiclePrice(vehicle.estimatedOnRoadPrice) ??
-                `₹${vehicle.estimatedOnRoadPrice}`}
-            </div>
-          </div>
-        ) : null}
-      </div>
-
-      {Array.isArray(vehicle.availableColors) && vehicle.availableColors.length ? (
-        <div id="colors">
-          <AutomobileDetailSection title="Available colors">
-            <ul className="flex flex-wrap gap-3">
-              {vehicle.availableColors.map((color) => (
-                <li
-                  key={`${color.name}-${color.hex ?? ''}`}
-                  className="flex items-center gap-2 text-sm"
-                >
-                  <span
-                    className="h-6 w-6 rounded-full border border-slate-200"
-                    style={{ backgroundColor: color.hex || '#e2e8f0' }}
-                    aria-hidden
-                  />
-                  <span className="font-medium text-[#0b1f3a]">{color.name}</span>
-                </li>
-              ))}
-            </ul>
-          </AutomobileDetailSection>
-        </div>
-      ) : null}
-
-      {specs.length ? (
-        <div id="specifications">
-          <AutomobileDetailSection title="Specifications">
-            <dl className="grid gap-3 sm:grid-cols-2">
-              {specs.map((row) => (
-                <div
-                  key={row.label}
-                  className="rounded-lg border border-slate-100 bg-slate-50 px-3 py-2"
-                >
-                  <dt className="text-xs uppercase tracking-wide text-slate-500">{row.label}</dt>
-                  <dd className="mt-0.5 font-medium text-[#0b1f3a]">{String(row.value)}</dd>
-                </div>
-              ))}
-            </dl>
-          </AutomobileDetailSection>
-        </div>
-      ) : null}
-
-      {vehicle.description ? (
-        <div id="overview">
-          <AutomobileDetailSection title="Overview">{vehicle.description}</AutomobileDetailSection>
-        </div>
-      ) : null}
-
-      <div id="safety" className="mt-6 text-sm text-slate-600">
-        {vehicle.safetyRating != null && Number(vehicle.safetyRating) > 0 ? (
-          <p>
-            Published safety figure: {String(vehicle.safetyRating)}
-            {vehicle.safetyAgency
-              ? ` (${vehicle.safetyAgency})`
-              : ' — testing agency not stored, not compared across NCAP programmes'}
-            .
-          </p>
-        ) : (
-          <p>No verified crash-test rating is stored for this record.</p>
-        )}
-      </div>
-
-      <VehicleReviewsBlock reviews={linkedReviews} />
       <VehicleOfferCards loans={offers.loans} insurance={offers.insurance} />
-
-      <div className="mt-8 flex flex-wrap gap-3">
-        <Link
-          href={`/automobile/compare?ids=${vehicle.id}`}
-          className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-[#0b1f3a] hover:border-[#ea580c]"
-        >
-          Compare
-        </Link>
-        <Link
-          href="/automobile/calculators/car-loan"
-          className="rounded-lg bg-[#0b1f3a] px-4 py-2 text-sm font-medium text-white"
-        >
-          Calculate EMI
-        </Link>
-        <Link
-          href={`/automobile/vehicles/${slug}/on-road-price/bangalore`}
-          className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-[#0b1f3a] hover:border-[#ea580c]"
-        >
-          Get on-road price
-        </Link>
-        <Link
-          href={`/automobile/maintenance?vehicleId=${vehicle.id}`}
-          className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-[#0b1f3a] hover:border-[#ea580c]"
-        >
-          Maintenance schedule
-        </Link>
-      </div>
 
       <section className="mt-10 text-sm">
         <h2 className="font-extrabold text-[#0b1f3a]">Research next</h2>
@@ -385,16 +360,6 @@ export default async function AutomobileVehicleDetailPage({ params }: Props) {
               Running cost
             </Link>
           </li>
-          {AUTOMOBILE_ONROAD_CITIES.slice(0, 4).map((c) => (
-            <li key={c.slug}>
-              <Link
-                className="text-[#ea580c] underline"
-                href={`/automobile/vehicles/${slug}/on-road-price/${c.slug}`}
-              >
-                {c.name} price
-              </Link>
-            </li>
-          ))}
         </ul>
       </section>
 

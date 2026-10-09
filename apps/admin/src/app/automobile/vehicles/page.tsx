@@ -1,7 +1,7 @@
 import { Badge, Card, CardDescription, CardHeader, CardTitle, PageHeader } from '@varnarc/ui';
 import Link from 'next/link';
 import { AutomobileCsvToolbar, AutomobileListSearch } from '@/components/automobile-admin-toolbar';
-import { AutomobileVehicleForm } from '@/components/automobile-forms';
+import { AutomobileVehicleForm, type CatalogColor } from '@/components/automobile-forms';
 import { AutomobileVehiclesDataTable } from '@/components/automobile-vehicles-data-table';
 import { apiServerFetch } from '@/lib/api';
 
@@ -105,16 +105,20 @@ export default async function AutomobileVehiclesAdminPage({
   if (params.maxPrice && Number.isFinite(maxPrice) && maxPrice >= 0)
     qs.set('maxPrice', String(maxPrice));
 
-  const [vehiclesResult, manufacturersResult] = await Promise.all([
+  const [vehiclesResult, manufacturersResult, colorsResult] = await Promise.all([
     apiServerFetch<VehicleRow[]>(`/automobile/admin/vehicles?${qs.toString()}`, {
       signal: AbortSignal.timeout(20_000),
     }),
     apiServerFetch<ManufacturerRow[]>('/automobile/admin/manufacturers/options', {
       signal: AbortSignal.timeout(20_000),
     }),
+    apiServerFetch<CatalogColor[]>('/automobile/admin/colors', {
+      signal: AbortSignal.timeout(20_000),
+    }),
   ]);
   const rows = Array.isArray(vehiclesResult.data) ? vehiclesResult.data : [];
   const manufacturers = Array.isArray(manufacturersResult.data) ? manufacturersResult.data : [];
+  const colors = Array.isArray(colorsResult.data) ? colorsResult.data : [];
   const total = Number(vehiclesResult.meta?.total ?? rows.length);
   const pageCount = Math.max(1, Math.ceil(total / limit));
   const from = total ? (page - 1) * limit + 1 : 0;
@@ -165,7 +169,7 @@ export default async function AutomobileVehiclesAdminPage({
         showVehicleFilters
       />
       <AutomobileCsvToolbar entity="vehicles" />
-      <AutomobileVehicleForm manufacturers={manufacturers} />
+      <AutomobileVehicleForm manufacturers={manufacturers} colors={colors} />
 
       {vehiclesResult.error ? (
         <Card>

@@ -13,10 +13,12 @@ import type {
   AutomobileAffiliateLeadInput,
   AutomobileCompareQuery,
   AutomobileListQuery,
+  CreateAutomobileColorInput,
   CreateAutomobileComparisonInput,
   CreateAutomobileMaintenanceInput,
   CreateAutomobileManufacturerInput,
   CreateAutomobileVehicleInput,
+  UpdateAutomobileColorInput,
   UpdateAutomobileMaintenanceInput,
   UpdateAutomobileManufacturerInput,
   UpdateAutomobileVehicleInput,
@@ -123,6 +125,19 @@ export class AutomobileService {
       const url = await this.mediaUrl(manufacturer.logoMediaId);
       if (url) manufacturer.logoUrl = url;
     }
+    const links = row.vehicleColors as
+      | Array<{
+          color?: { id: string; name: string; hex?: string | null; deletedAt?: Date | null };
+        }>
+      | undefined;
+    if (links?.length) {
+      const colors = links
+        .map((link) => link.color)
+        .filter((color): color is NonNullable<typeof color> => Boolean(color && !color.deletedAt))
+        .map((color) => ({ id: color.id, name: color.name, hex: color.hex ?? null }));
+      row.colors = colors;
+      row.availableColors = colors.map((color) => ({ name: color.name, hex: color.hex }));
+    }
     return row;
   }
 
@@ -151,7 +166,10 @@ export class AutomobileService {
 
   private async applyVehicleExtras(
     vehicleId: string,
-    input: { galleryImages?: CreateAutomobileVehicleInput['galleryImages']; reviewIds?: string[] },
+    input: Pick<
+      CreateAutomobileVehicleInput,
+      'galleryImages' | 'reviewIds' | 'colorIds' | 'availableColors'
+    >,
   ) {
     if (input.galleryImages) {
       await this.repos.automobileVehicles.replaceGallery(
@@ -167,6 +185,76 @@ export class AutomobileService {
     if (input.reviewIds) {
       await this.repos.automobileVehicles.replaceReviewLinks(vehicleId, input.reviewIds);
     }
+    if (input.colorIds !== undefined || input.availableColors !== undefined) {
+      await this.syncVehicleColors(vehicleId, input);
+    }
+  }
+
+  private normalizeHex(hex?: string | null) {
+    const value = (hex ?? '').trim();
+    if (!value) return null;
+    const match = value.match(/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/);
+    if (!match) return null;
+    const body = match[1];
+    if (!body) return null;
+    return body.length === 3
+      ? `#${body
+          .split('')
+          .map((char) => char + char)
+          .join('')}`.toLowerCase()
+      : `#${body.toLowerCase()}`;
+  }
+
+  private async syncVehicleColors(
+    vehicleId: string,
+    input: {
+      colorIds?: string[];
+      availableColors?: CreateAutomobileVehicleInput['availableColors'];
+    },
+  ) {
+    const ids = [...(input.colorIds ?? [])];
+    for (const color of this.normalizeAvailableColors(input.availableColors) ?? []) {
+      const saved = await this.repos.automobileColors.upsert(
+        color.name,
+        this.normalizeHex(color.hex),
+      );
+      ids.push(saved.id);
+    }
+    await this.repos.automobileColors.replaceForVehicle(vehicleId, ids);
+  }
+
+  listColors() {
+    return this.repos.automobileColors.list();
+  }
+
+  async createColor(input: CreateAutomobileColorInput) {
+    const saved = await this.repos.automobileColors.upsert(
+      input.name,
+      this.normalizeHex(input.hex),
+    );
+    return saved;
+  }
+
+  async updateColor(id: string, input: UpdateAutomobileColorInput) {
+    const saved = await this.repos.automobileColors.updateColor(
+      id,
+      input.name,
+      this.normalizeHex(input.hex),
+    );
+    if (saved === 'conflict') {
+      throw new ConflictException({
+        success: false,
+        error: { code: 'CONFLICT', message: 'A color with this name already exists.' },
+      });
+    }
+    if (!saved) throw this.notFound('Color not found.');
+    return saved;
+  }
+
+  async deleteColor(id: string) {
+    const ok = await this.repos.automobileColors.remove(id);
+    if (!ok) throw this.notFound('Color not found.');
+    return { id, deleted: true };
   }
 
   private async audit(
@@ -776,6 +864,10 @@ export class AutomobileService {
       createdBy: actorId,
       updatedBy: actorId,
     });
+    const colorIds = existing.vehicleColors?.map((link) => link.colorId) ?? [];
+    if (colorIds.length) {
+      await this.repos.automobileColors.replaceForVehicle(row.id, colorIds);
+    }
     if (existing.images?.length) {
       await this.repos.automobileVehicles.replaceGallery(
         row.id,

@@ -17,72 +17,337 @@ function slugify(value: string) {
     .replace(/[^a-z0-9-]/g, '');
 }
 
-type VehicleColor = { name: string; hex: string };
+export type CatalogColor = { id: string; name: string; hex?: string | null };
 
-function parseAvailableColors(value: unknown): VehicleColor[] {
-  if (!Array.isArray(value)) return [];
-  return value.flatMap((item) => {
-    if (typeof item === 'string' && item.trim()) return [{ name: item.trim(), hex: '' }];
-    if (!item || typeof item !== 'object' || !('name' in item)) return [];
-    const name = String((item as { name?: unknown }).name ?? '').trim();
-    const hex = String((item as { hex?: unknown }).hex ?? '').trim();
-    return name ? [{ name, hex }] : [];
-  });
+export type BrochureDetails = {
+  sourceName?: string;
+  sourceUrl?: string;
+  groups?: Array<{ title: string; rows: Array<{ label: string; value: string }> }>;
+  features?: Array<{ name: string; value: string }>;
+};
+
+const EMPTY_SPEC_GROUPS: NonNullable<BrochureDetails['groups']> = [
+  {
+    title: 'Dimensions',
+    rows: [
+      { label: 'Overall length', value: '' },
+      { label: 'Overall width', value: '' },
+      { label: 'Overall height (unladen)', value: '' },
+      { label: 'Wheelbase', value: '' },
+      { label: 'Turning radius', value: '' },
+      { label: 'Seating capacity', value: '' },
+    ],
+  },
+  {
+    title: 'Engine',
+    rows: [
+      { label: 'Engine type', value: '' },
+      { label: 'Fuel type', value: '' },
+      { label: 'Piston displacement', value: '' },
+      { label: 'Maximum power', value: '' },
+      { label: 'Maximum torque', value: '' },
+      { label: 'Emission standard', value: '' },
+      { label: 'Fuel tank capacity', value: '' },
+    ],
+  },
+  { title: 'Transmission', rows: [{ label: 'Transmission type', value: '' }] },
+  {
+    title: 'Suspension',
+    rows: [
+      { label: 'Front', value: '' },
+      { label: 'Rear', value: '' },
+    ],
+  },
+  { title: 'Tyres', rows: [{ label: 'Tyre size', value: '' }] },
+  {
+    title: 'Brakes',
+    rows: [
+      { label: 'Front', value: '' },
+      { label: 'Rear', value: '' },
+    ],
+  },
+  {
+    title: 'Mileage',
+    rows: [
+      { label: 'Claimed mileage', value: '' },
+      { label: 'Test basis', value: '' },
+    ],
+  },
+  { title: 'Warranty', rows: [{ label: 'Warranty', value: '' }] },
+];
+
+function specSheet(brochure?: BrochureDetails | null): BrochureDetails {
+  if (brochure?.groups?.length) {
+    return {
+      sourceName: brochure.sourceName ?? '',
+      sourceUrl: brochure.sourceUrl ?? '',
+      groups: brochure.groups,
+      features: brochure.features ?? [],
+    };
+  }
+  return {
+    sourceName: '',
+    sourceUrl: '',
+    groups: EMPTY_SPEC_GROUPS.map((group) => ({
+      title: group.title,
+      rows: group.rows.map((row) => ({ ...row })),
+    })),
+    features: [],
+  };
 }
 
-function AvailableColorsEditor({
-  colors,
+function filledBrochure(brochure: BrochureDetails): BrochureDetails | null {
+  const groups = (brochure.groups ?? [])
+    .map((group) => ({
+      title: group.title.trim(),
+      rows: group.rows
+        .filter((row) => row.label.trim() && row.value.trim())
+        .map((row) => ({ label: row.label.trim(), value: row.value.trim() })),
+    }))
+    .filter((group) => group.title && group.rows.length);
+  const features = (brochure.features ?? [])
+    .filter((feature) => feature.name.trim())
+    .map((feature) => ({
+      name: feature.name.trim(),
+      value: feature.value.trim() || 'Yes',
+    }));
+  if (!groups.length && !features.length) return null;
+  return {
+    ...(brochure.sourceName?.trim() ? { sourceName: brochure.sourceName.trim() } : {}),
+    ...(brochure.sourceUrl?.trim() ? { sourceUrl: brochure.sourceUrl.trim() } : {}),
+    groups,
+    features,
+  };
+}
+
+function specificationsWithBrochure(existing: unknown, brochure: BrochureDetails) {
+  const base =
+    existing && typeof existing === 'object' && !Array.isArray(existing)
+      ? { ...(existing as Record<string, unknown>) }
+      : {};
+  const filled = filledBrochure(brochure);
+  if (!filled) {
+    delete base.brochure;
+    return Object.keys(base).length ? base : undefined;
+  }
+  return { ...base, brochure: filled };
+}
+
+function BrochureSpecEditor({
+  brochure,
   onChange,
 }: {
-  colors: VehicleColor[];
-  onChange: (colors: VehicleColor[]) => void;
+  brochure: BrochureDetails;
+  onChange: (next: BrochureDetails) => void;
 }) {
+  const groups = brochure.groups ?? [];
+  const features = brochure.features ?? [];
+
+  function updateRow(groupIndex: number, rowIndex: number, value: string) {
+    onChange({
+      ...brochure,
+      groups: groups.map((group, index) =>
+        index === groupIndex
+          ? {
+              ...group,
+              rows: group.rows.map((row, rowAt) => (rowAt === rowIndex ? { ...row, value } : row)),
+            }
+          : group,
+      ),
+    });
+  }
+
+  function updateFeature(featureIndex: number, value: string) {
+    onChange({
+      ...brochure,
+      features: features.map((feature, index) =>
+        index === featureIndex ? { ...feature, value } : feature,
+      ),
+    });
+  }
+
+  return (
+    <div className="space-y-4 rounded-lg border border-[var(--varnarc-border)] p-3 md:col-span-2 lg:col-span-3">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p className="text-xs font-semibold uppercase tracking-wide text-[var(--varnarc-subtle)]">
+          Technical specifications
+        </p>
+        {brochure.sourceUrl ? (
+          <a
+            href={brochure.sourceUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="text-xs text-[var(--varnarc-brand)] hover:underline"
+          >
+            {brochure.sourceName || 'Official brochure'}
+          </a>
+        ) : null}
+      </div>
+      {groups.map((group, groupIndex) => (
+        <div key={`${group.title}-${groupIndex}`}>
+          <p className="mb-2 text-sm font-medium">{group.title}</p>
+          <div className="grid gap-2 sm:grid-cols-2">
+            {group.rows.map((row, rowIndex) => (
+              <label key={`${group.title}-${row.label}-${rowIndex}`} className="block">
+                <span className="mb-1 block text-xs text-[var(--varnarc-muted)]">{row.label}</span>
+                <input
+                  className={inputClass}
+                  value={row.value}
+                  placeholder={row.label}
+                  onChange={(event) => updateRow(groupIndex, rowIndex, event.target.value)}
+                />
+              </label>
+            ))}
+          </div>
+        </div>
+      ))}
+      {features.length ? (
+        <div>
+          <p className="mb-2 text-sm font-medium">Features on this variant</p>
+          <div className="grid max-h-72 gap-2 overflow-y-auto sm:grid-cols-2">
+            {features.map((feature, featureIndex) => (
+              <label key={`${feature.name}-${featureIndex}`} className="block">
+                <span className="mb-1 block text-xs text-[var(--varnarc-muted)]">
+                  {feature.name}
+                </span>
+                <input
+                  className={inputClass}
+                  value={feature.value}
+                  onChange={(event) => updateFeature(featureIndex, event.target.value)}
+                />
+              </label>
+            ))}
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function swatch(hex?: string | null) {
+  return hex && /^#[0-9a-fA-F]{6}$/.test(hex) ? hex : '#d1d5db';
+}
+
+function VehicleColorPicker({
+  catalog,
+  selectedIds,
+  onSelectedChange,
+  onCatalogChange,
+}: {
+  catalog: CatalogColor[];
+  selectedIds: string[];
+  onSelectedChange: (ids: string[]) => void;
+  onCatalogChange: (colors: CatalogColor[]) => void;
+}) {
+  const [name, setName] = useState('');
+  const [hex, setHex] = useState('#d1d5db');
+  const [error, setError] = useState<string | null>(null);
+  const [adding, setAdding] = useState(false);
+
+  async function addColor() {
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    setAdding(true);
+    setError(null);
+    try {
+      const res = await fetch('/api/admin/automobile/colors', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: trimmed, hex }),
+      });
+      const json = (await res.json()) as {
+        data?: CatalogColor;
+        error?: { message?: string };
+      };
+      if (!res.ok || !json.data?.id) {
+        throw new Error(json.error?.message || 'Could not add color');
+      }
+      const saved = json.data;
+      const nextCatalog = catalog.some((color) => color.id === saved.id)
+        ? catalog.map((color) => (color.id === saved.id ? { ...color, ...saved } : color))
+        : [...catalog, saved].sort((a, b) => a.name.localeCompare(b.name));
+      onCatalogChange(nextCatalog);
+      if (!selectedIds.includes(saved.id)) onSelectedChange([...selectedIds, saved.id]);
+      setName('');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not add color');
+    } finally {
+      setAdding(false);
+    }
+  }
+
   return (
     <div className="md:col-span-2 lg:col-span-3">
-      <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-[var(--varnarc-subtle)]">
-        Available colors
-      </p>
-      <div className="space-y-2">
-        {colors.map((color, index) => (
-          <div key={`${index}-${color.name}`} className="flex items-center gap-2">
-            <input
-              type="color"
-              aria-label={`Swatch for ${color.name || 'color'}`}
-              className="h-10 w-12 cursor-pointer rounded-md border border-[var(--varnarc-border)] bg-[var(--varnarc-surface)] p-1"
-              value={/^#[0-9a-fA-F]{6}$/.test(color.hex) ? color.hex : '#d1d5db'}
-              onChange={(event) => {
-                const next = [...colors];
-                next[index] = { ...color, hex: event.target.value };
-                onChange(next);
-              }}
-            />
-            <input
-              className={inputClass}
-              placeholder="Color name, for example Pearl White"
-              value={color.name}
-              onChange={(event) => {
-                const next = [...colors];
-                next[index] = { ...color, name: event.target.value };
-                onChange(next);
-              }}
-            />
-            <button
-              type="button"
-              className="shrink-0 text-sm text-red-600 hover:underline"
-              onClick={() => onChange(colors.filter((_, itemIndex) => itemIndex !== index))}
-            >
-              Remove
-            </button>
-          </div>
-        ))}
+      <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+        <p className="text-xs font-semibold uppercase tracking-wide text-[var(--varnarc-subtle)]">
+          Available colors
+        </p>
+        <Link
+          href="/automobile/colors"
+          className="text-xs text-[var(--varnarc-brand)] hover:underline"
+        >
+          Manage all colors
+        </Link>
+      </div>
+      {catalog.length ? (
+        <div className="mb-3 flex flex-wrap gap-2">
+          {catalog.map((color) => {
+            const selected = selectedIds.includes(color.id);
+            return (
+              <button
+                key={color.id}
+                type="button"
+                aria-pressed={selected}
+                className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm ${
+                  selected
+                    ? 'border-[var(--varnarc-brand)] bg-[var(--varnarc-brand)]/10'
+                    : 'border-[var(--varnarc-border)]'
+                }`}
+                onClick={() =>
+                  onSelectedChange(
+                    selected
+                      ? selectedIds.filter((id) => id !== color.id)
+                      : [...selectedIds, color.id],
+                  )
+                }
+              >
+                <span
+                  className="h-4 w-4 rounded-full border border-slate-200"
+                  style={{ backgroundColor: swatch(color.hex) }}
+                  aria-hidden
+                />
+                {color.name}
+              </button>
+            );
+          })}
+        </div>
+      ) : (
+        <p className="mb-3 text-sm text-[var(--varnarc-muted)]">No colors in the catalogue yet.</p>
+      )}
+      <div className="flex flex-wrap items-center gap-2">
+        <input
+          type="color"
+          aria-label="New color swatch"
+          className="h-10 w-12 cursor-pointer rounded-md border border-[var(--varnarc-border)] bg-[var(--varnarc-surface)] p-1"
+          value={swatch(hex)}
+          onChange={(event) => setHex(event.target.value)}
+        />
+        <input
+          className={`${inputClass} max-w-xs`}
+          placeholder="Add a color, for example Pearl White"
+          value={name}
+          onChange={(event) => setName(event.target.value)}
+        />
         <button
           type="button"
-          className="text-sm text-[var(--varnarc-brand)] hover:underline"
-          onClick={() => onChange([...colors, { name: '', hex: '' }])}
+          className="text-sm text-[var(--varnarc-brand)] hover:underline disabled:opacity-60"
+          disabled={adding || !name.trim()}
+          onClick={() => void addColor()}
         >
-          Add color
+          {adding ? 'Adding…' : 'Add color'}
         </button>
       </div>
+      {error ? <p className="mt-2 text-sm text-red-600">{error}</p> : null}
     </div>
   );
 }
@@ -157,20 +422,27 @@ function FormActions({
   loading,
   disabled,
   onSave,
+  onCancel,
   label = 'Create',
   loadingLabel = 'Saving…',
 }: {
   loading: boolean;
   disabled: boolean;
   onSave: () => void;
+  onCancel?: () => void;
   label?: string;
   loadingLabel?: string;
 }) {
   return (
-    <div className="mt-3">
+    <div className="mt-3 flex gap-2">
       <Button type="button" disabled={loading || disabled} onClick={onSave}>
         {loading ? loadingLabel : label}
       </Button>
+      {onCancel ? (
+        <Button type="button" variant="secondary" disabled={loading} onClick={onCancel}>
+          Cancel
+        </Button>
+      ) : null}
     </div>
   );
 }
@@ -652,8 +924,10 @@ export function AutomobileManufacturerEditForm({
 
 export function AutomobileVehicleForm({
   manufacturers,
+  colors,
 }: {
   manufacturers: Array<{ id: string; name: string }>;
+  colors: CatalogColor[];
 }) {
   const manufacturersSorted = sortManufacturersByName(manufacturers);
   const router = useRouter();
@@ -662,14 +936,24 @@ export function AutomobileVehicleForm({
   const [model, setModel] = useState('');
   const [variant, setVariant] = useState('');
   const [fuelType, setFuelType] = useState('Petrol');
+  const [transmission, setTransmission] = useState('');
+  const [engineCapacity, setEngineCapacity] = useState('');
+  const [horsepower, setHorsepower] = useState('');
+  const [torque, setTorque] = useState('');
+  const [mileage, setMileage] = useState('');
+  const [seatingCapacity, setSeatingCapacity] = useState('');
+  const [warranty, setWarranty] = useState('');
+  const [brochure, setBrochure] = useState<BrochureDetails>(() => specSheet(null));
   const [exShowroomPrice, setExShowroomPrice] = useState('');
   const [estimatedOnRoadPrice, setEstimatedOnRoadPrice] = useState('');
   const [affiliateUrl, setAffiliateUrl] = useState('');
   const [featured, setFeatured] = useState(false);
   const [sponsored, setSponsored] = useState(false);
-  const [availableColors, setAvailableColors] = useState<VehicleColor[]>([]);
+  const [catalog, setCatalog] = useState<CatalogColor[]>(colors);
+  const [colorIds, setColorIds] = useState<string[]>([]);
   const [message, setMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [open, setOpen] = useState(false);
 
   async function save() {
     setLoading(true);
@@ -685,14 +969,20 @@ export function AutomobileVehicleForm({
           model,
           variant: variant || undefined,
           fuelType: fuelType || undefined,
+          transmission: transmission || undefined,
+          engineCapacity: engineCapacity || undefined,
+          horsepower: horsepower ? Number(horsepower) : undefined,
+          torque: torque ? Number(torque) : undefined,
+          mileage: mileage ? Number(mileage) : undefined,
+          seatingCapacity: seatingCapacity ? Number(seatingCapacity) : undefined,
+          warranty: warranty || undefined,
+          specifications: specificationsWithBrochure(undefined, brochure),
           exShowroomPrice: exShowroomPrice ? Number(exShowroomPrice) : undefined,
           estimatedOnRoadPrice: estimatedOnRoadPrice ? Number(estimatedOnRoadPrice) : undefined,
           affiliateUrl: affiliateUrl || undefined,
           featured,
           sponsored,
-          availableColors: availableColors
-            .map((color) => ({ name: color.name.trim(), hex: color.hex || undefined }))
-            .filter((color) => color.name),
+          colorIds,
         }),
       });
       const json = (await res.json()) as { error?: { message?: string } };
@@ -700,12 +990,20 @@ export function AutomobileVehicleForm({
       setName('');
       setModel('');
       setVariant('');
+      setTransmission('');
+      setEngineCapacity('');
+      setHorsepower('');
+      setTorque('');
+      setMileage('');
+      setSeatingCapacity('');
+      setWarranty('');
+      setBrochure(specSheet(null));
       setExShowroomPrice('');
       setEstimatedOnRoadPrice('');
       setAffiliateUrl('');
       setFeatured(false);
       setSponsored(false);
-      setAvailableColors([]);
+      setColorIds([]);
       setMessage('Created');
       router.refresh();
     } catch (err) {
@@ -713,6 +1011,16 @@ export function AutomobileVehicleForm({
     } finally {
       setLoading(false);
     }
+  }
+
+  if (!open) {
+    return (
+      <div className="mb-6">
+        <Button type="button" onClick={() => setOpen(true)}>
+          Add vehicle
+        </Button>
+      </div>
+    );
   }
 
   return (
@@ -749,6 +1057,49 @@ export function AutomobileVehicleForm({
         />
         <input
           className={inputClass}
+          placeholder="Transmission"
+          value={transmission}
+          onChange={(e) => setTransmission(e.target.value)}
+        />
+        <input
+          className={inputClass}
+          placeholder="Engine capacity"
+          value={engineCapacity}
+          onChange={(e) => setEngineCapacity(e.target.value)}
+        />
+        <input
+          className={inputClass}
+          placeholder="Power (hp)"
+          value={horsepower}
+          onChange={(e) => setHorsepower(e.target.value)}
+        />
+        <input
+          className={inputClass}
+          placeholder="Torque (Nm)"
+          value={torque}
+          onChange={(e) => setTorque(e.target.value)}
+        />
+        <input
+          className={inputClass}
+          placeholder="Mileage"
+          value={mileage}
+          onChange={(e) => setMileage(e.target.value)}
+        />
+        <input
+          className={inputClass}
+          placeholder="Seating"
+          value={seatingCapacity}
+          onChange={(e) => setSeatingCapacity(e.target.value)}
+        />
+        <input
+          className={inputClass}
+          placeholder="Warranty"
+          value={warranty}
+          onChange={(e) => setWarranty(e.target.value)}
+        />
+        <BrochureSpecEditor brochure={brochure} onChange={setBrochure} />
+        <input
+          className={inputClass}
           placeholder="India ex-showroom in rupees (not GBP)"
           value={exShowroomPrice}
           onChange={(e) => setExShowroomPrice(e.target.value)}
@@ -781,12 +1132,18 @@ export function AutomobileVehicleForm({
           />
           Sponsored
         </label>
-        <AvailableColorsEditor colors={availableColors} onChange={setAvailableColors} />
+        <VehicleColorPicker
+          catalog={catalog}
+          selectedIds={colorIds}
+          onSelectedChange={setColorIds}
+          onCatalogChange={setCatalog}
+        />
       </div>
       <FormActions
         loading={loading}
         disabled={!name || !model || !manufacturerId}
         onSave={() => void save()}
+        onCancel={() => setOpen(false)}
       />
     </AutomobileFormShell>
   );
@@ -795,10 +1152,12 @@ export function AutomobileVehicleForm({
 export function AutomobileVehicleEditForm({
   id,
   manufacturers,
+  colors,
   initial,
 }: {
   id: string;
   manufacturers: Array<{ id: string; name: string }>;
+  colors: CatalogColor[];
   initial: {
     manufacturerId?: string | null;
     name: string;
@@ -819,7 +1178,16 @@ export function AutomobileVehicleEditForm({
     featured?: boolean;
     sponsored?: boolean;
     availableInIndia?: boolean;
-    availableColors?: unknown;
+    colorIds?: string[];
+    transmission?: string | null;
+    engineCapacity?: string | null;
+    horsepower?: number | string | null;
+    torque?: number | string | null;
+    mileage?: number | string | null;
+    seatingCapacity?: number | string | null;
+    warranty?: string | null;
+    brochure?: BrochureDetails | null;
+    specifications?: unknown;
   };
 }) {
   const manufacturersSorted = sortManufacturersByName(manufacturers);
@@ -829,6 +1197,18 @@ export function AutomobileVehicleEditForm({
   const [model, setModel] = useState(initial.model);
   const [variant, setVariant] = useState(initial.variant ?? '');
   const [fuelType, setFuelType] = useState(initial.fuelType ?? '');
+  const [transmission, setTransmission] = useState(initial.transmission ?? '');
+  const [engineCapacity, setEngineCapacity] = useState(initial.engineCapacity ?? '');
+  const [horsepower, setHorsepower] = useState(
+    initial.horsepower != null ? String(initial.horsepower) : '',
+  );
+  const [torque, setTorque] = useState(initial.torque != null ? String(initial.torque) : '');
+  const [mileage, setMileage] = useState(initial.mileage != null ? String(initial.mileage) : '');
+  const [seatingCapacity, setSeatingCapacity] = useState(
+    initial.seatingCapacity != null ? String(initial.seatingCapacity) : '',
+  );
+  const [warranty, setWarranty] = useState(initial.warranty ?? '');
+  const [brochure, setBrochure] = useState<BrochureDetails>(() => specSheet(initial.brochure));
   const [category, setCategory] = useState(initial.category ?? '');
   const [imageUrl, setImageUrl] = useState(initial.imageUrl ?? '');
   const [imageMediaId, setImageMediaId] = useState<string | null>(initial.imageMediaId ?? null);
@@ -848,9 +1228,8 @@ export function AutomobileVehicleEditForm({
   const [featured, setFeatured] = useState(Boolean(initial.featured));
   const [sponsored, setSponsored] = useState(Boolean(initial.sponsored));
   const [availableInIndia, setAvailableInIndia] = useState(Boolean(initial.availableInIndia));
-  const [availableColors, setAvailableColors] = useState<VehicleColor[]>(
-    parseAvailableColors(initial.availableColors),
-  );
+  const [catalog, setCatalog] = useState<CatalogColor[]>(colors);
+  const [colorIds, setColorIds] = useState<string[]>(initial.colorIds ?? []);
   const [message, setMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -872,6 +1251,14 @@ export function AutomobileVehicleEditForm({
           model,
           variant: variant || '',
           fuelType: fuelType || undefined,
+          transmission: transmission || null,
+          engineCapacity: engineCapacity || null,
+          horsepower: horsepower ? Number(horsepower) : null,
+          torque: torque ? Number(torque) : null,
+          mileage: mileage ? Number(mileage) : null,
+          seatingCapacity: seatingCapacity ? Number(seatingCapacity) : null,
+          warranty: warranty || null,
+          specifications: specificationsWithBrochure(initial.specifications, brochure),
           category: category || undefined,
           imageUrl: imageUrl || '',
           brochureUrl: brochureUrl || '',
@@ -884,9 +1271,7 @@ export function AutomobileVehicleEditForm({
           featured,
           sponsored,
           availableInIndia,
-          availableColors: availableColors
-            .map((color) => ({ name: color.name.trim(), hex: color.hex || undefined }))
-            .filter((color) => color.name),
+          colorIds,
         }),
       });
       const json = (await res.json()) as { error?: { message?: string } };
@@ -931,6 +1316,55 @@ export function AutomobileVehicleEditForm({
           placeholder="Fuel type"
           value={fuelType}
           onChange={(e) => setFuelType(e.target.value)}
+        />
+        <input
+          className={inputClass}
+          placeholder="Transmission"
+          value={transmission}
+          onChange={(e) => setTransmission(e.target.value)}
+        />
+        <input
+          className={inputClass}
+          placeholder="Engine capacity"
+          value={engineCapacity}
+          onChange={(e) => setEngineCapacity(e.target.value)}
+        />
+        <input
+          className={inputClass}
+          placeholder="Power (hp)"
+          value={horsepower}
+          onChange={(e) => setHorsepower(e.target.value)}
+        />
+        <input
+          className={inputClass}
+          placeholder="Torque (Nm)"
+          value={torque}
+          onChange={(e) => setTorque(e.target.value)}
+        />
+        <input
+          className={inputClass}
+          placeholder="Mileage"
+          value={mileage}
+          onChange={(e) => setMileage(e.target.value)}
+        />
+        <input
+          className={inputClass}
+          placeholder="Seating"
+          value={seatingCapacity}
+          onChange={(e) => setSeatingCapacity(e.target.value)}
+        />
+        <input
+          className={inputClass}
+          placeholder="Warranty"
+          value={warranty}
+          onChange={(e) => setWarranty(e.target.value)}
+        />
+        <BrochureSpecEditor brochure={brochure} onChange={setBrochure} />
+        <VehicleColorPicker
+          catalog={catalog}
+          selectedIds={colorIds}
+          onSelectedChange={setColorIds}
+          onCatalogChange={setCatalog}
         />
         <input
           className={inputClass}
@@ -1010,7 +1444,6 @@ export function AutomobileVehicleEditForm({
           />
           Available in India
         </label>
-        <AvailableColorsEditor colors={availableColors} onChange={setAvailableColors} />
         <textarea
           className={`${inputClass} min-h-24 py-2 md:col-span-2 lg:col-span-3`}
           placeholder="Description"

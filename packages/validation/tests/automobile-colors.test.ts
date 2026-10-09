@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { automobileAvailableColorSchema } from '../src/automobile';
+import { automobileAvailableColorSchema, automobileColorNameKey } from '../src/automobile';
 
 describe('available colors', () => {
   it('accepts a named color with a hex swatch', () => {
@@ -12,5 +12,10 @@ describe('available colors', () => {
     expect(automobileAvailableColorSchema.safeParse({ name: '  ', hex: '#fff' }).success).toBe(
       false,
     );
+  });
+
+  it('treats the same color name as one catalogue row', () => {
+    expect(automobileColorNameKey('  Pearl   White ')).toBe('pearl white');
+    expect(automobileColorNameKey('Pearl White')).toBe(automobileColorNameKey('pearl white'));
   });
 });

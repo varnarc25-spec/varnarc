@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  buildLaptopPriceListDocument,
   buildLaptopRentalDocument,
   formatProposalInr,
   laptopRentalDefaults,
@@ -194,6 +195,71 @@ describe('buildLaptopRentalDocument', () => {
       'Security deposit: ₹2,50,000 refundable.',
     );
     expect(document.fileName).toBe('laptop-rental-proposal-LRP-2026-0001-northwind-systems.pdf');
+  });
+});
+
+describe('buildLaptopPriceListDocument', () => {
+  it('lists each model at the catalog rate and keeps the proposal wording', () => {
+    const document = buildLaptopPriceListDocument({
+      customerCompanyName: 'Northwind Systems',
+      proposalDate: '2026-10-08',
+      issuerName: 'Varnarc',
+      issuerAddress: 'Bengaluru',
+      issuerPhone: null,
+      issuerEmail: 'hello@varnarc.com',
+      issuerGstin: '29AAAAA0000A1Z5',
+      lines: [
+        {
+          name: 'Dell Pro 14',
+          processor: 'Intel Core i5',
+          ram: '16GB',
+          storage: '512GB SSD',
+          display: '14-inch',
+          operatingSystem: 'Windows 11 Pro',
+          monthlyRate: 6200,
+          depositPerLaptop: 20000,
+          gstPercent: 18,
+        },
+        {
+          name: 'MSI Creator',
+          processor: 'Intel Core i9',
+          ram: '32GB',
+          storage: '1TB SSD',
+          display: '16-inch',
+          operatingSystem: 'Windows 11 Pro',
+          monthlyRate: 7500,
+          depositPerLaptop: 10000,
+          gstPercent: 18,
+        },
+      ],
+    });
+
+    expect(document.kicker).toBe('LAPTOP RENTAL PROPOSAL');
+    expect(document.preparedFor).toBe('Northwind Systems');
+    expect(document.headline).toBe('Laptop Rental Price List – 2 models');
+    expect(document.services[0]).toBe('Delivery of laptops to the agreed Bengaluru location');
+    expect(document.modelRates?.headers).toEqual([
+      'Laptop',
+      'Monthly',
+      '3 mo',
+      '6 mo',
+      '9 mo',
+      '12 mo',
+      'Deposit',
+    ]);
+    expect(document.modelRates?.rows[0]).toEqual([
+      'Dell Pro 14',
+      '₹6,200',
+      '₹5,890',
+      '₹5,580',
+      '₹5,270',
+      '₹4,960',
+      '₹20,000',
+    ]);
+    expect(document.depositIntro).toBe(
+      'A refundable security deposit applies to each model and is shown in the price list.',
+    );
+    expect(document.footer.gstin).toBe('29AAAAA0000A1Z5');
   });
 });
 

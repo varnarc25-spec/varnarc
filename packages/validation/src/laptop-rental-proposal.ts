@@ -307,6 +307,8 @@ export type LaptopRentalDocument = {
   plans: Array<{ name: string; perLaptop: string; quantity: string; monthly: string }>;
   recommended: Array<{ label: string; amount: string | null }>;
   depositRows: Array<{ label: string; value: string; emphasis?: boolean }>;
+  depositIntro?: string;
+  modelRates?: { headers: string[]; rows: string[][] };
   depositNote: string;
   services: string[];
   support: string[];
@@ -676,6 +678,151 @@ export function laptopRentalDefaults(proposalDate: string) {
     laptopIds: [] as string[],
     laptopLines: [] as Array<{ laptopId: string; quantity: number }>,
     discountPercent: 0,
+  };
+}
+
+export type LaptopPriceListLine = {
+  name: string;
+  processor: string;
+  ram: string;
+  storage: string;
+  display: string;
+  operatingSystem: string;
+  monthlyRate: number | null;
+  depositPerLaptop: number;
+  gstPercent: number;
+};
+
+export function buildLaptopPriceListDocument(input: {
+  customerCompanyName: string;
+  proposalDate: string;
+  issuerName: string;
+  issuerAddress: string | null;
+  issuerPhone: string | null;
+  issuerEmail: string | null;
+  issuerGstin: string | null;
+  lines: LaptopPriceListLine[];
+  discountTiers?: RentalDiscountTier[];
+}): LaptopRentalDocument {
+  const copy = laptopRentalDefaults(input.proposalDate);
+  const tiers = [
+    ...(input.discountTiers?.length ? input.discountTiers : DEFAULT_RENTAL_DISCOUNTS),
+  ].sort((left, right) => left.months - right.months);
+  const count = input.lines.length;
+  const models = count === 1 ? 'model' : 'models';
+  const client = input.customerCompanyName.trim() || 'Client';
+  const deposits = input.lines.map((line) => line.depositPerLaptop);
+  const sameDeposit = deposits.length > 0 && deposits.every((amount) => amount === deposits[0]);
+  const gstValues = [...new Set(input.lines.map((line) => line.gstPercent))];
+  const gstNote =
+    gstValues.length === 1
+      ? `GST at ${formatGstPercent(gstValues[0] ?? copy.gstPercent)}% is extra on every monthly rate.`
+      : copy.gstNote;
+  const contact = [input.issuerPhone, input.issuerEmail].filter(Boolean).join(' | ');
+  const headers = ['Laptop', 'Monthly', ...tiers.map((tier) => `${tier.months} mo`), 'Deposit'];
+  const rows = input.lines.map((line) => [
+    line.name,
+    line.monthlyRate == null ? '' : formatProposalInr(line.monthlyRate),
+    ...tiers.map((tier) => {
+      const price = discountedMonthlyRate(line.monthlyRate, tier.percent);
+      return price == null ? '' : formatProposalInr(price);
+    }),
+    formatProposalInr(line.depositPerLaptop),
+  ]);
+  const depositIntro = sameDeposit
+    ? `A refundable security deposit of ${formatProposalInr(deposits[0] ?? 0)} per laptop is applicable.`
+    : 'A refundable security deposit applies to each model and is shown in the price list.';
+
+  return {
+    fileName: `laptop-rental-price-list-${fileSlug(client)}-${input.proposalDate}.pdf`,
+    proposalNumber: `PL-${input.proposalDate.replaceAll('-', '')}`,
+    statusLabel: 'Price list',
+    kicker: 'LAPTOP RENTAL PROPOSAL',
+    headline: `Laptop Rental Price List – ${count} ${models}`,
+    preparedFor: client,
+    preparedBy: input.issuerName,
+    dateLabel: formatProposalDate(input.proposalDate),
+    intro: [
+      `We are pleased to submit this proposal for providing business laptops on a rental basis to ${client}.`,
+      `This price list covers ${count} ${models}. Each monthly rate is for one laptop, before GST. The longer terms already include the saved term discounts.`,
+      ...proposalBlocks(copy.proposalSummary),
+    ],
+    specifications: input.lines.map((line) => ({
+      label: line.name,
+      value: [line.processor, line.ram, line.storage, line.display, line.operatingSystem]
+        .filter(Boolean)
+        .join(', '),
+    })),
+    gstNote,
+    plans: [],
+    modelRates: { headers, rows },
+    recommended: [
+      { label: 'Each rate is the monthly rental for one laptop, before GST.', amount: null },
+      {
+        label: 'The 3-month, 6-month, 9-month, and 12-month prices include the term discount.',
+        amount: null,
+      },
+      { label: gstNote, amount: null },
+    ],
+    depositRows: sameDeposit
+      ? [
+          { label: 'Models in this list', value: String(count) },
+          {
+            label: 'Security deposit per laptop',
+            value: formatProposalInr(deposits[0] ?? 0),
+            emphasis: true,
+          },
+        ]
+      : [
+          { label: 'Models in this list', value: String(count) },
+          { label: 'Security deposit', value: 'Listed per model', emphasis: true },
+        ],
+    depositIntro,
+    depositNote: copy.depositNote,
+    services: copy.services,
+    support: proposalBlocks(copy.supportText),
+    responsibilitiesIntro: 'The customer shall:',
+    responsibilities: copy.responsibilities,
+    paymentTerms: [
+      [
+        {
+          text: 'Rental charges will be billed monthly at the rate for the chosen model and term.',
+        },
+      ],
+      [{ text: 'GST will be charged as applicable.' }],
+      [
+        { text: 'Security deposit: ' },
+        { text: 'refundable, as listed for each model', strong: true },
+        { text: '.' },
+      ],
+      [{ text: `Payment due date: ${copy.paymentDueText}` }],
+      [{ text: 'Rental period: the term selected from this price list.' }],
+    ],
+    returnIntro: copy.returnIntro,
+    returnInspectLabel: 'The equipment will be inspected for:',
+    returnChecks: copy.returnChecks,
+    wearNote: copy.wearNote,
+    acceptance: proposalBlocks(copy.acceptanceText),
+    signatures: {
+      customerHeading: 'For Customer',
+      customerName: '',
+      customerDesignation: '',
+      issuerHeading: `For ${input.issuerName || 'Issuer'}`,
+      issuerName: '',
+      issuerDesignation: '',
+    },
+    footer: {
+      name: input.issuerName,
+      addressLines: input.issuerAddress
+        ? input.issuerAddress
+            .split('\n')
+            .map((line) => line.trim())
+            .filter(Boolean)
+        : [],
+      contact,
+      gstin: input.issuerGstin ?? '',
+    },
+    assignedLaptops: [],
   };
 }
 

@@ -88,6 +88,14 @@ export type AutomobileVehicle = {
   seoTitle?: string | null;
   seoDescription?: string | null;
   availableColors?: Array<{ name?: string; hex?: string | null }> | null;
+  specifications?: {
+    brochure?: {
+      sourceName?: string;
+      sourceUrl?: string;
+      groups?: Array<{ title: string; rows: Array<{ label: string; value: string }> }>;
+      features?: Array<{ name: string; value: string }>;
+    };
+  } | null;
   manufacturer?: { id: string; name: string; slug: string; logoUrl?: string | null } | null;
   manufacturerId?: string | null;
   images?: Array<{
