@@ -693,8 +693,13 @@ export type LaptopPriceListLine = {
   gstPercent: number;
 };
 
+function priceListSpecification(line: LaptopPriceListLine) {
+  return [line.processor, line.ram, line.storage, line.display, line.operatingSystem]
+    .filter(Boolean)
+    .join(', ');
+}
+
 export function buildLaptopPriceListDocument(input: {
-  customerCompanyName: string;
   proposalDate: string;
   issuerName: string;
   issuerAddress: string | null;
@@ -710,7 +715,7 @@ export function buildLaptopPriceListDocument(input: {
   ].sort((left, right) => left.months - right.months);
   const count = input.lines.length;
   const models = count === 1 ? 'model' : 'models';
-  const client = input.customerCompanyName.trim() || 'Client';
+  const client = 'Client';
   const deposits = input.lines.map((line) => line.depositPerLaptop);
   const sameDeposit = deposits.length > 0 && deposits.every((amount) => amount === deposits[0]);
   const gstValues = [...new Set(input.lines.map((line) => line.gstPercent))];
@@ -719,9 +724,20 @@ export function buildLaptopPriceListDocument(input: {
       ? `GST at ${formatGstPercent(gstValues[0] ?? copy.gstPercent)}% is extra on every monthly rate.`
       : copy.gstNote;
   const contact = [input.issuerPhone, input.issuerEmail].filter(Boolean).join(' | ');
-  const headers = ['Laptop', 'Monthly', ...tiers.map((tier) => `${tier.months} mo`), 'Deposit'];
+  const headers = [
+    'Laptop',
+    'Specification',
+    '1 month',
+    ...tiers.map((tier) =>
+      tier.percent > 0
+        ? `${tier.months} mo\n-${formatGstPercent(tier.percent)}%`
+        : `${tier.months} mo`,
+    ),
+    'Deposit',
+  ];
   const rows = input.lines.map((line) => [
     line.name,
+    priceListSpecification(line),
     line.monthlyRate == null ? '' : formatProposalInr(line.monthlyRate),
     ...tiers.map((tier) => {
       const price = discountedMonthlyRate(line.monthlyRate, tier.percent);
@@ -749,9 +765,7 @@ export function buildLaptopPriceListDocument(input: {
     ],
     specifications: input.lines.map((line) => ({
       label: line.name,
-      value: [line.processor, line.ram, line.storage, line.display, line.operatingSystem]
-        .filter(Boolean)
-        .join(', '),
+      value: priceListSpecification(line),
     })),
     gstNote,
     plans: [],

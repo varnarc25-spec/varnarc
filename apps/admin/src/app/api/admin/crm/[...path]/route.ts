@@ -24,6 +24,10 @@ export async function PUT(request: Request, { params }: Params) {
   return forward(request, params, 'PUT');
 }
 
+export async function PATCH(request: Request, { params }: Params) {
+  return forward(request, params, 'PATCH');
+}
+
 export async function DELETE(_request: Request, { params }: Params) {
   return forward(_request, params, 'DELETE');
 }

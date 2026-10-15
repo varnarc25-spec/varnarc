@@ -5,6 +5,7 @@ import {
   Get,
   Param,
   ParseUUIDPipe,
+  Patch,
   Post,
   Put,
   Query,
@@ -15,6 +16,7 @@ import {
   crmActivitySchema,
   crmCompanySchema,
   crmContactSchema,
+  crmLaptopPricingSchema,
   crmLaptopSchema,
   crmRentalDiscountsSchema,
   LAPTOP_RENTAL_STATUSES,
@@ -26,6 +28,7 @@ import {
   type CrmCompanyInput,
   type CrmContactInput,
   type CrmLaptopInput,
+  type CrmLaptopPricingInput,
   type CrmRentalDiscountsInput,
   type LaptopRentalStatusInput,
   type UpdateLaptopRentalProposalInput,
@@ -138,6 +141,15 @@ export class CrmController {
   @RequirePermissions(PERMISSIONS.CRM_VIEW)
   async laptop(@Param('id', ParseUUIDPipe) id: string) {
     return ok(await this.crm.getLaptop(id));
+  }
+
+  @Patch('laptops/:id/pricing')
+  @RequirePermissions(PERMISSIONS.CRM_EDIT)
+  async updateLaptopPricing(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body(new ZodValidationPipe(crmLaptopPricingSchema)) body: CrmLaptopPricingInput,
+  ) {
+    return ok(await this.crm.updateLaptopPricing(id, body));
   }
 
   @Put('laptops/:id')

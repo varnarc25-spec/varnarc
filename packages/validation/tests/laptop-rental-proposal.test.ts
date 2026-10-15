@@ -199,9 +199,8 @@ describe('buildLaptopRentalDocument', () => {
 });
 
 describe('buildLaptopPriceListDocument', () => {
-  it('lists each model at the catalog rate and keeps the proposal wording', () => {
+  it('builds the client price list in the proposal section order', () => {
     const document = buildLaptopPriceListDocument({
-      customerCompanyName: 'Northwind Systems',
       proposalDate: '2026-10-08',
       issuerName: 'Varnarc',
       issuerAddress: 'Bengaluru',
@@ -235,20 +234,24 @@ describe('buildLaptopPriceListDocument', () => {
     });
 
     expect(document.kicker).toBe('LAPTOP RENTAL PROPOSAL');
-    expect(document.preparedFor).toBe('Northwind Systems');
+    expect(document.preparedFor).toBe('Client');
     expect(document.headline).toBe('Laptop Rental Price List – 2 models');
+    expect(document.fileName).toBe('laptop-rental-price-list-client-2026-10-08.pdf');
     expect(document.services[0]).toBe('Delivery of laptops to the agreed Bengaluru location');
+    expect(document.intro[0]).toContain('Client');
     expect(document.modelRates?.headers).toEqual([
       'Laptop',
-      'Monthly',
-      '3 mo',
-      '6 mo',
-      '9 mo',
-      '12 mo',
+      'Specification',
+      '1 month',
+      '3 mo\n-5%',
+      '6 mo\n-10%',
+      '9 mo\n-15%',
+      '12 mo\n-20%',
       'Deposit',
     ]);
     expect(document.modelRates?.rows[0]).toEqual([
       'Dell Pro 14',
+      'Intel Core i5, 16GB, 512GB SSD, 14-inch, Windows 11 Pro',
       '₹6,200',
       '₹5,890',
       '₹5,580',

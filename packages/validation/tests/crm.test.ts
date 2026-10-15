@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { crmCompanySchema, crmLaptopSchema } from '../src/crm';
+import { crmCompanySchema, crmLaptopPricingSchema, crmLaptopSchema } from '../src/crm';
 
 describe('crm companies', () => {
   it('accepts a company with a GSTIN and blank optional fields', () => {
@@ -43,9 +43,21 @@ describe('crm laptops', () => {
       availability: 'IN_STOCK',
     });
     expect(parsed.slug).toBeNull();
+    expect(parsed.buyingPrice).toBeNull();
     expect(parsed.monthlyRate).toBe(3500);
     expect(parsed.commitmentRate).toBe(2489);
     expect(parsed.ram).toBeNull();
     expect(parsed.camera).toBe(false);
+  });
+
+  it('accepts a price update with a blank buying price', () => {
+    const parsed = crmLaptopPricingSchema.parse({
+      buyingPrice: '',
+      monthlyRate: 6200,
+      depositPerLaptop: 5000,
+    });
+    expect(parsed.buyingPrice).toBeNull();
+    expect(parsed.monthlyRate).toBe(6200);
+    expect(parsed.depositPerLaptop).toBe(5000);
   });
 });

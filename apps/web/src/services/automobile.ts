@@ -187,6 +187,7 @@ type ListOptions = {
   search?: string;
   manufacturerId?: string;
   manufacturerSlug?: string;
+  model?: string;
   category?: string;
   fuelType?: string;
   featured?: boolean;
@@ -244,6 +245,7 @@ function buildQs(options?: ListOptions) {
   if (options?.featured) qs.set('featured', 'true');
   if (options?.manufacturerId) qs.set('manufacturerId', options.manufacturerId);
   if (options?.manufacturerSlug) qs.set('manufacturerSlug', options.manufacturerSlug);
+  if (options?.model) qs.set('model', options.model);
   if (options?.category) qs.set('category', options.category);
   if (options?.fuelType) qs.set('fuelType', options.fuelType);
   if (options?.bodyType) qs.set('bodyType', options.bodyType);

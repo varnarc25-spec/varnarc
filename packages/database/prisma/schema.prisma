@@ -6198,6 +6198,7 @@ model CrmLaptop {
   useCase          String?               @map("use_case")
   condition        String?
   notes            String?
+  buyingPrice      Decimal?              @map("buying_price") @db.Decimal(12, 2)
   monthlyRate      Decimal?              @map("monthly_rate") @db.Decimal(12, 2)
   commitmentMonths Int                   @default(12) @map("commitment_months")
   commitmentRate   Decimal               @default(0) @map("commitment_rate") @db.Decimal(12, 2)

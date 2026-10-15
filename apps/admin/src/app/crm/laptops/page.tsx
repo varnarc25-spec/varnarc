@@ -6,10 +6,10 @@ import {
   type CrmLaptopView,
   type RentalDiscountTier,
 } from '@varnarc/validation';
-import { HrPanel } from '@/components/hr-table';
 import { apiServerFetch } from '@/lib/api';
-import { LaptopForm, type LaptopValues } from './laptop-form';
-import { LaptopsTable, type LaptopTableRow } from './laptops-table';
+import { LaptopsCatalog } from './laptops-catalog';
+import type { LaptopValues } from './laptop-form';
+import type { LaptopTableRow } from './laptops-table';
 
 const blank: LaptopValues = {
   name: '',
@@ -34,6 +34,7 @@ const blank: LaptopValues = {
   notes: '',
   assetTag: '',
   serialNumber: '',
+  buyingPrice: null,
   monthlyRate: null,
   commitmentMonths: 12,
   commitmentRate: 0,
@@ -92,6 +93,7 @@ function toTableRow(row: CrmLaptopView): LaptopTableRow {
     graphics: row.graphics ?? '',
     operatingSystem: row.operatingSystem,
     camera: row.camera ? 'Yes' : 'No',
+    buyingPrice: row.buyingPrice,
     monthlyRate: row.monthlyRate,
     commitmentMonths: row.commitmentMonths,
     commitmentRate: row.commitmentRate,
@@ -127,15 +129,13 @@ export default async function CrmLaptopsPage() {
     <div>
       <PageHeader
         title="Laptops"
-        description="Add each laptop model here, with its specification and rental price. A proposal chooses from this list."
+        description="The rental catalog. Add a laptop from the button, or change buying price, rent, and deposit with Inline edit."
       />
       {result.error ? <p className="mb-4 text-sm text-red-600">{result.error}</p> : null}
-      <HrPanel>
-        <LaptopForm initial={blank} submitLabel="Add laptop" discounts={tiers} />
-      </HrPanel>
-      <LaptopsTable
+      <LaptopsCatalog
         rows={rows.map(toTableRow)}
         discounts={tiers}
+        blank={blank}
         company={{
           name: profile.legalName?.trim() ?? '',
           address,

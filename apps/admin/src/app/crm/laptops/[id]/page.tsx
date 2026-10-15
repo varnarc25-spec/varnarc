@@ -57,6 +57,7 @@ export default async function CrmLaptopPage({ params }: Params) {
               notes: laptop.notes ?? '',
               assetTag: laptop.assetTag ?? '',
               serialNumber: laptop.serialNumber ?? '',
+              buyingPrice: laptop.buyingPrice,
               monthlyRate: laptop.monthlyRate,
               commitmentMonths: laptop.commitmentMonths,
               commitmentRate: laptop.commitmentRate,

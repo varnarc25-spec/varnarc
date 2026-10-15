@@ -11,9 +11,20 @@ export type VehicleDetailGroup = {
   rows: VehicleDetailFact[];
 };
 
+export type VehicleDetailVariant = {
+  name: string;
+  href: string;
+  transmission: string | null;
+  group: string | null;
+  fuel: string | null;
+  priceLabel: string | null;
+  current: boolean;
+};
+
 export type VehicleDetailExperienceProps = {
   name: string;
   images: Array<{ src: string; alt: string }>;
+  variants?: VehicleDetailVariant[];
   manufacturer: { name: string; slug: string } | null;
   featured: boolean;
   sponsored: boolean;
@@ -43,6 +54,37 @@ type Tab = (typeof TABS)[number];
 
 export function VehicleDetailExperience(props: VehicleDetailExperienceProps) {
   const [imageIndex, setImageIndex] = useState(0);
+  const [transmissionFilter, setTransmissionFilter] = useState<string>('All');
+  const [fuelFilter, setFuelFilter] = useState<string>('All');
+  const variants = props.variants ?? [];
+  const groupOrder = [
+    'Manual',
+    'Automatic',
+    'Automatic (CVT)',
+    'Automatic (DCT)',
+    'Automatic (AMT)',
+    'Automatic (TC)',
+    'Manual / Automatic',
+  ];
+  const transmissionGroups = Array.from(
+    new Set(
+      variants.map((variant) => variant.group).filter((group): group is string => Boolean(group)),
+    ),
+  ).sort((left, right) => {
+    const leftIndex = groupOrder.indexOf(left);
+    const rightIndex = groupOrder.indexOf(right);
+    return (leftIndex === -1 ? 99 : leftIndex) - (rightIndex === -1 ? 99 : rightIndex);
+  });
+  const fuelGroups = Array.from(
+    new Set(
+      variants.map((variant) => variant.fuel).filter((fuel): fuel is string => Boolean(fuel)),
+    ),
+  );
+  const visibleVariants = variants.filter(
+    (variant) =>
+      (fuelFilter === 'All' || variant.fuel === fuelFilter) &&
+      (transmissionFilter === 'All' || variant.group === transmissionFilter),
+  );
   const availableTabs = TABS.filter((tab) => tabHasContent(tab, props));
   const [tab, setTab] = useState<Tab>(availableTabs[0] ?? 'Highlights');
   const active = availableTabs.includes(tab) ? tab : availableTabs[0];
@@ -206,6 +248,7 @@ export function VehicleDetailExperience(props: VehicleDetailExperienceProps) {
       >
         {[
           ['Price', '#price'],
+          ...(variants.length > 1 ? [['Variants', '#variants']] : []),
           ...(availableTabs.length ? [['Specifications', '#specifications']] : []),
           ...(props.colors.length ? [['Colours', '#colors']] : []),
           ...(props.cities.length ? [['Cities', '#cities']] : []),
@@ -220,6 +263,88 @@ export function VehicleDetailExperience(props: VehicleDetailExperienceProps) {
           </a>
         ))}
       </nav>
+
+      {variants.length > 1 ? (
+        <section id="variants" className="mt-8 scroll-mt-28 lg:scroll-mt-40">
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <h2 className="text-lg font-extrabold text-[#0b1f3a]">Variants</h2>
+            <p className="text-sm text-slate-600">
+              Stored India ex-showroom prices for this model.
+            </p>
+          </div>
+          {fuelGroups.length > 1 || transmissionGroups.length > 1 ? (
+            <div
+              className="mt-4 flex flex-wrap gap-2"
+              role="group"
+              aria-label="Filter by fuel and transmission"
+            >
+              <FilterChip
+                label="All"
+                pressed={fuelFilter === 'All' && transmissionFilter === 'All'}
+                onClick={() => {
+                  setFuelFilter('All');
+                  setTransmissionFilter('All');
+                }}
+              />
+              {fuelGroups.length > 1
+                ? fuelGroups.map((fuel) => (
+                    <FilterChip
+                      key={fuel}
+                      label={fuel}
+                      pressed={fuelFilter === fuel}
+                      onClick={() => setFuelFilter(fuelFilter === fuel ? 'All' : fuel)}
+                    />
+                  ))
+                : null}
+              {transmissionGroups.length > 1
+                ? transmissionGroups.map((group) => (
+                    <FilterChip
+                      key={group}
+                      label={group}
+                      pressed={transmissionFilter === group}
+                      onClick={() =>
+                        setTransmissionFilter(transmissionFilter === group ? 'All' : group)
+                      }
+                    />
+                  ))
+                : null}
+            </div>
+          ) : null}
+          <div className="mt-4 overflow-hidden rounded-xl border border-slate-200">
+            <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-3 border-b border-slate-200 bg-slate-50 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+              <span>Variant</span>
+              <span>Ex-showroom</span>
+            </div>
+            <ul>
+              {visibleVariants.map((variant) => (
+                <li key={variant.href} className={variant.current ? 'bg-orange-50' : 'bg-white'}>
+                  <Link
+                    href={variant.href}
+                    className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b border-slate-100 px-4 py-3 last:border-b-0"
+                    aria-current={variant.current ? 'page' : undefined}
+                  >
+                    <span>
+                      <span className="block text-sm font-semibold text-[#0b1f3a]">
+                        {variant.name}
+                      </span>
+                      <span className="mt-0.5 block text-xs text-slate-500">
+                        {variant.transmission || 'Transmission not stored'}
+                        {variant.current ? ' · This variant' : ''}
+                      </span>
+                    </span>
+                    <span className="text-sm font-semibold text-[#0b1f3a]">
+                      {variant.priceLabel ?? 'Price not verified'}
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+            {visibleVariants.length === 0 ? (
+              <p className="px-4 py-3 text-sm text-slate-600">No variants for this transmission.</p>
+            ) : null}
+          </div>
+        </section>
+      ) : null}
 
       {availableTabs.length ? (
         <section id="specifications" className="mt-8 scroll-mt-28 lg:scroll-mt-40">
@@ -329,6 +454,31 @@ export function VehicleDetailExperience(props: VehicleDetailExperienceProps) {
         </section>
       ) : null}
     </div>
+  );
+}
+
+function FilterChip({
+  label,
+  pressed,
+  onClick,
+}: {
+  label: string;
+  pressed: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      aria-pressed={pressed}
+      onClick={onClick}
+      className={`rounded-lg border px-3 py-1.5 text-sm font-semibold ${
+        pressed
+          ? 'border-[#0b1f3a] bg-[#0b1f3a] text-white'
+          : 'border-slate-200 bg-white text-[#0b1f3a] hover:border-[#ea580c]'
+      }`}
+    >
+      {label}
+    </button>
   );
 }
 

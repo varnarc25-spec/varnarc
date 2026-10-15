@@ -15,7 +15,10 @@ import {
   fetchAutomobileReviews,
   fetchAutomobileVehicleBySlug,
   fetchAutomobileVehicleOffers,
+  fetchAutomobileVehiclePage,
+  type AutomobileVehicle,
 } from '@/services/automobile';
+import { variantFuelGroup, variantTransmissionGroup } from '@/lib/automobile/variant-transmission';
 import { automobileHubBreadcrumbs, buildAutomobileMetadata } from '@/lib/automobile/seo';
 import { ApiError } from '@/services/api-client';
 import { notFound } from 'next/navigation';
@@ -57,6 +60,45 @@ function readBrochure(specifications: unknown): BrochureSpec | null {
   const brochure = (specifications as { brochure?: unknown }).brochure;
   if (!brochure || typeof brochure !== 'object') return null;
   return brochure as BrochureSpec;
+}
+
+async function modelVariants(vehicle: AutomobileVehicle, slug: string) {
+  const manufacturerSlug = vehicle.manufacturer?.slug;
+  const model = vehicle.model?.trim();
+  if (!manufacturerSlug || !model) return [];
+  const collected: AutomobileVehicle[] = [];
+  let page = 1;
+  let total = 0;
+  do {
+    const result = await fetchAutomobileVehiclePage({
+      manufacturerSlug,
+      model,
+      limit: 100,
+      page,
+      sort: 'price_asc',
+    });
+    collected.push(...result.items);
+    total = result.total;
+    page += 1;
+  } while (collected.length < total && page <= 3);
+
+  return collected
+    .map((item) => {
+      const amount = item.exShowroomPrice == null ? null : Number(item.exShowroomPrice);
+      const price = amount != null && Number.isFinite(amount) && amount > 0 ? amount : null;
+      return {
+        name: item.variant?.trim() || item.name,
+        href: `/automobile/vehicles/${item.slug}`,
+        transmission: item.transmission?.trim() || null,
+        group: variantTransmissionGroup(item.transmission),
+        fuel: variantFuelGroup(item.fuelType),
+        priceLabel: formatIndianVehiclePrice(price),
+        current: item.slug === slug,
+        sortPrice: price ?? Number.POSITIVE_INFINITY,
+      };
+    })
+    .sort((left, right) => left.sortPrice - right.sortPrice || left.name.localeCompare(right.name))
+    .map(({ sortPrice: _sortPrice, ...variant }) => variant);
 }
 
 function galleryImages(
@@ -112,9 +154,10 @@ export default async function AutomobileVehicleDetailPage({ params }: Props) {
     notFound();
   }
 
-  const [{ data: offers }, { data: reviews }] = await Promise.all([
+  const [{ data: offers }, { data: reviews }, variants] = await Promise.all([
     fetchAutomobileVehicleOffers(vehicle.id),
     fetchAutomobileReviews(vehicle.id),
+    modelVariants(vehicle, slug),
   ]);
 
   const linkedReviews =
@@ -325,6 +368,7 @@ export default async function AutomobileVehicleDetailPage({ params }: Props) {
             ? { value: aggregateRating.ratingValue, count: aggregateRating.reviewCount }
             : null
         }
+        variants={variants}
       />
 
       <div id="reviews" className="scroll-mt-28 lg:scroll-mt-40">

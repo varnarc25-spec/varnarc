@@ -136,6 +136,7 @@ export const crmLaptopSchema = z.object({
   notes: optionalText(2000),
   assetTag: optionalText(40),
   serialNumber: optionalText(80),
+  buyingPrice: optionalMoney,
   monthlyRate: optionalMoney,
   commitmentMonths: z.coerce.number().int().min(1).max(60),
   commitmentRate: z.coerce.number().min(0).max(10_000_000),
@@ -147,6 +148,14 @@ export const crmLaptopSchema = z.object({
 });
 
 export type CrmLaptopInput = z.infer<typeof crmLaptopSchema>;
+
+export const crmLaptopPricingSchema = z.object({
+  buyingPrice: optionalMoney,
+  monthlyRate: optionalMoney,
+  depositPerLaptop: z.coerce.number().min(0).max(10_000_000),
+});
+
+export type CrmLaptopPricingInput = z.infer<typeof crmLaptopPricingSchema>;
 
 export const crmRentalDiscountsSchema = z
   .object({
@@ -201,6 +210,7 @@ export type CrmLaptopView = {
   useCase: string | null;
   condition: string | null;
   notes: string | null;
+  buyingPrice: number | null;
   monthlyRate: number | null;
   commitmentMonths: number;
   commitmentRate: number;

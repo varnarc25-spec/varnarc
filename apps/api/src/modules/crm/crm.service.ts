@@ -8,6 +8,7 @@ import type {
   CrmContactView,
   CrmDashboard,
   CrmLaptopInput,
+  CrmLaptopPricingInput,
   CrmLaptopView,
   CrmRentalDiscountsInput,
   CrmRentalSummary,
@@ -181,6 +182,18 @@ export class CrmService {
     }
   }
 
+  async updateLaptopPricing(id: string, input: CrmLaptopPricingInput) {
+    const existing = await this.repos.crm.getLaptop(id);
+    if (!existing) throw new NotFoundException('Laptop not found');
+    const row = await this.repos.crm.updateLaptop(id, {
+      buyingPrice: input.buyingPrice,
+      monthlyRate: input.monthlyRate,
+      depositPerLaptop: input.depositPerLaptop,
+      commitmentRate: input.monthlyRate ?? 0,
+    });
+    return presentLaptop({ ...row, proposals: existing.proposals });
+  }
+
   async updateLaptop(id: string, input: CrmLaptopInput) {
     const existing = await this.repos.crm.getLaptop(id);
     if (!existing) throw new NotFoundException('Laptop not found');
@@ -241,6 +254,7 @@ function presentLaptop(row: {
   useCase: string | null;
   condition: string | null;
   notes: string | null;
+  buyingPrice: { toString(): string } | number | string | null;
   monthlyRate: { toString(): string } | number | string | null;
   commitmentMonths: number;
   commitmentRate: { toString(): string } | number | string;
@@ -277,6 +291,7 @@ function presentLaptop(row: {
     useCase: row.useCase,
     condition: row.condition,
     notes: row.notes,
+    buyingPrice: row.buyingPrice == null ? null : Number(row.buyingPrice),
     monthlyRate: row.monthlyRate == null ? null : Number(row.monthlyRate),
     commitmentMonths: row.commitmentMonths,
     commitmentRate: Number(row.commitmentRate),
