@@ -301,6 +301,41 @@ export const SITE_PAGE_CATALOG = [
     slug: 'site-construction-prices',
   },
   {
+    path: '/construction/prices/aggregate',
+    title: 'Construction / Prices / Aggregate',
+    slug: 'site-construction-prices-aggregate',
+  },
+  {
+    path: '/construction/prices/brick',
+    title: 'Construction / Prices / Brick',
+    slug: 'site-construction-prices-brick',
+  },
+  {
+    path: '/construction/prices/cement',
+    title: 'Construction / Prices / Cement',
+    slug: 'site-construction-prices-cement',
+  },
+  {
+    path: '/construction/prices/paint',
+    title: 'Construction / Prices / Paint',
+    slug: 'site-construction-prices-paint',
+  },
+  {
+    path: '/construction/prices/sand',
+    title: 'Construction / Prices / Sand',
+    slug: 'site-construction-prices-sand',
+  },
+  {
+    path: '/construction/prices/steel',
+    title: 'Construction / Prices / Steel',
+    slug: 'site-construction-prices-steel',
+  },
+  {
+    path: '/construction/prices/tiles',
+    title: 'Construction / Prices / Tiles',
+    slug: 'site-construction-prices-tiles',
+  },
+  {
     path: '/construction/professionals',
     title: 'Construction / Professionals',
     slug: 'site-construction-professionals',

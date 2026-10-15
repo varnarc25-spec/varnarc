@@ -62,7 +62,21 @@ function walk(dir, pages) {
 
 const paths = [];
 walk(appDir, paths);
-const unique = [...new Set(paths)].sort((a, b) => a.localeCompare(b));
+// National price pages are served by construction/prices/[material]/page.tsx.
+for (const key of ['cement', 'steel', 'sand', 'aggregate', 'brick', 'tiles', 'paint']) {
+  paths.push(`/construction/prices/${key}`);
+}
+// Account and document-library routes are app screens, not CMS site pages.
+const SKIP_PATHS = new Set([
+  '/account/documents',
+  '/documents',
+  '/documents/latest',
+  '/documents/popular',
+  '/documents/search',
+]);
+const unique = [...new Set(paths)]
+  .filter((path) => !SKIP_PATHS.has(path))
+  .sort((a, b) => a.localeCompare(b));
 const slugPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const entries = unique.map((path) => {
   const slug = sitePageSlugFromPath(path);

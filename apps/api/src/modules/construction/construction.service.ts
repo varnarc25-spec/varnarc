@@ -1641,17 +1641,20 @@ export class ConstructionService {
 
     const materialSlugAliases = materialKey
       ? PRICE_HUB_MATERIALS.filter((m) => m.key === materialKey).flatMap((m) => {
+          if (m.key === 'cement') return ['cement', 'opc-53-cement', 'opc-cement', 'ppc-cement'];
           if (m.key === 'brick') return ['brick', 'bricks', 'aac-blocks', 'aac'];
           if (m.key === 'tiles') return ['tiles', 'tile'];
           if (m.key === 'steel') return ['steel', 'tmt', 'tmt-steel'];
           return [m.key];
         })
       : PRICE_HUB_MATERIALS.flatMap((m) =>
-          m.key === 'brick'
-            ? ['brick', 'bricks', 'aac-blocks']
-            : m.key === 'tiles'
-              ? ['tiles', 'tile']
-              : [m.key],
+          m.key === 'cement'
+            ? ['cement', 'opc-53-cement', 'opc-cement', 'ppc-cement']
+            : m.key === 'brick'
+              ? ['brick', 'bricks', 'aac-blocks']
+              : m.key === 'tiles'
+                ? ['tiles', 'tile']
+                : [m.key],
         );
 
     const rows = await this.repos.constructionMaterialPrices.listFiltered({
@@ -1867,6 +1870,7 @@ export class ConstructionService {
   }
 
   private priceHubMaterialSlugs(materialKey: string): string[] {
+    if (materialKey === 'cement') return ['cement', 'opc-53-cement', 'opc-cement', 'ppc-cement'];
     if (materialKey === 'brick') return ['brick', 'bricks', 'aac-blocks', 'aac'];
     if (materialKey === 'tiles') return ['tiles', 'tile'];
     if (materialKey === 'steel') return ['steel', 'tmt', 'tmt-steel'];

@@ -20,6 +20,7 @@ import {
   listIndexableConstructionGlossaryTerms,
   listIndexableIntentCalcLandings,
   PRICE_HUB_CITIES,
+  PRICE_HUB_MATERIALS,
   type AutomobileSitemapSegment,
   type ConstructionSitemapSegment,
   type PriceFreshness,
@@ -826,6 +827,16 @@ export class SeoSitemapRepository extends BaseRepository {
           lastmod: r.updatedAt,
         });
       }
+    }
+
+    for (const material of PRICE_HUB_MATERIALS) {
+      entries.push({
+        loc: `${base}/construction/prices/${material.key}`,
+        lastmod:
+          material.key === 'cement'
+            ? new Date('2026-10-16T00:00:00.000Z')
+            : CONSTRUCTION_SITEMAP_STATIC_LASTMOD,
+      });
     }
 
     return entries;

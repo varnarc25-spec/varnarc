@@ -15,6 +15,7 @@ import {
   listIndexableConstructionGlossaryTerms,
   listIndexableIntentCalcLandings,
   listPotentialConstructionCostCities,
+  PRICE_HUB_MATERIALS,
 } from '@varnarc/validation';
 
 const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000/api/v1';
@@ -86,6 +87,7 @@ const STATIC_FALLBACK_URLS: Record<string, string[]> = {
     '/calculators/retirement',
     '/calculators/fuel',
   ],
+  documents: ['/documents', '/documents/popular', '/documents/latest'],
   'construction-core': [...CONSTRUCTION_SITEMAP_CORE_PATHS],
   'construction-calculators': [
     ...listConstructionSitemapStaticPaths('construction-calculators'),
@@ -106,6 +108,7 @@ const STATIC_FALLBACK_URLS: Record<string, string[]> = {
   ),
   'construction-prices': [
     '/construction/prices',
+    ...PRICE_HUB_MATERIALS.map((material) => `/construction/prices/${material.key}`),
     '/construction/construction-cost',
     '/construction/cost-index',
     ...listPotentialConstructionCostCities().map((c) => c.path),

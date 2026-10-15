@@ -70,6 +70,18 @@ export function PricesHubClient({
     <div className="space-y-6">
       <p className="max-w-3xl text-sm leading-relaxed text-slate-600">{PRICE_HUB_QUALIFICATION}</p>
 
+      <nav aria-label="Material price pages" className="flex flex-wrap gap-2">
+        {initial.materials.map((item) => (
+          <Link
+            key={item.key}
+            href={`/construction/prices/${item.key}`}
+            className={cx.secondaryBtn}
+          >
+            {item.label} prices
+          </Link>
+        ))}
+      </nav>
+
       <div className={cn(cx.card, 'grid gap-3 p-4 sm:grid-cols-2 sm:p-5')}>
         <label className="text-sm">
           <span className={cx.label}>Location</span>
