@@ -86,6 +86,7 @@ export const SITEMAP_TYPES = [
   'finance',
   'construction',
   'automobile',
+  'documents',
   'images',
 ] as const;
 
@@ -110,6 +111,8 @@ export const SEO_REQUIRED_DISALLOW_PATHS = [
   '/membership',
   '/activity',
   '/reading-history',
+  '/account',
+  '/documents/search',
   '/api/',
   '/newsletter/unsubscribe',
   '/admin',

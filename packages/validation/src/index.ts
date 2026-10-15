@@ -122,6 +122,7 @@ export * from './ai-tools';
 export * from './search';
 export * from './analytics';
 export * from './seo';
+export * from './documents';
 export * from './notifications';
 export * from './newsletter';
 export * from './users';

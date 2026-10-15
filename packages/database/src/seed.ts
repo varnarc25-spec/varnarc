@@ -11,6 +11,7 @@ import { seedNewsletter } from './seed-newsletter';
 import { seedPremiumPlans } from './seed-premium';
 import { seedConstructionIntelligence } from './seed-construction-intelligence';
 import { seedExpandedComparisons } from './seed-comparisons-expanded';
+import { seedDocuments } from './seed-documents';
 
 const prisma = new PrismaClient();
 
@@ -85,6 +86,12 @@ async function main() {
     [PERMISSIONS.CRM_CREATE]: { name: 'Create CRM records', module: 'crm' },
     [PERMISSIONS.CRM_EDIT]: { name: 'Edit CRM records', module: 'crm' },
     [PERMISSIONS.CRM_DELETE]: { name: 'Delete CRM records', module: 'crm' },
+    [PERMISSIONS.DOCUMENT_VIEW]: { name: 'View documents', module: 'documents' },
+    [PERMISSIONS.DOCUMENT_CREATE]: { name: 'Create documents', module: 'documents' },
+    [PERMISSIONS.DOCUMENT_EDIT]: { name: 'Edit documents', module: 'documents' },
+    [PERMISSIONS.DOCUMENT_PUBLISH]: { name: 'Publish documents', module: 'documents' },
+    [PERMISSIONS.DOCUMENT_DELETE]: { name: 'Delete documents', module: 'documents' },
+    [PERMISSIONS.DOCUMENT_REVIEW]: { name: 'Review documents', module: 'documents' },
     [PERMISSIONS.USER_DELETE]: { name: 'Delete users', module: 'users' },
     [PERMISSIONS.ROLE_VIEW]: { name: 'View roles', module: 'roles' },
     [PERMISSIONS.ROLE_MANAGE]: { name: 'Manage roles', module: 'roles' },
@@ -505,6 +512,7 @@ async function main() {
   }
 
   await seedCalculatorCatalog(prisma);
+  await seedDocuments(prisma);
 
   await seedLoanCategories(prisma);
   await seedAiOps(prisma);
@@ -2538,6 +2546,7 @@ async function main() {
     { label: 'Automobile', href: '/automobile' },
     { label: 'Solar', href: '/solar' },
     { label: 'Calculators', href: '/calculators' },
+    { label: 'Documents', href: '/documents' },
     { label: 'AI Tools', href: '/ai-tools' },
     { label: 'Compare', href: '/compare' },
     { label: 'Reviews', href: '/reviews' },
@@ -2562,7 +2571,7 @@ async function main() {
   await seedPremiumPlans(prisma);
   await seedNewsletter(prisma);
 
-  console.log(
+  console.warn(
     'Seeded Auth0 RBAC, themes, ads, calculators, finance, construction, automobile, reviews, comparisons, articles, directory, AI tools, search, menus, homepage, and newsletter',
   );
 }

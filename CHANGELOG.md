@@ -4,6 +4,7 @@
 
 ### Added
 
+- Documents, forms, and templates: public catalog, live generators, PDF and Word download, and admin template management.
 - Admin laptop rental proposals for clients, with calculated GST and deposit totals and a downloadable PDF.
 - Laptop rental operations: agreement, tagged laptops, deposit, monthly invoices, support cases, and damage or loss charges.
 - CRM module for companies, contacts, activity, proposals, and rentals. Laptop proposals moved out of Human Resources.

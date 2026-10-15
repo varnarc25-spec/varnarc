@@ -42,6 +42,15 @@ export const ADMIN_NAV_GROUPS: AdminNavGroup[] = [
     ],
   },
   {
+    id: 'documents',
+    label: 'Documents',
+    items: [
+      { href: '/documents', label: 'Dashboard', permission: PERMISSIONS.DOCUMENT_VIEW },
+      { href: '/documents/templates', label: 'Templates', permission: PERMISSIONS.DOCUMENT_VIEW },
+      { href: '/documents/categories', label: 'Categories', permission: PERMISSIONS.DOCUMENT_VIEW },
+    ],
+  },
+  {
     id: 'users',
     label: 'Users & access',
     items: [

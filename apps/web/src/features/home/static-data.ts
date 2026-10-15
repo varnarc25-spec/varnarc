@@ -16,6 +16,7 @@ export const quickTools = [
     icon: 'percent',
   },
   { name: 'GST Calculator', href: '/calculators/gst', color: '#f5a623', icon: 'receipt' },
+  { name: 'Document templates', href: '/documents', color: '#0b1f3a', icon: 'book' },
   {
     name: 'Construction Cost Calculator',
     href: '/calculators/construction-cost',

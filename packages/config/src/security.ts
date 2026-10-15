@@ -7,6 +7,7 @@ export const SECURITY_RATE_LIMITS = {
   newsletter: 10,
   contact: 10,
   ai: 20,
+  documents: 20,
 } as const;
 
 /** Secret env keys checked at startup / security overview (values never exposed). */

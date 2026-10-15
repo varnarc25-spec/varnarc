@@ -449,6 +449,9 @@ model User {
   aiToolBookmarks   AiToolBookmark[]
   aiToolViews       AiToolRecentlyViewed[]
   aiCategoryFollows AiCategoryFollow[]
+  generatedDocuments GeneratedDocument[]
+  documentDownloads DocumentDownload[]
+  reviewedDocumentTemplates DocumentTemplate[] @relation("DocumentReviewer")
 
   @@index([status])
   @@index([createdAt])
@@ -6241,4 +6244,208 @@ model LaptopRentalProposalLaptop {
   @@id([proposalId, laptopId])
   @@index([laptopId])
   @@map("laptop_rental_proposal_laptops")
+}
+
+enum DocumentTemplateStatus {
+  DRAFT
+  REVIEW_REQUIRED
+  PUBLISHED
+  ARCHIVED
+  @@map("document_template_status")
+}
+
+enum DocumentTemplateKind {
+  LETTER
+  CERTIFICATE
+  AGREEMENT
+  INVOICE
+  RECEIPT
+  CHECKLIST
+  GUIDANCE
+  APPLICATION
+  @@map("document_template_kind")
+}
+
+enum GeneratedDocumentStatus {
+  DRAFT
+  COMPLETED
+  EXPIRED
+  DELETED
+  @@map("generated_document_status")
+}
+
+enum DocumentFileFormat {
+  PDF
+  DOCX
+  HTML
+  @@map("document_file_format")
+}
+
+model DocumentCategory {
+  id             String    @id @default(uuid()) @db.Uuid
+  name           String
+  slug           String    @unique
+  description    String?
+  parentId       String?   @map("parent_id") @db.Uuid
+  icon           String?
+  displayOrder   Int       @default(0) @map("display_order")
+  isActive       Boolean   @default(true) @map("is_active")
+  seoTitle       String?   @map("seo_title")
+  seoDescription String?   @map("seo_description")
+  seedKey        String?   @unique @map("seed_key")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+  deletedAt      DateTime? @map("deleted_at")
+  parent         DocumentCategory?  @relation("DocumentCategoryTree", fields: [parentId], references: [id], onDelete: Restrict)
+  children       DocumentCategory[] @relation("DocumentCategoryTree")
+  templates      DocumentTemplate[]
+
+  @@index([parentId, displayOrder])
+  @@index([isActive])
+  @@map("document_categories")
+}
+
+model DocumentTemplate {
+  id                String                 @id @default(uuid()) @db.Uuid
+  categoryId        String                 @map("category_id") @db.Uuid
+  name              String
+  slug              String                 @unique
+  shortDescription  String                 @map("short_description")
+  fullDescription   String                 @map("full_description")
+  templateType      DocumentTemplateKind   @map("template_type")
+  jurisdiction      String                 @default("IN")
+  state             String?
+  language          String                 @default("en")
+  formSchema        Json                   @map("form_schema")
+  templateContent   Json                   @map("template_content")
+  editorial         Json
+  templateVersion   Int                    @default(1) @map("template_version")
+  status            DocumentTemplateStatus @default(DRAFT)
+  isFree            Boolean                @default(true) @map("is_free")
+  requiresReview    Boolean                @default(false) @map("requires_review")
+  legalDisclaimer   String?                @map("legal_disclaimer")
+  officialSourceUrl String?                @map("official_source_url")
+  seoTitle          String                 @map("seo_title")
+  seoDescription    String                 @map("seo_description")
+  canonicalUrl      String?                @map("canonical_url")
+  publishedAt       DateTime?              @map("published_at")
+  lastVerifiedAt    DateTime?              @map("last_verified_at")
+  nextReviewAt      DateTime?              @map("next_review_at")
+  reviewedByUserId  String?                @map("reviewed_by_user_id") @db.Uuid
+  generationCount   Int                    @default(0) @map("generation_count")
+  downloadCount     Int                    @default(0) @map("download_count")
+  seedKey           String?                @unique @map("seed_key")
+  createdAt         DateTime               @default(now()) @map("created_at")
+  updatedAt         DateTime               @updatedAt @map("updated_at")
+  deletedAt         DateTime?              @map("deleted_at")
+  category          DocumentCategory       @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  reviewer          User?                  @relation("DocumentReviewer", fields: [reviewedByUserId], references: [id], onDelete: SetNull)
+  seo               DocumentSeo?
+  versions          DocumentVersion[]
+  generated         GeneratedDocument[]
+  downloads         DocumentDownload[]
+  outgoingRelated   DocumentRelated[]      @relation("DocumentRelatedFrom")
+  incomingRelated   DocumentRelated[]      @relation("DocumentRelatedTo")
+  analytics         DocumentAnalyticsEvent[]
+
+  @@index([categoryId, status])
+  @@index([status, publishedAt])
+  @@index([status, downloadCount])
+  @@index([language, jurisdiction])
+  @@map("document_templates")
+}
+
+model DocumentSeo {
+  id                 String           @id @default(uuid()) @db.Uuid
+  templateId         String           @unique @map("template_id") @db.Uuid
+  focusKeyword       String           @map("focus_keyword")
+  secondaryKeywords  String[]         @default([]) @map("secondary_keywords")
+  faqContent         Json             @map("faq_content")
+  structuredData     Json?            @map("structured_data")
+  updatedAt          DateTime         @updatedAt @map("updated_at")
+  template           DocumentTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  @@map("document_seo")
+}
+
+model DocumentRelated {
+  templateId        String           @map("template_id") @db.Uuid
+  relatedTemplateId String           @map("related_template_id") @db.Uuid
+  sortOrder         Int              @default(0) @map("sort_order")
+  template          DocumentTemplate @relation("DocumentRelatedFrom", fields: [templateId], references: [id], onDelete: Cascade)
+  related           DocumentTemplate @relation("DocumentRelatedTo", fields: [relatedTemplateId], references: [id], onDelete: Cascade)
+
+  @@id([templateId, relatedTemplateId])
+  @@index([relatedTemplateId])
+  @@map("document_related")
+}
+
+model DocumentVersion {
+  id              String           @id @default(uuid()) @db.Uuid
+  templateId      String           @map("template_id") @db.Uuid
+  version         Int
+  schemaSnapshot  Json             @map("schema_snapshot")
+  contentSnapshot Json             @map("content_snapshot")
+  changeNotes     String?          @map("change_notes")
+  createdAt       DateTime         @default(now()) @map("created_at")
+  createdBy       String?          @map("created_by") @db.Uuid
+  template        DocumentTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  @@unique([templateId, version])
+  @@index([templateId])
+  @@map("document_versions")
+}
+
+model GeneratedDocument {
+  id                       String                  @id @default(uuid()) @db.Uuid
+  templateId               String                  @map("template_id") @db.Uuid
+  templateVersion          Int                     @map("template_version")
+  userId                   String?                 @map("user_id") @db.Uuid
+  title                    String
+  encryptedInputData       String                  @map("encrypted_input_data")
+  encryptedRenderedContent String                  @map("encrypted_rendered_content")
+  status                   GeneratedDocumentStatus @default(COMPLETED)
+  expiresAt                DateTime?               @map("expires_at")
+  createdAt                DateTime                @default(now()) @map("created_at")
+  updatedAt                DateTime                @updatedAt @map("updated_at")
+  deletedAt                DateTime?               @map("deleted_at")
+  template                 DocumentTemplate        @relation(fields: [templateId], references: [id], onDelete: Restrict)
+  user                     User?                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  downloads                DocumentDownload[]
+
+  @@index([userId, createdAt])
+  @@index([templateId])
+  @@index([expiresAt])
+  @@map("generated_documents")
+}
+
+model DocumentDownload {
+  id                  String             @id @default(uuid()) @db.Uuid
+  templateId          String             @map("template_id") @db.Uuid
+  generatedDocumentId String?            @map("generated_document_id") @db.Uuid
+  userId              String?            @map("user_id") @db.Uuid
+  format              DocumentFileFormat
+  createdAt           DateTime           @default(now()) @map("created_at")
+  template            DocumentTemplate   @relation(fields: [templateId], references: [id], onDelete: Restrict)
+  generatedDocument   GeneratedDocument? @relation(fields: [generatedDocumentId], references: [id], onDelete: SetNull)
+  user                User?              @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([templateId, createdAt])
+  @@index([userId, createdAt])
+  @@map("document_downloads")
+}
+
+model DocumentAnalyticsEvent {
+  id           String            @id @default(uuid()) @db.Uuid
+  templateId   String?           @map("template_id") @db.Uuid
+  eventType    String            @map("event_type")
+  categorySlug String?           @map("category_slug")
+  queryText    String?           @map("query_text")
+  format       String?
+  createdAt    DateTime          @default(now()) @map("created_at")
+  template     DocumentTemplate? @relation(fields: [templateId], references: [id], onDelete: SetNull)
+
+  @@index([eventType, createdAt])
+  @@index([templateId, eventType])
+  @@map("document_analytics_events")
 }

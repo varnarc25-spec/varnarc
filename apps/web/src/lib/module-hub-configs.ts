@@ -157,6 +157,15 @@ export const MODULE_HUB_META: Record<string, ModuleHubMeta> = {
     heroSteps: DEFAULT_STEPS,
     searchPlaceholder: 'Search calculators by name or topic…',
   },
+  documents: {
+    badge: 'DOCUMENTS',
+    trustTitle: 'Why use Varnarc documents?',
+    trustItems: DEFAULT_TRUST,
+    disclaimer:
+      'Templates are samples for you to edit. They are not government certificates, and legal outlines need a qualified professional.',
+    heroSteps: DEFAULT_STEPS,
+    searchPlaceholder: 'Search letters, receipts, invoices…',
+  },
   'ai-tools': {
     badge: 'AI TOOLS DIRECTORY',
     trustTitle: 'Why use Varnarc AI Tools?',

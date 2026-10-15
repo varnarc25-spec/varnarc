@@ -412,6 +412,34 @@ export class SeoSitemapRepository extends BaseRepository {
         );
         return this.dedupeSitemapEntries(parts.flat());
       }
+      case 'documents': {
+        const now = new Date();
+        const [templates, categories] = await Promise.all([
+          this.db.documentTemplate.findMany({
+            where: { deletedAt: null, status: 'PUBLISHED' },
+            select: { slug: true, updatedAt: true },
+            take: 5000,
+          }),
+          this.db.documentCategory.findMany({
+            where: { deletedAt: null, isActive: true },
+            select: { slug: true, updatedAt: true },
+            take: 500,
+          }),
+        ]);
+        return [
+          { loc: `${siteUrl}/documents`, lastmod: now },
+          { loc: `${siteUrl}/documents/popular`, lastmod: now },
+          { loc: `${siteUrl}/documents/latest`, lastmod: now },
+          ...categories.map((row) => ({
+            loc: `${siteUrl}/documents/category/${row.slug}`,
+            lastmod: row.updatedAt,
+          })),
+          ...templates.map((row) => ({
+            loc: `${siteUrl}/documents/${row.slug}`,
+            lastmod: row.updatedAt,
+          })),
+        ];
+      }
       default:
         return [];
     }
