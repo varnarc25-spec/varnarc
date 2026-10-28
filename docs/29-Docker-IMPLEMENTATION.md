@@ -54,11 +54,11 @@ docker compose -f docker/docker-compose.yml --profile local-db --profile tools u
 
 ## Image summary
 
-| Image              | Base           | Port | User    |
-| ------------------ | -------------- | ---- | ------- |
-| `Dockerfile.api`   | node:20-alpine | 4000 | varnarc |
-| `Dockerfile.web`   | node:20-alpine | 3000 | varnarc |
-| `Dockerfile.admin` | node:20-alpine | 3001 | varnarc |
+| Image              | Base                | Port | User    |
+| ------------------ | ------------------- | ---- | ------- |
+| `Dockerfile.api`   | node:24.22.1-alpine | 4000 | varnarc |
+| `Dockerfile.web`   | node:24.22.1-alpine | 3000 | varnarc |
+| `Dockerfile.admin` | node:24.22.1-alpine | 3001 | varnarc |
 
 ## Recommended local dev workflow
 

@@ -20,7 +20,7 @@ RUN if [ ! -f package.json ]; then \
       fi; \
     fi
 
-FROM node:20-alpine AS base
+FROM node:24.22.1-alpine AS base
 RUN apk add --no-cache openssl
 RUN corepack enable && corepack prepare pnpm@9.6.0 --activate
 WORKDIR /app
@@ -155,7 +155,7 @@ RUN cd /deploy && node -e "require('@prisma/debug'); require('@prisma/engines');
 # direct dependencies there, so express must stay in apps/api/package.json.
 RUN cd /deploy && node -e "require('express')"
 
-FROM node:20-alpine AS runner
+FROM node:24.22.1-alpine AS runner
 RUN apk add --no-cache openssl
 RUN addgroup -S varnarc && adduser -S varnarc -G varnarc
 WORKDIR /app

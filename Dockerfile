@@ -20,7 +20,7 @@ RUN if [ ! -f package.json ]; then \
       fi; \
     fi
 
-FROM node:20-alpine AS base
+FROM node:24.22.1-alpine AS base
 RUN corepack enable && corepack prepare pnpm@9.6.0 --activate
 WORKDIR /app
 
@@ -41,7 +41,7 @@ ENV NEXT_TELEMETRY_DISABLED=1
 COPY --from=src /work .
 RUN pnpm --filter @varnarc/web... build
 
-FROM node:20-alpine AS runner
+FROM node:24.22.1-alpine AS runner
 RUN addgroup -S varnarc && adduser -S varnarc -G varnarc
 WORKDIR /app
 ENV NODE_ENV=production
