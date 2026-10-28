@@ -53,7 +53,6 @@ export type AutomobileVehicle = {
   torque?: number | string | null;
   groundClearance?: number | string | null;
   bootSpace?: number | string | null;
-  specifications?: Record<string, unknown> | null;
   exShowroomPrice?: number | string | null;
   indiaAvailability?: 'EXACT_VARIANT' | 'MODEL_ONLY' | 'NOT_AVAILABLE' | 'UNVERIFIED' | null;
   pricingView?: {
@@ -95,6 +94,7 @@ export type AutomobileVehicle = {
       groups?: Array<{ title: string; rows: Array<{ label: string; value: string }> }>;
       features?: Array<{ name: string; value: string }>;
     };
+    [key: string]: unknown;
   } | null;
   manufacturer?: { id: string; name: string; slug: string; logoUrl?: string | null } | null;
   manufacturerId?: string | null;

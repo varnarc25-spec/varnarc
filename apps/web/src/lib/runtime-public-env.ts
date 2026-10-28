@@ -40,12 +40,17 @@ export function isBrowserReachableApiUrl(url: string): boolean {
  * A public runtime API_URL (Cloud Run) wins. An internal Docker host such as
  * http://api:4000 is skipped in favour of NEXT_PUBLIC_API_URL.
  */
-export function resolveBrowserApiUrl(
-  env: { API_URL?: string; NEXT_PUBLIC_API_URL?: string } = process.env,
-): string | undefined {
-  const runtime = env.API_URL?.trim();
+export function resolveBrowserApiUrl(env?: {
+  API_URL?: string;
+  NEXT_PUBLIC_API_URL?: string;
+}): string | undefined {
+  const source = env ?? {
+    API_URL: process.env.API_URL,
+    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
+  };
+  const runtime = source.API_URL?.trim();
   if (runtime && isBrowserReachableApiUrl(runtime)) return runtime.replace(/\/$/, '');
-  const pub = env.NEXT_PUBLIC_API_URL?.trim();
+  const pub = source.NEXT_PUBLIC_API_URL?.trim();
   if (pub && isBrowserReachableApiUrl(pub)) return pub.replace(/\/$/, '');
   return undefined;
 }
