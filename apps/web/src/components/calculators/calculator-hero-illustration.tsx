@@ -22,7 +22,15 @@ const LABEL: Record<CalculatorIllustrationType, string> = {
   generic: 'Calculator illustration',
 };
 
-function Frame({ children, label }: { children: ReactNode; label: string }) {
+function Frame({
+  children,
+  label,
+  className = 'h-auto w-full max-w-[280px]',
+}: {
+  children: ReactNode;
+  label: string;
+  className?: string;
+}) {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -32,7 +40,7 @@ function Frame({ children, label }: { children: ReactNode; label: string }) {
       fill="none"
       role="img"
       aria-label={label}
-      className="h-auto w-full max-w-[280px]"
+      className={className}
     >
       <rect width="480" height="360" rx="28" fill="#f7f9fc" />
       <circle cx="64" cy="80" r="48" fill="#e8eef5" opacity="0.7" />

@@ -239,12 +239,12 @@ export default async function CalculatorDetailPage({ params, searchParams }: Pro
         title="Solar Savings Calculator India"
         description="Calculate how much you could save with rooftop solar panels in India. Estimate installation costs, monthly electricity savings, eligible government subsidies, and payback period using your location and electricity consumption."
         illustration={
-          <div className="mx-auto w-36 sm:mx-0 sm:w-64">
+          <div className="mx-auto w-full sm:mx-0 sm:w-[500px] sm:min-w-[500px] [&_img]:w-full [&_svg]:w-full [&_svg]:max-w-none">
             <CalculatorHeroIllustration
               slug={slug}
               src={calc?.illustrationUrl}
               alt={calc?.illustrationAlt || 'Solar savings illustration'}
-              displayWidth={calc?.settings?.illustrationDisplay?.width}
+              displayWidth={Math.max(500, calc?.settings?.illustrationDisplay?.width ?? 500)}
             />
           </div>
         }
