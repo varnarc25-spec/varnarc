@@ -9,6 +9,7 @@ export * from './ads';
 export * from './calculators';
 export * from './calculator-field-visibility';
 export * from './loan-calculator';
+export * from './solar-calculator';
 export * from './age-calculator';
 export * from './finance';
 export * from './finance-pages';

@@ -4,6 +4,7 @@ import { ROLE_DEFINITIONS, PERMISSIONS } from '@varnarc/auth';
 import { CANONICAL_CONSTRUCTION_CHECKLISTS } from '@varnarc/validation';
 import { seedContent } from './seed-content';
 import { seedCalculatorCatalog } from './seed-calculator-catalog';
+import { seedSolarReferences } from './seed-solar-references';
 import { seedLoanCategories } from './seed-loan-categories';
 import { seedAiOps } from './seed-ai';
 import { seedHomepage } from './seed-homepage';
@@ -512,6 +513,7 @@ async function main() {
   }
 
   await seedCalculatorCatalog(prisma);
+  await seedSolarReferences(prisma);
   await seedDocuments(prisma);
 
   await seedLoanCategories(prisma);

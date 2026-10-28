@@ -29,6 +29,11 @@ import {
 import { loansHubPath } from '@/lib/finance-routes';
 import { isLoanHubCategorySlug } from '@/lib/loan-hub-categories';
 import Link from 'next/link';
+import {
+  SolarCalculatorClient,
+  type SolarPublishedRef,
+} from '@/features/calculators/v2/solar-calculator-client';
+import { SOLAR_PAGE_FAQ } from '@/features/calculators/v2/solar-guide';
 
 type Props = {
   params: Promise<{ slug: string }>;
@@ -112,8 +117,14 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
       entityType: 'calculator',
       entityId: data.id,
       path: canonical,
-      title: data.seoTitle || data.name,
-      description: data.seoDescription || data.description,
+      title:
+        slug === 'solar'
+          ? 'Solar Savings Calculator India 2026 — Cost, Subsidy & Payback | Varnarc'
+          : data.seoTitle || data.name,
+      description:
+        slug === 'solar'
+          ? 'Estimate rooftop solar savings in India. Calculate solar installation cost, monthly electricity savings, eligible subsidies, annual generation, and payback period.'
+          : data.seoDescription || data.description,
     });
     return {
       ...metadata,
@@ -196,6 +207,76 @@ export default async function CalculatorDetailPage({ params, searchParams }: Pro
     (item, index, list) =>
       list.findIndex((x) => (x.href ?? x.slug) === (item.href ?? item.slug)) === index,
   );
+
+  if (slug === 'solar') {
+    const solarFaq = normalizeFaq(calc?.settings?.faq, SOLAR_PAGE_FAQ);
+    let published: SolarPublishedRef[] = [];
+    try {
+      const config = await apiPublicFetch<SolarPublishedRef[]>('/calculators/solar/config');
+      published = Array.isArray(config.data) ? config.data : [];
+    } catch {
+      published = [];
+    }
+    const solarJsonLd = {
+      '@context': 'https://schema.org',
+      '@graph': [
+        breadcrumbJsonLd([
+          { name: 'Home', url: '/' },
+          { name: 'Calculators', url: '/calculators' },
+          { name: 'Solar Savings Calculator India', url: '/calculators/solar' },
+        ]),
+        {
+          '@type': 'WebApplication',
+          name: 'Solar Savings Calculator India',
+          applicationCategory: 'UtilitiesApplication',
+          offers: { '@type': 'Offer', price: '0', priceCurrency: 'INR' },
+          url: '/calculators/solar',
+        },
+      ],
+    };
+    return (
+      <PageShell
+        title="Solar Savings Calculator India"
+        description="Calculate how much you could save with rooftop solar panels in India. Estimate installation costs, monthly electricity savings, eligible government subsidies, and payback period using your location and electricity consumption."
+        illustration={
+          <div className="mx-auto w-36 sm:mx-0 sm:w-64">
+            <CalculatorHeroIllustration
+              slug={slug}
+              src={calc?.illustrationUrl}
+              alt={calc?.illustrationAlt || 'Solar savings illustration'}
+              displayWidth={calc?.settings?.illustrationDisplay?.width}
+            />
+          </div>
+        }
+        heroExtra={
+          <ul className="mt-4 flex flex-wrap gap-2 text-xs text-slate-600">
+            <li className="rounded-full bg-slate-100 px-3 py-1">Free calculator</li>
+            <li className="rounded-full bg-slate-100 px-3 py-1">India-focused estimates</li>
+            <li className="rounded-full bg-slate-100 px-3 py-1">Transparent assumptions</li>
+            <li className="rounded-full bg-slate-100 px-3 py-1">Reviewed 28 Oct 2026</li>
+          </ul>
+        }
+        breadcrumbs={[
+          { label: 'Home', href: '/' },
+          { label: 'Calculators', href: '/calculators' },
+          { label: 'Solar Savings Calculator India' },
+        ]}
+      >
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(solarJsonLd) }}
+        />
+        <SolarCalculatorClient
+          published={published}
+          faq={solarFaq}
+          articles={relatedArticles.map((article) => ({
+            title: article.title,
+            href: `/articles/${article.slug}`,
+          }))}
+        />
+      </PageShell>
+    );
+  }
 
   const singlePageSlugs = new Set(['loan', 'emi', 'age']);
   const useWizard =

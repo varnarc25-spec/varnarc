@@ -174,6 +174,7 @@ export const ADMIN_NAV_GROUPS: AdminNavGroup[] = [
     label: 'Calculators',
     items: [
       { href: '/calculators', label: 'All calculators', permission: PERMISSIONS.CALCULATOR_VIEW },
+      { href: '/calculators/solar', label: 'Solar data', permission: PERMISSIONS.CALCULATOR_VIEW },
       {
         href: '/calculators/new',
         label: 'New calculator',

@@ -32,6 +32,7 @@ import {
   CalculatorCategoryRepository,
   SavedCalculationRepository,
 } from './calculators/calculator.repository';
+import { SolarReferenceRepository } from './calculators/solar-reference.repository';
 import {
   FinanceCategoryRepository,
   BankRepository,
@@ -233,6 +234,7 @@ export function createRepositories(db: PrismaClient) {
     adPlacements: new AdPlacementRepository(db),
     sponsors: new SponsorRepository(db),
     calculators: new CalculatorRepository(db),
+    solarReferences: new SolarReferenceRepository(db),
     calculatorCategories: new CalculatorCategoryRepository(db),
     savedCalculations: new SavedCalculationRepository(db),
     financeCategories: new FinanceCategoryRepository(db),

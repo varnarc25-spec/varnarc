@@ -20,6 +20,8 @@ import {
   relatedArticlesQuerySchema,
   runCalculatorSchema,
   saveCalculationSchema,
+  solarCalculateInputSchema,
+  solarReferenceWriteSchema,
   updateCalculatorCategorySchema,
   updateCalculatorSchema,
   type CalculatorListQuery,
@@ -30,6 +32,8 @@ import {
   type RelatedArticlesQuery,
   type RunCalculatorInput,
   type SaveCalculationInput,
+  type SolarCalculateInput,
+  type SolarReferenceWrite,
   type UpdateCalculatorCategoryInput,
   type UpdateCalculatorInput,
 } from '@varnarc/validation';
@@ -40,11 +44,15 @@ import { CurrentUserDecorator } from '../../auth/decorators/current-user.decorat
 import { ZodValidationPipe } from '../../common/zod-validation.pipe';
 import { ok, okCursor } from '../../common/utils/response';
 import { CalculatorService } from './calculator.service';
+import { SolarReferenceService } from './solar-reference.service';
 
 @ApiTags('calculators')
 @Controller('calculators')
 export class CalculatorController {
-  constructor(private readonly service: CalculatorService) {}
+  constructor(
+    private readonly service: CalculatorService,
+    private readonly solar: SolarReferenceService,
+  ) {}
 
   @Public()
   @Get('categories')
@@ -56,7 +64,8 @@ export class CalculatorController {
   @RequirePermissions(PERMISSIONS.CALCULATOR_EDIT)
   async createCategory(
     @CurrentUserDecorator() user: CurrentUser,
-    @Body(new ZodValidationPipe(createCalculatorCategorySchema)) body: CreateCalculatorCategoryInput,
+    @Body(new ZodValidationPipe(createCalculatorCategorySchema))
+    body: CreateCalculatorCategoryInput,
   ) {
     return ok(await this.service.createCategory(body, user.id));
   }
@@ -66,7 +75,8 @@ export class CalculatorController {
   async updateCategory(
     @Param('id', ParseUUIDPipe) id: string,
     @CurrentUserDecorator() user: CurrentUser,
-    @Body(new ZodValidationPipe(updateCalculatorCategorySchema)) body: UpdateCalculatorCategoryInput,
+    @Body(new ZodValidationPipe(updateCalculatorCategorySchema))
+    body: UpdateCalculatorCategoryInput,
   ) {
     return ok(await this.service.updateCategory(id, body, user.id));
   }
@@ -136,8 +146,55 @@ export class CalculatorController {
 
   @Get('admin/all')
   @RequirePermissions(PERMISSIONS.CALCULATOR_VIEW)
-  async adminList(@Query(new ZodValidationPipe(calculatorListQuerySchema)) query: CalculatorListQuery) {
+  async adminList(
+    @Query(new ZodValidationPipe(calculatorListQuerySchema)) query: CalculatorListQuery,
+  ) {
     return okCursor(await this.service.list(query));
+  }
+
+  @Public()
+  @Get('solar/config')
+  async solarConfig() {
+    return ok(await this.solar.published());
+  }
+
+  @Get('solar/references')
+  @RequirePermissions(PERMISSIONS.CALCULATOR_VIEW)
+  async solarReferences() {
+    return ok(await this.solar.list());
+  }
+
+  @Post('solar/references')
+  @RequirePermissions(PERMISSIONS.CALCULATOR_EDIT)
+  async createSolarReference(
+    @CurrentUserDecorator() user: CurrentUser,
+    @Body(new ZodValidationPipe(solarReferenceWriteSchema)) body: SolarReferenceWrite,
+  ) {
+    return ok(await this.solar.create(body, user.id));
+  }
+
+  @Put('solar/references/:id')
+  @RequirePermissions(PERMISSIONS.CALCULATOR_EDIT)
+  async updateSolarReference(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUserDecorator() user: CurrentUser,
+    @Body(new ZodValidationPipe(solarReferenceWriteSchema)) body: SolarReferenceWrite,
+  ) {
+    return ok(await this.solar.update(id, body, user.id));
+  }
+
+  @Delete('solar/references/:id')
+  @RequirePermissions(PERMISSIONS.CALCULATOR_DELETE)
+  async deleteSolarReference(@Param('id', ParseUUIDPipe) id: string) {
+    return ok(await this.solar.remove(id));
+  }
+
+  @Post('solar/preview')
+  @RequirePermissions(PERMISSIONS.CALCULATOR_EDIT)
+  async previewSolar(
+    @Body(new ZodValidationPipe(solarCalculateInputSchema)) body: SolarCalculateInput,
+  ) {
+    return ok(this.solar.preview(body));
   }
 
   @Public()

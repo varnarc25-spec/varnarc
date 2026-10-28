@@ -1408,6 +1408,36 @@ model SavedCalculation {
   @@map("saved_calculations")
 }
 
+enum SolarReferenceKind {
+  LOCATION
+  TARIFF
+  INSTALLATION_PRICE
+  SUBSIDY
+  DEFAULTS
+  @@map("solar_reference_kind")
+}
+
+model SolarReference {
+  id             String             @id @default(uuid()) @db.Uuid
+  kind           SolarReferenceKind
+  status         PublishStatus      @default(DRAFT)
+  title          String
+  state          String?
+  city           String?
+  payload        Json
+  sourceUrl      String?            @map("source_url")
+  sourceLabel    String?            @map("source_label")
+  lastVerifiedAt DateTime?          @map("last_verified_at")
+  createdAt      DateTime           @default(now()) @map("created_at")
+  updatedAt      DateTime           @updatedAt @map("updated_at")
+  deletedAt      DateTime?          @map("deleted_at")
+  createdBy      String?            @map("created_by") @db.Uuid
+  updatedBy      String?            @map("updated_by") @db.Uuid
+  @@index([kind, status])
+  @@index([state, city])
+  @@map("solar_references")
+}
+
 model FinanceCategory {
   id                 String         @id @default(uuid()) @db.Uuid
   name               String

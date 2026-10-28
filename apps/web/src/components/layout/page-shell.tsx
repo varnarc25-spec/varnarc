@@ -6,12 +6,14 @@ export function PageShell({
   description,
   breadcrumbs,
   illustration,
+  heroExtra,
   children,
 }: {
   title: string;
   description?: string;
   breadcrumbs?: Array<{ label: string; href?: string }>;
   illustration?: ReactNode;
+  heroExtra?: ReactNode;
   children: ReactNode;
 }) {
   return (
@@ -24,8 +26,11 @@ export function PageShell({
               {title}
             </h1>
             {description ? (
-              <p className="mt-2 max-w-3xl text-sm text-slate-600 sm:text-base">{description}</p>
+              <p className="mt-2 max-w-3xl text-sm text-slate-600 sm:text-base dark:text-slate-300">
+                {description}
+              </p>
             ) : null}
+            {heroExtra}
           </div>
           {illustration ? <div className="shrink-0 sm:pt-1">{illustration}</div> : null}
         </div>
