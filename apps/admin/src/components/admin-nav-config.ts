@@ -51,6 +51,22 @@ export const ADMIN_NAV_GROUPS: AdminNavGroup[] = [
     ],
   },
   {
+    id: 'elections',
+    label: 'Elections',
+    items: [
+      {
+        href: '/elections/statistical-reports',
+        label: 'Statistical reports',
+        permission: PERMISSIONS.ELECTION_VIEW,
+      },
+      {
+        href: '/elections/states',
+        label: 'States',
+        permission: PERMISSIONS.ELECTION_VIEW,
+      },
+    ],
+  },
+  {
     id: 'users',
     label: 'Users & access',
     items: [
