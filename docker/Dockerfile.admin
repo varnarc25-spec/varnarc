@@ -37,7 +37,8 @@ ENV NEXT_PUBLIC_ADMIN_URL=$NEXT_PUBLIC_ADMIN_URL
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV DOCKER_BUILD=1
-ENV NODE_OPTIONS=--max-old-space-size=3072
+# The VPS is memory-constrained. A 3GB heap plus the webpack worker gets the build killed.
+ENV NODE_OPTIONS=--max-old-space-size=1536
 COPY --from=src /work .
 # Compile only when DOCKER_BUILD=1 (see docker/next-build.mjs).
 RUN pnpm --filter @varnarc/admin... build
