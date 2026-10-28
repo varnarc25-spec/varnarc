@@ -148,7 +148,7 @@ function projectActions(ctx: ConstructionWhatNextContext): ActionCandidate[] {
   ];
 }
 
-function baseSaveAction(ctx: ConstructionWhatNextContext): ActionCandidate {
+function baseSaveAction(_ctx: ConstructionWhatNextContext): ActionCandidate {
   return {
     id: 'saved-calculations',
     label: 'View saved calculations',

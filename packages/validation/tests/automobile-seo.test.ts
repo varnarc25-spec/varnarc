@@ -6,7 +6,6 @@ import {
   isAutomobileSitemapSegment,
   listAllAutomobileSitemapStaticPaths,
   listAutomobileCategories,
-  listAutomobileSitemapStaticPaths,
   vehicleMatchesAutomobileCategory,
   getAutomobileCategory,
 } from '../src';

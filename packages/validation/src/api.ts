@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { cursorPaginationQuerySchema, uuidSchema } from './common';
+import { cursorPaginationQuerySchema } from './common';
 
 export const API_VERSION = '1.0.0';
 

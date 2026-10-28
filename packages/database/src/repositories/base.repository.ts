@@ -29,11 +29,13 @@ export abstract class BaseRepository {
 
 /** Prisma delegates are structurally incompatible with strict Record types — use a loose adapter. */
 
+type DelegateArgs = Record<string, unknown>;
+
 type AnyDelegate = {
-  findUnique: (args: any) => Promise<any>;
-  findFirst: (args: any) => Promise<any>;
-  findMany: (args: any) => Promise<any[]>;
-  update: (args: any) => Promise<any>;
+  findUnique: (args: DelegateArgs) => Promise<{ deletedAt?: Date | null } | null>;
+  findFirst: (args: DelegateArgs) => Promise<unknown>;
+  findMany: (args: DelegateArgs) => Promise<unknown[]>;
+  update: (args: DelegateArgs) => Promise<unknown>;
 };
 
 export async function softDeleteById(

@@ -1,7 +1,6 @@
 import { convertUnit } from '../construction-engine/units';
 import { roundMoney, roundQuantity } from '../construction-engine/money';
 import { buildReverseCalculationDisplay } from '../reverse-calculator';
-import type { ReverseCalculationDisplay } from '../reverse-calculator';
 import { M2_TO_FT2, TILE_CALC_VERSION, TILE_GRID_PREVIEW_MAX } from './rates';
 import {
   tileCalculatorInputSchema,

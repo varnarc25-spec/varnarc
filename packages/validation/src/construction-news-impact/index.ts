@@ -6,7 +6,6 @@ import {
   getPriceHubMaterial,
   isPriceHubMaterialKey,
   matchMaterialToHubKey,
-  type PriceHubMaterialKey,
 } from '../prices-hub';
 import { calculateProjectPriceImpact } from '../material-price-position';
 
