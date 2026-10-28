@@ -27,15 +27,19 @@ export abstract class BaseRepository {
   }
 }
 
-/** Prisma delegates are structurally incompatible with strict Record types — use a loose adapter. */
-
-type DelegateArgs = Record<string, unknown>;
-
+/**
+ * Prisma model delegates are not mutually assignable to one concrete args type.
+ * The adapter stays loose so every model can share these helpers.
+ */
 type AnyDelegate = {
-  findUnique: (args: DelegateArgs) => Promise<{ deletedAt?: Date | null } | null>;
-  findFirst: (args: DelegateArgs) => Promise<unknown>;
-  findMany: (args: DelegateArgs) => Promise<unknown[]>;
-  update: (args: DelegateArgs) => Promise<unknown>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  findUnique: (args: any) => Promise<any>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  findFirst: (args: any) => Promise<any>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  findMany: (args: any) => Promise<any[]>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  update: (args: any) => Promise<any>;
 };
 
 export async function softDeleteById(
