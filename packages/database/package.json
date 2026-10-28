@@ -23,8 +23,6 @@
     "seed:age-calculator": "tsx --env-file=../../.env src/seed-age-calculator-only.ts",
     "seed:calculators": "tsx --env-file=../../.env src/seed-calculators-only.ts",
     "seed:documents": "tsx --env-file=../../.env src/seed-documents-only.ts",
-    "seed:election-reports": "tsx --env-file=../../.env src/seed-election-reports-only.ts",
-    "scrape:election-report-files": "tsx --env-file=../../.env src/scrape-election-report-files.ts",
     "seed:calculator-articles": "tsx --env-file=../../.env src/seed-calculator-articles-only.ts",
     "backup": "tsx --env-file=../../.env scripts/backup-database.ts",
     "restore": "tsx --env-file=../../.env scripts/restore-database.ts",

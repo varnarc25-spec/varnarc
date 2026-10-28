@@ -160,7 +160,6 @@ export const PERMISSIONS = {
   DOCUMENT_PUBLISH: 'document.publish',
   DOCUMENT_DELETE: 'document.delete',
   DOCUMENT_REVIEW: 'document.review',
-  ELECTION_VIEW: 'election.view',
 } as const;
 
 export type Permission = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];
@@ -208,7 +207,6 @@ export const ROLE_DEFINITIONS: Record<
       PERMISSIONS.DOCUMENT_VIEW,
       PERMISSIONS.DOCUMENT_CREATE,
       PERMISSIONS.DOCUMENT_EDIT,
-      PERMISSIONS.ELECTION_VIEW,
       PERMISSIONS.FINANCE_VIEW,
       PERMISSIONS.FINANCE_CREATE,
       PERMISSIONS.FINANCE_EDIT,

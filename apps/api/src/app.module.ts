@@ -31,7 +31,6 @@ import { AutomobileModule } from './modules/automobile/automobile.module';
 import { HrModule } from './modules/hr/hr.module';
 import { CrmModule } from './modules/crm/crm.module';
 import { DocumentModule } from './modules/documents/document.module';
-import { ElectionReportsModule } from './modules/election-reports/election-reports.module';
 import { ComparisonModule } from './modules/comparison/comparison.module';
 import { ContactModule } from './modules/contact/contact.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
@@ -95,7 +94,6 @@ const rateLimit = Number(process.env.RATE_LIMIT_PER_MINUTE ?? SECURITY_RATE_LIMI
     HrModule,
     CrmModule,
     DocumentModule,
-    ElectionReportsModule,
     ComparisonModule,
     ContactModule,
     DashboardModule,

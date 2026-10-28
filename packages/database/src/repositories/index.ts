@@ -7,7 +7,6 @@ import {
 } from './identity/user.repository';
 import { SecurityEventRepository } from './security/security.repository';
 import { DocumentRepository } from './documents/document.repository';
-import { ElectionReportRepository } from './election-reports/election-reports.repository';
 import {
   ArticleRepository,
   CategoryRepository,
@@ -200,7 +199,6 @@ export * from './api/api.repository';
 export * from './newsletter/newsletter.repository';
 export * from './security/security.repository';
 export * from './documents/document.repository';
-export * from './election-reports/election-reports.repository';
 
 /** Convenience factory that wires every domain repository to one Prisma client. */
 export function createRepositories(db: PrismaClient) {
@@ -330,7 +328,6 @@ export function createRepositories(db: PrismaClient) {
     newsletterTemplates: new NewsletterTemplateRepository(db),
     newsletterCampaigns: new NewsletterCampaignRepository(db),
     documents: new DocumentRepository(db),
-    electionReports: new ElectionReportRepository(db),
   };
 }
 

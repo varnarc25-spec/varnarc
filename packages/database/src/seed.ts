@@ -13,7 +13,6 @@ import { seedPremiumPlans } from './seed-premium';
 import { seedConstructionIntelligence } from './seed-construction-intelligence';
 import { seedExpandedComparisons } from './seed-comparisons-expanded';
 import { seedDocuments } from './seed-documents';
-import { seedElectionReports } from './seed-election-reports';
 
 const prisma = new PrismaClient();
 
@@ -94,7 +93,6 @@ async function main() {
     [PERMISSIONS.DOCUMENT_PUBLISH]: { name: 'Publish documents', module: 'documents' },
     [PERMISSIONS.DOCUMENT_DELETE]: { name: 'Delete documents', module: 'documents' },
     [PERMISSIONS.DOCUMENT_REVIEW]: { name: 'Review documents', module: 'documents' },
-    [PERMISSIONS.ELECTION_VIEW]: { name: 'View election reports', module: 'elections' },
     [PERMISSIONS.USER_DELETE]: { name: 'Delete users', module: 'users' },
     [PERMISSIONS.ROLE_VIEW]: { name: 'View roles', module: 'roles' },
     [PERMISSIONS.ROLE_MANAGE]: { name: 'Manage roles', module: 'roles' },
@@ -517,7 +515,6 @@ async function main() {
   await seedCalculatorCatalog(prisma);
   await seedSolarReferences(prisma);
   await seedDocuments(prisma);
-  await seedElectionReports(prisma);
 
   await seedLoanCategories(prisma);
   await seedAiOps(prisma);
