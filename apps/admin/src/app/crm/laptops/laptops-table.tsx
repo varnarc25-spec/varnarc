@@ -77,7 +77,10 @@ const EMPTY_FILTERS: Record<ColumnFilterKey, string[]> = {
 function capacityOptions(value: string, kind: 'ram' | 'storage'): string[] {
   const found = new Set<string>();
   for (const match of value.matchAll(/(\d+)\s*(GB|TB)/gi)) {
-    const size = `${match[1]}${match[2].toUpperCase()}`;
+    const amount = match[1];
+    const unit = match[2];
+    if (!amount || !unit) continue;
+    const size = `${amount}${unit.toUpperCase()}`;
     found.add(kind === 'storage' ? `${size} SSD` : size);
   }
   return [...found];
@@ -85,9 +88,11 @@ function capacityOptions(value: string, kind: 'ram' | 'storage'): string[] {
 
 function capacityRank(label: string): number {
   const match = /^(\d+)\s*(GB|TB)/i.exec(label);
-  if (!match) return 0;
-  const amount = Number(match[1]);
-  return match[2].toUpperCase() === 'TB' ? amount * 1024 : amount;
+  const amountText = match?.[1];
+  const unit = match?.[2];
+  if (!amountText || !unit) return 0;
+  const amount = Number(amountText);
+  return unit.toUpperCase() === 'TB' ? amount * 1024 : amount;
 }
 
 function matchesColumnFilter(
