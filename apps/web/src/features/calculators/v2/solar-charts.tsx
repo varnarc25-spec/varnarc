@@ -40,7 +40,7 @@ export function SolarCharts({
             type="monotone"
             dataKey="cumulative"
             name="Cumulative net"
-            stroke="#0b1f3a"
+            stroke="#2563eb"
             dot={false}
           />
         </LineChart>

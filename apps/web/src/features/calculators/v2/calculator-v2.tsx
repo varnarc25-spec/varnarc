@@ -14,19 +14,19 @@ export function CalculatorInputCard({
   actions?: ReactNode;
 }) {
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900 sm:p-5">
-      <h2 className="text-lg font-bold text-[#0b1f3a] dark:text-white">{title}</h2>
+    <section className="rounded-2xl border border-[var(--vn-border)] bg-[var(--vn-surface)] p-5 shadow-sm">
+      <h2 className="text-base font-bold text-[var(--vn-ink)]">{title}</h2>
       <div className="mt-4 space-y-4">{children}</div>
-      {actions ? <div className="mt-4 flex flex-wrap gap-2">{actions}</div> : null}
+      {actions ? <div className="mt-5 flex flex-col gap-2">{actions}</div> : null}
     </section>
   );
 }
 
 export function CalculatorResultsCard({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900 sm:p-5">
-      <h2 className="text-lg font-bold text-[#0b1f3a] dark:text-white">{title}</h2>
-      <div className="mt-4 grid gap-3 sm:grid-cols-2">{children}</div>
+    <section className="rounded-2xl border border-[var(--vn-border)] bg-[var(--vn-surface)] p-5 shadow-sm">
+      <h2 className="text-base font-bold text-[var(--vn-ink)]">{title}</h2>
+      <div className="mt-4 space-y-4">{children}</div>
     </section>
   );
 }
@@ -41,10 +41,10 @@ export function CalculatorResultMetric({
   hint?: string;
 }) {
   return (
-    <div className="rounded-xl bg-[#f8fafc] px-3 py-3 dark:bg-slate-800">
-      <p className="text-xs font-medium text-slate-500 dark:text-slate-400">{label}</p>
-      <p className="mt-1 text-lg font-bold tabular-nums text-[#0b1f3a] dark:text-white">{value}</p>
-      {hint ? <p className="mt-1 text-xs text-slate-500">{hint}</p> : null}
+    <div className="border-b border-[var(--vn-border)] pb-3 last:border-0 last:pb-0">
+      <p className="text-xs font-medium text-[var(--vn-subtle)]">{label}</p>
+      <p className="mt-1 text-2xl font-bold tabular-nums text-[var(--vn-ink)]">{value}</p>
+      {hint ? <p className="mt-1 text-xs text-[var(--vn-subtle)]">{hint}</p> : null}
     </div>
   );
 }
@@ -57,8 +57,8 @@ export function CalculatorChartSection({
   children: ReactNode;
 }) {
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900 sm:p-5">
-      <h2 className="text-lg font-bold text-[#0b1f3a] dark:text-white">{title}</h2>
+    <section className="rounded-2xl border border-[var(--vn-border)] bg-[var(--vn-surface)] p-5 shadow-sm">
+      <h2 className="text-base font-bold text-[var(--vn-ink)]">{title}</h2>
       <div className="mt-4 h-72 w-full">{children}</div>
     </section>
   );
@@ -67,21 +67,14 @@ export function CalculatorChartSection({
 export function CalculatorFAQ({ items }: { items: Array<{ q: string; a: string }> }) {
   return (
     <section>
-      <h2 className="text-xl font-bold text-[#0b1f3a] dark:text-white">
-        Frequently asked questions
-      </h2>
-      <div className="mt-4 space-y-3">
+      <h2 className="text-xl font-bold text-[var(--vn-ink)]">Frequently asked questions</h2>
+      <div className="mt-4 divide-y divide-[var(--vn-border)] rounded-2xl border border-[var(--vn-border)] bg-[var(--vn-surface)]">
         {items.map((item) => (
-          <details
-            key={item.q}
-            className="rounded-xl border border-slate-200 px-4 py-3 dark:border-slate-700"
-          >
-            <summary className="cursor-pointer font-semibold text-[#0b1f3a] dark:text-white">
+          <details key={item.q} className="px-4 py-3">
+            <summary className="cursor-pointer font-semibold text-[var(--vn-ink)]">
               {item.q}
             </summary>
-            <p className="mt-2 text-sm leading-relaxed text-slate-600 dark:text-slate-300">
-              {item.a}
-            </p>
+            <p className="mt-2 text-sm leading-relaxed text-[var(--vn-subtle)]">{item.a}</p>
           </details>
         ))}
       </div>
@@ -99,13 +92,13 @@ export function CalculatorRelatedTools({
   return (
     <section className="grid gap-6 md:grid-cols-2">
       <div>
-        <h2 className="text-xl font-bold text-[#0b1f3a] dark:text-white">Related calculators</h2>
+        <h2 className="text-xl font-bold text-[var(--vn-ink)]">Related calculators</h2>
         {calculators.length ? (
           <ul className="mt-3 space-y-2 text-sm">
             {calculators.map((item) => (
               <li key={item.href}>
                 <a
-                  className="font-semibold text-[#0b1f3a] underline-offset-2 hover:underline dark:text-white"
+                  className="font-semibold text-[var(--vn-ink)] underline-offset-2 hover:underline"
                   href={item.href}
                 >
                   {item.name}
@@ -114,7 +107,7 @@ export function CalculatorRelatedTools({
             ))}
           </ul>
         ) : (
-          <p className="mt-3 text-sm text-slate-600 dark:text-slate-300">
+          <p className="mt-3 text-sm text-[var(--vn-subtle)]">
             Electricity bill, panel size, installation cost, and payback are covered in this
             calculator. Separate tools for those questions are not published yet, so this page does
             not link to them.
@@ -122,13 +115,13 @@ export function CalculatorRelatedTools({
         )}
       </div>
       <div>
-        <h2 className="text-xl font-bold text-[#0b1f3a] dark:text-white">Useful guides</h2>
+        <h2 className="text-xl font-bold text-[var(--vn-ink)]">Useful guides</h2>
         {articles.length ? (
           <ul className="mt-3 space-y-2 text-sm">
             {articles.map((item) => (
               <li key={item.href}>
                 <a
-                  className="font-semibold text-[#0b1f3a] underline-offset-2 hover:underline dark:text-white"
+                  className="font-semibold text-[var(--vn-ink)] underline-offset-2 hover:underline"
                   href={item.href}
                 >
                   {item.title}
@@ -137,7 +130,7 @@ export function CalculatorRelatedTools({
             ))}
           </ul>
         ) : (
-          <p className="mt-3 text-sm text-slate-600 dark:text-slate-300">
+          <p className="mt-3 text-sm text-[var(--vn-subtle)]">
             Published solar guides from the Varnarc library will appear here when they are available
             for this calculator.
           </p>
@@ -154,8 +147,8 @@ export function CalculatorSourceReferences({
 }) {
   return (
     <section>
-      <h2 className="text-xl font-bold text-[#0b1f3a] dark:text-white">Methodology and sources</h2>
-      <ul className="mt-3 list-disc space-y-2 pl-5 text-sm text-slate-600 dark:text-slate-300">
+      <h2 className="text-xl font-bold text-[var(--vn-ink)]">Methodology and sources</h2>
+      <ul className="mt-3 list-disc space-y-2 pl-5 text-sm text-[var(--vn-subtle)]">
         {items.map((item) => (
           <li key={item.label}>
             {item.href ? (
@@ -174,7 +167,7 @@ export function CalculatorSourceReferences({
 
 export function CalculatorDisclaimer({ children }: { children: ReactNode }) {
   return (
-    <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-relaxed text-amber-950 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-100">
+    <p className="rounded-xl border border-[var(--vn-border)] bg-[var(--vn-orange-soft)] px-4 py-3 text-sm leading-relaxed text-[var(--vn-ink)]">
       {children}
     </p>
   );

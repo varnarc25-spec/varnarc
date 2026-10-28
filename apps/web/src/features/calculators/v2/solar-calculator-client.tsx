@@ -65,7 +65,7 @@ function Field({
 }) {
   return (
     <label className="block text-sm">
-      <span className="font-medium text-[#0b1f3a] dark:text-white">
+      <span className="text-xs font-medium text-[var(--vn-subtle)]">
         {label}
         {hint ? (
           <span className="ml-1 cursor-help text-slate-400" title={hint}>
@@ -80,7 +80,7 @@ function Field({
 }
 
 const inputClass =
-  'min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-[#0b1f3a] dark:border-slate-600 dark:bg-slate-950 dark:text-white';
+  'min-h-11 w-full rounded-xl border border-[var(--vn-border)] bg-[var(--vn-surface)] px-3 text-base font-semibold text-[var(--vn-ink)]';
 
 function assumptionsFromRefs(
   refs: SolarPublishedRef[],
@@ -314,51 +314,37 @@ export function SolarCalculatorClient({
 
   return (
     <CalculatorPageShell>
-      <p className="text-xs text-slate-500">
-        Demonstration values are estimates. Last content review: 28 October 2026. They are not
-        verified DISCOM tariffs or subsidy amounts.
-      </p>
-      <div className="grid items-start gap-6 lg:grid-cols-2">
+      <div className="grid items-start gap-4 lg:grid-cols-2">
         <CalculatorInputCard
-          title="Solar savings calculator"
+          title="Your solar details"
           actions={
             <>
               <button
                 type="button"
-                className="min-h-11 rounded-lg bg-[#0b1f3a] px-4 text-sm font-semibold text-white"
+                className="min-h-12 w-full rounded-xl bg-[var(--vn-orange-soft)] text-sm font-semibold text-[var(--vn-ink)] hover:bg-[var(--vn-orange)] hover:text-white"
                 onClick={run}
               >
                 Calculate savings
               </button>
-              <button
-                type="button"
-                className="min-h-11 rounded-lg border border-slate-300 px-4 text-sm font-semibold"
-                onClick={reset}
-              >
-                Reset
-              </button>
-              <button
-                type="button"
-                className="min-h-11 rounded-lg border border-slate-300 px-4 text-sm font-semibold"
-                onClick={() => void share()}
-              >
-                Copy link
-              </button>
-              <button
-                type="button"
-                className="min-h-11 rounded-lg border border-slate-300 px-4 text-sm font-semibold"
-                onClick={() => window.print()}
-              >
-                Print
-              </button>
-              <button
-                type="button"
-                className="min-h-11 rounded-lg border border-slate-300 px-4 text-sm font-semibold"
-                onClick={() => void downloadPdf()}
-                disabled={!result}
-              >
-                Download PDF
-              </button>
+              <div className="flex flex-wrap justify-center gap-x-4 gap-y-1 text-sm font-semibold text-[var(--vn-subtle)]">
+                <button type="button" className="min-h-11" onClick={reset}>
+                  Reset
+                </button>
+                <button type="button" className="min-h-11" onClick={() => void share()}>
+                  Copy link
+                </button>
+                <button type="button" className="min-h-11" onClick={() => window.print()}>
+                  Print
+                </button>
+                <button
+                  type="button"
+                  className="min-h-11 disabled:opacity-40"
+                  onClick={() => void downloadPdf()}
+                  disabled={!result}
+                >
+                  PDF
+                </button>
+              </div>
             </>
           }
         >
@@ -576,14 +562,20 @@ export function SolarCalculatorClient({
             </p>
           ) : null}
         </CalculatorInputCard>
-        <CalculatorResultsCard title="Estimate">
+        <CalculatorResultsCard title="Estimated savings">
           {result ? (
             <>
-              <CalculatorResultMetric
-                label="Estimated monthly savings"
-                value={inr.format(result.monthlySavings)}
-                hint="Net operating savings ÷ 12"
-              />
+              <div className="border-b border-[var(--vn-border)] pb-3">
+                <p className="text-xs font-medium text-[var(--vn-subtle)]">
+                  Estimated monthly savings
+                </p>
+                <p className="mt-1 text-3xl font-bold tabular-nums text-[#16a34a]">
+                  {inr.format(result.monthlySavings)}
+                </p>
+                <p className="mt-1 text-xs text-[var(--vn-subtle)]">
+                  Illustrative, after maintenance
+                </p>
+              </div>
               <CalculatorResultMetric
                 label="Estimated annual savings"
                 value={inr.format(result.annualNetOperatingSavings)}
@@ -618,24 +610,22 @@ export function SolarCalculatorClient({
       </div>
       {result ? (
         <>
-          <div className="grid gap-4 lg:grid-cols-2">
-            <CalculatorChartSection title="Cumulative net savings">
-              <SolarCharts result={result} chart="cumulative" />
-            </CalculatorChartSection>
-            <CalculatorChartSection title="Electricity bill comparison">
+          <CalculatorChartSection title="Savings over time">
+            <SolarCharts result={result} chart="cumulative" />
+          </CalculatorChartSection>
+          <div className="grid gap-4 lg:grid-cols-3">
+            <CalculatorChartSection title="Electricity bill">
               <SolarCharts result={result} chart="bill" />
             </CalculatorChartSection>
-            <CalculatorChartSection title="Generation and consumption">
+            <CalculatorChartSection title="Generation and use">
               <SolarCharts result={result} chart="energy" />
             </CalculatorChartSection>
-            <CalculatorChartSection title="Cost breakdown">
+            <CalculatorChartSection title="Costs">
               <SolarCharts result={result} chart="cost" />
             </CalculatorChartSection>
           </div>
           <section className="overflow-x-auto">
-            <h2 className="text-xl font-bold text-[#0b1f3a] dark:text-white">
-              Solar system size comparison
-            </h2>
+            <h2 className="text-xl font-bold text-[var(--vn-ink)]">Solar system size comparison</h2>
             <table className="mt-3 min-w-[760px] w-full text-left text-sm">
               <thead>
                 <tr className="border-b text-slate-500">

@@ -88,10 +88,8 @@ export function SolarGuide() {
   return (
     <section className="space-y-6">
       <div>
-        <h2 className="text-xl font-bold text-[#0b1f3a] dark:text-white">
-          How to use this calculator
-        </h2>
-        <ol className="mt-3 list-decimal space-y-1 pl-5 text-sm text-slate-600 dark:text-slate-300">
+        <h2 className="text-xl font-bold text-[var(--vn-ink)]">How to use this calculator</h2>
+        <ol className="mt-3 list-decimal space-y-1 pl-5 text-sm text-[var(--vn-subtle)]">
           <li>Select your state and city.</li>
           <li>Enter your monthly electricity bill or consumption.</li>
           <li>Choose or adjust the suggested solar system size.</li>
@@ -101,8 +99,8 @@ export function SolarGuide() {
         </ol>
       </div>
       <div>
-        <h2 className="text-xl font-bold text-[#0b1f3a] dark:text-white">About this calculator</h2>
-        <p className="mt-2 text-sm leading-relaxed text-slate-600 dark:text-slate-300">
+        <h2 className="text-xl font-bold text-[var(--vn-ink)]">About this calculator</h2>
+        <p className="mt-2 text-sm leading-relaxed text-[var(--vn-subtle)]">
           It estimates rooftop solar generation, the part of that generation that offsets your own
           consumption, installation cost after an eligible subsidy, and the year cumulative net cash
           flow recovers that cost. Actual savings move with shade, season, the DISCOM tariff,
@@ -111,15 +109,13 @@ export function SolarGuide() {
       </div>
       {SECTIONS.map((section) => (
         <div key={section.title}>
-          <h2 className="text-xl font-bold text-[#0b1f3a] dark:text-white">{section.title}</h2>
-          <p className="mt-2 text-sm leading-relaxed text-slate-600 dark:text-slate-300">
-            {section.body}
-          </p>
+          <h2 className="text-xl font-bold text-[var(--vn-ink)]">{section.title}</h2>
+          <p className="mt-2 text-sm leading-relaxed text-[var(--vn-subtle)]">{section.body}</p>
         </div>
       ))}
       <div>
-        <h2 className="text-xl font-bold text-[#0b1f3a] dark:text-white">Worked example</h2>
-        <p className="mt-2 text-sm leading-relaxed text-slate-600 dark:text-slate-300">
+        <h2 className="text-xl font-bold text-[var(--vn-ink)]">Worked example</h2>
+        <p className="mt-2 text-sm leading-relaxed text-[var(--vn-subtle)]">
           A 3 kW system at 1,500 kWh per kW generates 4,500 kWh in year one. At 70%
           self-consumption, 3,150 kWh offsets imports. At an illustrative ₹8 per kWh and ₹0 export
           credit, gross electricity savings are ₹25,200 before maintenance of ₹2,400. That
